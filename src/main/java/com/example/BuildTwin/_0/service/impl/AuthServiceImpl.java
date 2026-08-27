@@ -1,0 +1,220 @@
+package com.example.BuildTwin._0.service.impl;
+
+import com.example.BuildTwin._0.dto.auth.*;
+import com.example.BuildTwin._0.exception.BadRequestException;
+import com.example.BuildTwin._0.exception.DuplicateResourceException;
+import com.example.BuildTwin._0.exception.ResourceNotFoundException;
+import com.example.BuildTwin._0.exception.UnauthorizedException;
+import com.example.BuildTwin._0.model.Role;
+import com.example.BuildTwin._0.model.User;
+import com.example.BuildTwin._0.model.UserProjectRole;
+import com.example.BuildTwin._0.repository.RoleRepository;
+import com.example.BuildTwin._0.repository.UserProjectRoleRepository;
+import com.example.BuildTwin._0.repository.UserRepository;
+import com.example.BuildTwin._0.security.CustomUserDetails;
+import com.example.BuildTwin._0.security.JwtTokenProvider;
+import com.example.BuildTwin._0.service.AuthService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImpl implements AuthService {
+
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final UserProjectRoleRepository userProjectRoleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Override
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new DuplicateResourceException("User", "username", request.getUsername());
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateResourceException("User", "email", request.getEmail());
+        }
+
+        Set<Role> assignedRoles = new HashSet<>();
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            for (String roleName : request.getRoles()) {
+                String normalizedName = roleName.toUpperCase().startsWith("ROLE_")
+                        ? roleName.toUpperCase()
+                        : "ROLE_" + roleName.toUpperCase();
+
+                Role role = roleRepository.findByName(normalizedName)
+                        .orElseGet(() -> roleRepository.save(Role.builder().name(normalizedName).build()));
+                assignedRoles.add(role);
+            }
+        } else {
+            Role defaultRole = roleRepository.findByName("ROLE_SITE_ENGINEER")
+                    .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_SITE_ENGINEER").build()));
+            assignedRoles.add(defaultRole);
+        }
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .status("ACTIVE")
+                .roles(assignedRoles)
+                .build();
+
+        User savedUser = userRepository.save(user);
+
+        List<String> roleNames = savedUser.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toList());
+
+        String accessToken = jwtTokenProvider.generateAccessToken(
+                savedUser.getUsername(),
+                savedUser.getId(),
+                savedUser.getEmail(),
+                roleNames
+        );
+        String refreshToken = jwtTokenProvider.generateRefreshToken(savedUser.getUsername());
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(jwtTokenProvider.getExpirationMs())
+                .user(mapToUserSummaryDto(savedUser))
+                .build();
+    }
+
+    @Override
+    public AuthResponse login(LoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsernameOrEmail(),
+                            request.getPassword()
+                    )
+            );
+
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            User user = userRepository.findById(userDetails.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", userDetails.getId()));
+
+            String accessToken = jwtTokenProvider.generateAccessToken(authentication);
+            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
+
+            return AuthResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(jwtTokenProvider.getExpirationMs())
+                    .user(mapToUserSummaryDto(user))
+                    .build();
+        } catch (BadCredentialsException ex) {
+            throw new UnauthorizedException("Invalid username/email or password");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        String token = request.getRefreshToken();
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new BadRequestException("Invalid or expired refresh token");
+        }
+
+        String username = jwtTokenProvider.getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        List<String> roleNames = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toList());
+
+        String newAccessToken = jwtTokenProvider.generateAccessToken(
+                user.getUsername(),
+                user.getId(),
+                user.getEmail(),
+                roleNames
+        );
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(token)
+                .tokenType("Bearer")
+                .expiresIn(jwtTokenProvider.getExpirationMs())
+                .user(mapToUserSummaryDto(user))
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserSummaryDto getCurrentUserProfile(String username) {
+        User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        return mapToUserSummaryDto(user);
+    }
+
+    @Override
+    @Transactional
+    public UserProjectRole assignProjectRole(AssignProjectRoleRequest request) {
+        if (!userRepository.existsById(request.getUserId())) {
+            throw new ResourceNotFoundException("User", "id", request.getUserId());
+        }
+        if (!roleRepository.existsById(request.getRoleId())) {
+            throw new ResourceNotFoundException("Role", "id", request.getRoleId());
+        }
+
+        UserProjectRole userProjectRole = UserProjectRole.builder()
+                .userId(request.getUserId())
+                .projectId(request.getProjectId())
+                .roleId(request.getRoleId())
+                .build();
+
+        return userProjectRoleRepository.save(userProjectRole);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserSummaryDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::mapToUserSummaryDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
+    }
+
+    private UserSummaryDto mapToUserSummaryDto(User user) {
+        Set<String> roles = user.getRoles() != null
+                ? user.getRoles().stream().map(Role::getName).collect(Collectors.toSet())
+                : Set.of();
+
+        return UserSummaryDto.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .status(user.getStatus())
+                .roles(roles)
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+}
