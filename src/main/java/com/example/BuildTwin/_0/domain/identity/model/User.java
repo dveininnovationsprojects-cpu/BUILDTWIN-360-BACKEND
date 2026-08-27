@@ -1,4 +1,4 @@
-package com.example.BuildTwin._0.model;
+package com.example.BuildTwin._0.domain.identity.model;
 
 import jakarta.persistence.*;
 import lombok.*;
