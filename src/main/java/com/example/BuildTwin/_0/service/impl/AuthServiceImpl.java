@@ -1,6 +1,7 @@
 package com.example.BuildTwin._0.service.impl;
 
 import com.example.BuildTwin._0.dto.auth.*;
+import com.example.BuildTwin._0.dto.user.ChangePasswordRequest;
 import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
@@ -13,6 +14,7 @@ import com.example.BuildTwin._0.repository.UserProjectRoleRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
 import com.example.BuildTwin._0.security.CustomUserDetails;
 import com.example.BuildTwin._0.security.JwtTokenProvider;
+import com.example.BuildTwin._0.service.AuditService;
 import com.example.BuildTwin._0.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuditService auditService;
 
     @Override
     @Transactional
@@ -91,6 +94,15 @@ public class AuthServiceImpl implements AuthService {
         );
         String refreshToken = jwtTokenProvider.generateRefreshToken(savedUser.getUsername());
 
+        auditService.logAction(
+                savedUser.getUsername(),
+                "REGISTER",
+                "USER",
+                String.valueOf(savedUser.getId()),
+                "User self-registered successfully",
+                null
+        );
+
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -114,8 +126,21 @@ public class AuthServiceImpl implements AuthService {
             User user = userRepository.findById(userDetails.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", userDetails.getId()));
 
+            if ("INACTIVE".equalsIgnoreCase(user.getStatus()) || "SUSPENDED".equalsIgnoreCase(user.getStatus())) {
+                throw new UnauthorizedException("Account is " + user.getStatus().toLowerCase() + ". Please contact administrator.");
+            }
+
             String accessToken = jwtTokenProvider.generateAccessToken(authentication);
             String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
+
+            auditService.logAction(
+                    user.getUsername(),
+                    "LOGIN",
+                    "USER",
+                    String.valueOf(user.getId()),
+                    "User logged in successfully",
+                    null
+            );
 
             return AuthResponse.builder()
                     .accessToken(accessToken)
@@ -168,6 +193,30 @@ public class AuthServiceImpl implements AuthService {
                 .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
         return mapToUserSummaryDto(user);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new UnauthorizedException("Current password does not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        auditService.logAction(
+                username,
+                "CHANGE_PASSWORD",
+                "USER",
+                String.valueOf(user.getId()),
+                "User changed password",
+                null
+        );
     }
 
     @Override
