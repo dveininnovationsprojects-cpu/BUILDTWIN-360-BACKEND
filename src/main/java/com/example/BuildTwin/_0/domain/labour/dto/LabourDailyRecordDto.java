@@ -49,4 +49,7 @@ public class LabourDailyRecordDto {
 
     @Schema(description = "Remarks or site observations", example = "Slab shuttering works in progress")
     private String remarks;
+
+    @Schema(description = "List of WBS activity task allocations for this labour record")
+    private java.util.List<LabourAllocationDto> allocations;
 }

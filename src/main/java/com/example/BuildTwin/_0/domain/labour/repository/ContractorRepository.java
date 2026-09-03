@@ -18,4 +18,8 @@ public interface ContractorRepository extends JpaRepository<Contractor, Long> {
     List<Contractor> findByStatus(String status);
 
     List<Contractor> findByTradeSpecializationAndStatus(TradeCategory tradeSpecialization, String status);
+
+    List<Contractor> findByContractorType(com.example.BuildTwin._0.domain.labour.enums.ContractorType contractorType);
+
+    List<Contractor> findByParentContractorId(Long parentContractorId);
 }

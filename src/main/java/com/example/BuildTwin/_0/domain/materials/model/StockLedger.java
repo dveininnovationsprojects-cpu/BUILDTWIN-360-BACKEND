@@ -38,6 +38,9 @@ public class StockLedger {
     @Column(name = "site_id", updatable = false)
     private Long siteId;
 
+    @Column(name = "activity_id", updatable = false)
+    private Long activityId;
+
     @NotNull(message = "Material is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_id", updatable = false, nullable = false)
@@ -65,4 +68,14 @@ public class StockLedger {
     @CreationTimestamp
     @Column(name = "timestamp", updatable = false, nullable = false)
     private LocalDateTime timestamp;
+
+    @PreUpdate
+    public void onPreUpdate() {
+        throw new UnsupportedOperationException("Stock ledger entries are immutable and cannot be updated.");
+    }
+
+    @PreRemove
+    public void onPreRemove() {
+        throw new UnsupportedOperationException("Stock ledger entries are immutable and cannot be deleted.");
+    }
 }

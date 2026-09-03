@@ -22,6 +22,7 @@ public class LabourAllocation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "labour_daily_id", nullable = false)
     private LabourDaily labourDaily;

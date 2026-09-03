@@ -60,6 +60,10 @@ public class LabourDaily {
     @Column(name = "remarks", length = 500)
     private String remarks;
 
+    @Builder.Default
+    @OneToMany(mappedBy = "labourDaily", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<LabourAllocation> allocations = new java.util.ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

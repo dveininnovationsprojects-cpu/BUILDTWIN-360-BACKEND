@@ -42,6 +42,12 @@ public class ContractorRequestDto {
     @Schema(description = "Office/permanent address", example = "Padur, OMR, Chennai")
     private String address;
 
+    @Schema(description = "Contractor type: MAIN_CONTRACTOR or SUBCONTRACTOR", example = "MAIN_CONTRACTOR")
+    private com.example.BuildTwin._0.domain.labour.enums.ContractorType contractorType;
+
+    @Schema(description = "Parent contractor ID if this is a subcontractor", example = "1")
+    private Long parentContractorId;
+
     @Schema(description = "Status of contractor", example = "ACTIVE")
     private String status;
 }

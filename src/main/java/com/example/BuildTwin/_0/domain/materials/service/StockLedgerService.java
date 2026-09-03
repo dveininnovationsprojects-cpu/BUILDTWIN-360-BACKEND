@@ -62,6 +62,7 @@ public class StockLedgerService {
         StockLedger entry = StockLedger.builder()
                 .projectId(dto.getProjectId())
                 .siteId(dto.getSiteId())
+                .activityId(dto.getActivityId())
                 .material(material)
                 .transactionType(txnType)
                 .quantity(quantity)
@@ -81,5 +82,10 @@ public class StockLedgerService {
     @Transactional(readOnly = true)
     public List<StockLedger> getLedgerEntriesByProject(Long projectId) {
         return stockLedgerRepository.findByProjectId(projectId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockLedger> getLedgerEntriesByActivity(Long activityId) {
+        return stockLedgerRepository.findByActivityId(activityId);
     }
 }

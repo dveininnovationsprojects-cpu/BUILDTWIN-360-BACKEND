@@ -55,6 +55,14 @@ public class Contractor {
     private String address;
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "contractor_type", nullable = false, length = 30)
+    private com.example.BuildTwin._0.domain.labour.enums.ContractorType contractorType = com.example.BuildTwin._0.domain.labour.enums.ContractorType.MAIN_CONTRACTOR;
+
+    @Column(name = "parent_contractor_id")
+    private Long parentContractorId;
+
+    @Builder.Default
     @Column(name = "status", nullable = false, length = 30)
     private String status = "ACTIVE";
 

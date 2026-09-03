@@ -2,8 +2,8 @@ package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.dto.ApiResponse;
 import com.example.BuildTwin._0.dto.auth.*;
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.UserProjectRole;
+import com.example.BuildTwin._0.domain.identity.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.UserProjectRole;
 import com.example.BuildTwin._0.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

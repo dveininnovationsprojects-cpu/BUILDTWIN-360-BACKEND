@@ -1,6 +1,6 @@
 package com.example.BuildTwin._0.security;
 
-import com.example.BuildTwin._0.model.User;
+import com.example.BuildTwin._0.domain.identity.model.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

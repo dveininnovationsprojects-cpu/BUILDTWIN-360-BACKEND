@@ -1,6 +1,6 @@
 package com.example.BuildTwin._0.security;
 
-import com.example.BuildTwin._0.model.User;
+import com.example.BuildTwin._0.domain.identity.model.User;
 import com.example.BuildTwin._0.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;

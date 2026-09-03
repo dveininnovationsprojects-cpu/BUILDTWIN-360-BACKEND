@@ -56,7 +56,17 @@ public class MaterialService {
     }
 
     @Transactional(readOnly = true)
+    public List<Material> getMaterialsByCategory(String category) {
+        return materialRepository.findByCategory(category);
+    }
+
+    @Transactional(readOnly = true)
     public List<Material> getLowStockMaterials() {
+        return materialRepository.findLowStockMaterials();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Material> getMaterialsNeedingReorder() {
         return materialRepository.findLowStockMaterials();
     }
 }

@@ -1,7 +1,7 @@
 package com.example.BuildTwin._0.config;
 
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.User;
+import com.example.BuildTwin._0.domain.identity.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.User;
 import com.example.BuildTwin._0.repository.RoleRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

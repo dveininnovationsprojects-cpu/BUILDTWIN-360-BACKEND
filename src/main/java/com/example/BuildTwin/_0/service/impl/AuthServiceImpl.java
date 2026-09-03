@@ -5,9 +5,9 @@ import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import com.example.BuildTwin._0.exception.UnauthorizedException;
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.User;
-import com.example.BuildTwin._0.model.UserProjectRole;
+import com.example.BuildTwin._0.domain.identity.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.User;
+import com.example.BuildTwin._0.domain.identity.model.UserProjectRole;
 import com.example.BuildTwin._0.repository.RoleRepository;
 import com.example.BuildTwin._0.repository.UserProjectRoleRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
@@ -173,17 +173,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public UserProjectRole assignProjectRole(AssignProjectRoleRequest request) {
-        if (!userRepository.existsById(request.getUserId())) {
-            throw new ResourceNotFoundException("User", "id", request.getUserId());
-        }
-        if (!roleRepository.existsById(request.getRoleId())) {
-            throw new ResourceNotFoundException("Role", "id", request.getRoleId());
-        }
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getUserId()));
+        Role role = roleRepository.findById(request.getRoleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "id", request.getRoleId()));
 
         UserProjectRole userProjectRole = UserProjectRole.builder()
-                .userId(request.getUserId())
+                .user(user)
                 .projectId(request.getProjectId())
-                .roleId(request.getRoleId())
+                .role(role)
                 .build();
 
         return userProjectRoleRepository.save(userProjectRole);
