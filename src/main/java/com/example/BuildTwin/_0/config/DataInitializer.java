@@ -1,8 +1,12 @@
 package com.example.BuildTwin._0.config;
 
+import com.example.BuildTwin._0.model.Project;
 import com.example.BuildTwin._0.model.Role;
+import com.example.BuildTwin._0.model.Site;
 import com.example.BuildTwin._0.model.User;
+import com.example.BuildTwin._0.repository.ProjectRepository;
 import com.example.BuildTwin._0.repository.RoleRepository;
+import com.example.BuildTwin._0.repository.SiteRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +15,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +28,8 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
+    private final SiteRepository siteRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -44,6 +52,7 @@ public class DataInitializer implements CommandLineRunner {
         fixUserRolesTableConstraints();
         cleanAndSyncExactRoles();
         seedOrUpdateAdminUser();
+        seedDefaultProjectAndSites();
     }
 
     private void fixUserRolesTableConstraints() {
@@ -123,5 +132,74 @@ public class DataInitializer implements CommandLineRunner {
                     log.info("Initialized default administrator: username='admin', email='admin@buildtwin360.com'");
                 }
         );
+    }
+
+    private void seedDefaultProjectAndSites() {
+        String defaultCode = "PADUR-AG-01";
+        if (!projectRepository.existsByCode(defaultCode)) {
+            User admin = userRepository.findByUsername("admin").orElse(null);
+
+            Project project = Project.builder()
+                    .name("Ashok Grandeur - Padur, Chennai")
+                    .code(defaultCode)
+                    .description("Flagship 18-storey twin-tower residential community with 220 luxury units and club facilities in Padur, OMR, Chennai.")
+                    .clientName("Ashok Builders & Developers")
+                    .projectType("RESIDENTIAL")
+                    .location("Old Mahabalipuram Road (OMR), Padur, Chennai - 603103")
+                    .status("ACTIVE")
+                    .plannedStartDate(LocalDate.of(2026, 9, 1))
+                    .plannedEndDate(LocalDate.of(2028, 6, 30))
+                    .actualStartDate(LocalDate.of(2026, 9, 5))
+                    .estimatedBudget(BigDecimal.valueOf(45000000.00))
+                    .currency("INR")
+                    .totalBuiltUpAreaSqFt(350000.0)
+                    .projectManagerId(admin != null ? admin.getId() : null)
+                    .build();
+
+            Project saved = projectRepository.save(project);
+            log.info("Initialized master construction project: '{}' ({})", saved.getName(), saved.getCode());
+
+            Site siteA = Site.builder()
+                    .project(saved)
+                    .code("PADUR-TWR-A")
+                    .name("Tower A (Stilt + 18 Floors)")
+                    .siteType("BUILDING_TOWER")
+                    .location("North Sector, Ashok Grandeur Campus, Padur")
+                    .status("ACTIVE")
+                    .latitude(12.7932)
+                    .longitude(80.2241)
+                    .areaSqFt(180000.0)
+                    .siteIncharge("Karthik Raman (PM)")
+                    .build();
+
+            Site siteB = Site.builder()
+                    .project(saved)
+                    .code("PADUR-TWR-B")
+                    .name("Tower B (Stilt + 18 Floors)")
+                    .siteType("BUILDING_TOWER")
+                    .location("South Sector, Ashok Grandeur Campus, Padur")
+                    .status("ACTIVE")
+                    .latitude(12.7935)
+                    .longitude(80.2245)
+                    .areaSqFt(150000.0)
+                    .siteIncharge("Suresh Kumar (Site Eng)")
+                    .build();
+
+            Site siteClub = Site.builder()
+                    .project(saved)
+                    .code("PADUR-CLUB-01")
+                    .name("Clubhouse & Podium Amenities")
+                    .siteType("AMENITIES")
+                    .location("Central Podium, Ashok Grandeur Campus")
+                    .status("ACTIVE")
+                    .latitude(12.7930)
+                    .longitude(80.2238)
+                    .areaSqFt(20000.0)
+                    .siteIncharge("Anand (QC Lead)")
+                    .build();
+
+            siteRepository.saveAll(List.of(siteA, siteB, siteClub));
+            log.info("Initialized 3 physical sites under project '{}'", saved.getName());
+        }
     }
 }
