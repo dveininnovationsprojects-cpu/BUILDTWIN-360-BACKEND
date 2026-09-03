@@ -1,13 +1,7 @@
 package com.example.BuildTwin._0.config;
 
-import com.example.BuildTwin._0.model.Project;
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.Site;
-import com.example.BuildTwin._0.model.User;
-import com.example.BuildTwin._0.repository.ProjectRepository;
-import com.example.BuildTwin._0.repository.RoleRepository;
-import com.example.BuildTwin._0.repository.SiteRepository;
-import com.example.BuildTwin._0.repository.UserRepository;
+import com.example.BuildTwin._0.model.*;
+import com.example.BuildTwin._0.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -30,6 +24,10 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final SiteRepository siteRepository;
+    private final BuildingRepository buildingRepository;
+    private final FloorRepository floorRepository;
+    private final ZoneRepository zoneRepository;
+    private final WorkPackageRepository workPackageRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -200,6 +198,105 @@ public class DataInitializer implements CommandLineRunner {
 
             siteRepository.saveAll(List.of(siteA, siteB, siteClub));
             log.info("Initialized 3 physical sites under project '{}'", saved.getName());
+
+            // 1. Seed Building
+            Building bldTowerA = Building.builder()
+                    .site(siteA)
+                    .code("BLD-TWR-A")
+                    .name("Tower A - Premium Suites")
+                    .buildingType("RESIDENTIAL_TOWER")
+                    .totalFloors(18)
+                    .totalBuiltUpAreaSqFt(180000.0)
+                    .status("UNDER_CONSTRUCTION")
+                    .description("18-storey residential tower with stilt parking and terrace garden")
+                    .build();
+            Building savedBld = buildingRepository.save(bldTowerA);
+
+            // 2. Seed Floors
+            Floor stiltFloor = Floor.builder()
+                    .building(savedBld)
+                    .floorNumber(0)
+                    .floorName("Stilt Floor (Parking & Entry)")
+                    .floorType("STILT")
+                    .builtUpAreaSqFt(10000.0)
+                    .status("COMPLETED")
+                    .build();
+
+            Floor floor1 = Floor.builder()
+                    .building(savedBld)
+                    .floorNumber(1)
+                    .floorName("First Typical Floor")
+                    .floorType("TYPICAL")
+                    .builtUpAreaSqFt(9500.0)
+                    .status("IN_PROGRESS")
+                    .build();
+
+            floorRepository.saveAll(List.of(stiltFloor, floor1));
+
+            // 3. Seed Zones under Floor 1
+            Zone zone101 = Zone.builder()
+                    .floor(floor1)
+                    .code("FL1-UNIT-101")
+                    .name("3BHK Luxury Flat 101")
+                    .zoneType("RESIDENTIAL_UNIT")
+                    .areaSqFt(1850.0)
+                    .status("IN_PROGRESS")
+                    .build();
+
+            Zone zone102 = Zone.builder()
+                    .floor(floor1)
+                    .code("FL1-UNIT-102")
+                    .name("3BHK Luxury Flat 102")
+                    .zoneType("RESIDENTIAL_UNIT")
+                    .areaSqFt(1850.0)
+                    .status("IN_PROGRESS")
+                    .build();
+
+            Zone zoneCorridor = Zone.builder()
+                    .floor(floor1)
+                    .code("FL1-LIFT-LOBBY")
+                    .name("Floor 1 Lift & Service Lobby")
+                    .zoneType("COMMON_AREA")
+                    .areaSqFt(800.0)
+                    .status("IN_PROGRESS")
+                    .build();
+
+            zoneRepository.saveAll(List.of(zone101, zone102, zoneCorridor));
+
+            // 4. Seed Work Packages under Project
+            WorkPackage wpCivil = WorkPackage.builder()
+                    .project(saved)
+                    .site(siteA)
+                    .code("WP-CIV-01")
+                    .name("Substructure & RCC Framing Works")
+                    .discipline("CIVIL")
+                    .description("RCC columns, beams, and slab casting up to 10th floor")
+                    .status("IN_PROGRESS")
+                    .plannedStartDate(LocalDate.of(2026, 9, 1))
+                    .plannedEndDate(LocalDate.of(2027, 4, 30))
+                    .actualStartDate(LocalDate.of(2026, 9, 10))
+                    .budgetAmount(BigDecimal.valueOf(18000000.00))
+                    .assignedContractor("L&T Construction (Civil Div)")
+                    .inchargeUserId(admin != null ? admin.getId() : null)
+                    .build();
+
+            WorkPackage wpMep = WorkPackage.builder()
+                    .project(saved)
+                    .site(siteA)
+                    .code("WP-MEP-01")
+                    .name("MEP - Plumbing, Conduit & Fire Piping")
+                    .discipline("MEP")
+                    .description("Conduit laying, soil/waste piping, and fire hydrant pipelines")
+                    .status("PLANNED")
+                    .plannedStartDate(LocalDate.of(2026, 11, 1))
+                    .plannedEndDate(LocalDate.of(2027, 8, 31))
+                    .budgetAmount(BigDecimal.valueOf(8500000.00))
+                    .assignedContractor("Voltas MEP Solutions")
+                    .inchargeUserId(admin != null ? admin.getId() : null)
+                    .build();
+
+            workPackageRepository.saveAll(List.of(wpCivil, wpMep));
+            log.info("Initialized default Buildings, Floors, Zones, and Work Packages for Padur project.");
         }
     }
 }

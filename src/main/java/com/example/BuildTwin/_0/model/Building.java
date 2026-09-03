@@ -11,49 +11,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "sites")
+@Table(name = "buildings")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Site {
+public class Building {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = false)
+    @JoinColumn(name = "site_id", nullable = false)
     @JsonIgnore
-    private Project project;
+    private Site site;
 
     @Column(name = "code", nullable = false)
-    private String code; // e.g. "PADUR-TWR-A"
+    private String code; // e.g. "BLD-TWR-A"
 
     @Column(name = "name", nullable = false)
-    private String name;
+    private String name; // e.g. "Tower A - Residential"
 
-    @Column(name = "site_type")
-    private String siteType; // TOWER, INFRASTRUCTURE, CLUBHOUSE, VILLA_ZONE, UTILITIES
+    @Column(name = "building_type")
+    private String buildingType; // RESIDENTIAL_TOWER, COMMERCIAL_BLOCK, CLUBHOUSE, PODIUM, PARKING_BLOCK
 
-    @Column(name = "location")
-    private String location;
+    @Column(name = "total_floors")
+    private Integer totalFloors; // e.g. 18
+
+    @Column(name = "total_built_up_area_sqft")
+    private Double totalBuiltUpAreaSqFt;
 
     @Column(name = "status")
-    private String status; // ACTIVE, INACTIVE, COMPLETED
+    private String status; // PLANNED, UNDER_CONSTRUCTION, COMPLETED, ON_HOLD
 
-    @Column(name = "latitude")
-    private Double latitude;
-
-    @Column(name = "longitude")
-    private Double longitude;
-
-    @Column(name = "area_sqft")
-    private Double areaSqFt;
-
-    @Column(name = "site_incharge")
-    private String siteIncharge;
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -63,8 +57,8 @@ public class Site {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @JsonIgnore
-    private List<Building> buildings = new ArrayList<>();
+    private List<Floor> floors = new ArrayList<>();
 }
