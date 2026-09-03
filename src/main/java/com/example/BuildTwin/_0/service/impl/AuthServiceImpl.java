@@ -1,8 +1,10 @@
 package com.example.BuildTwin._0.service.impl;
 
 import com.example.BuildTwin._0.dto.auth.*;
+import com.example.BuildTwin._0.dto.user.ChangePasswordRequest;
 import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
+import com.example.BuildTwin._0.exception.ForbiddenException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import com.example.BuildTwin._0.exception.UnauthorizedException;
 import com.example.BuildTwin._0.domain.identity.model.Role;
@@ -13,6 +15,7 @@ import com.example.BuildTwin._0.repository.UserProjectRoleRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
 import com.example.BuildTwin._0.security.CustomUserDetails;
 import com.example.BuildTwin._0.security.JwtTokenProvider;
+import com.example.BuildTwin._0.service.AuditService;
 import com.example.BuildTwin._0.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuditService auditService;
 
     @Override
     @Transactional
@@ -69,39 +73,54 @@ public class AuthServiceImpl implements AuthService {
             assignedRoles.add(defaultRole);
         }
 
+        // New registrations require Admin / Management approval
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .status("ACTIVE")
+                .status("PENDING_APPROVAL")
                 .roles(assignedRoles)
                 .build();
 
         User savedUser = userRepository.save(user);
 
-        List<String> roleNames = savedUser.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.toList());
-
-        String accessToken = jwtTokenProvider.generateAccessToken(
+        auditService.logAction(
                 savedUser.getUsername(),
-                savedUser.getId(),
-                savedUser.getEmail(),
-                roleNames
+                "REGISTER",
+                "USER",
+                String.valueOf(savedUser.getId()),
+                "User submitted registration (PENDING_APPROVAL). Awaiting Admin/Director approval.",
+                null
         );
-        String refreshToken = jwtTokenProvider.generateRefreshToken(savedUser.getUsername());
 
         return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .accessToken(null)
+                .refreshToken(null)
                 .tokenType("Bearer")
-                .expiresIn(jwtTokenProvider.getExpirationMs())
+                .expiresIn(0L)
                 .user(mapToUserSummaryDto(savedUser))
                 .build();
     }
 
     @Override
     public AuthResponse login(LoginRequest request) {
+        // Pre-check user status before authentication
+        User user = userRepository.findByUsername(request.getUsernameOrEmail())
+                .or(() -> userRepository.findByEmail(request.getUsernameOrEmail()))
+                .orElse(null);
+
+        if (user != null) {
+            if ("PENDING_APPROVAL".equalsIgnoreCase(user.getStatus())) {
+                throw new ForbiddenException("Your registration is pending approval by System Administrator or Project Director.");
+            }
+            if ("REJECTED".equalsIgnoreCase(user.getStatus())) {
+                throw new ForbiddenException("Your registration request was rejected by administration. Please contact support.");
+            }
+            if ("INACTIVE".equalsIgnoreCase(user.getStatus()) || "SUSPENDED".equalsIgnoreCase(user.getStatus())) {
+                throw new ForbiddenException("Account is " + user.getStatus().toLowerCase() + ". Please contact administrator.");
+            }
+        }
+
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -111,11 +130,29 @@ public class AuthServiceImpl implements AuthService {
             );
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            User user = userRepository.findById(userDetails.getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", userDetails.getId()));
+            if (user == null) {
+                user = userRepository.findById(userDetails.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "id", userDetails.getId()));
+            }
+
+            if ("PENDING_APPROVAL".equalsIgnoreCase(user.getStatus())) {
+                throw new ForbiddenException("Your registration is pending approval by System Administrator or Project Director.");
+            }
+            if ("INACTIVE".equalsIgnoreCase(user.getStatus()) || "SUSPENDED".equalsIgnoreCase(user.getStatus())) {
+                throw new ForbiddenException("Account is " + user.getStatus().toLowerCase() + ". Please contact administrator.");
+            }
 
             String accessToken = jwtTokenProvider.generateAccessToken(authentication);
             String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
+
+            auditService.logAction(
+                    user.getUsername(),
+                    "LOGIN",
+                    "USER",
+                    String.valueOf(user.getId()),
+                    "User logged in successfully",
+                    null
+            );
 
             return AuthResponse.builder()
                     .accessToken(accessToken)
@@ -140,6 +177,10 @@ public class AuthServiceImpl implements AuthService {
         String username = jwtTokenProvider.getUsernameFromToken(token);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            throw new ForbiddenException("Account is not active (" + user.getStatus() + "). Token refresh denied.");
+        }
 
         List<String> roleNames = user.getRoles().stream()
                 .map(Role::getName)
@@ -168,6 +209,30 @@ public class AuthServiceImpl implements AuthService {
                 .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
         return mapToUserSummaryDto(user);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new UnauthorizedException("Current password does not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        auditService.logAction(
+                username,
+                "CHANGE_PASSWORD",
+                "USER",
+                String.valueOf(user.getId()),
+                "User successfully changed their own password",
+                null
+        );
     }
 
     @Override
