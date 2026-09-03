@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -42,7 +43,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         fixUserRolesTableConstraints();
         cleanAndSyncExactRoles();
-        seedAdminUser();
+        seedOrUpdateAdminUser();
     }
 
     private void fixUserRolesTableConstraints() {
@@ -93,21 +94,34 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void seedAdminUser() {
-        if (!userRepository.existsByUsername("admin")) {
-            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                    .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_ADMIN").build()));
+    private void seedOrUpdateAdminUser() {
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_ADMIN").build()));
+        Role directorRole = roleRepository.findByName("ROLE_DIRECTOR")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_DIRECTOR").build()));
 
-            User adminUser = User.builder()
-                    .username("admin")
-                    .email("admin@buildtwin360.com")
-                    .password(passwordEncoder.encode("Admin@123"))
-                    .status("ACTIVE")
-                    .roles(Set.of(adminRole))
-                    .build();
+        userRepository.findByUsername("admin").ifPresentOrElse(
+                existingAdmin -> {
+                    boolean hasAdmin = existingAdmin.getRoles().stream().anyMatch(r -> "ROLE_ADMIN".equals(r.getName()));
+                    if (!hasAdmin) {
+                        existingAdmin.getRoles().add(adminRole);
+                        existingAdmin.getRoles().add(directorRole);
+                        userRepository.save(existingAdmin);
+                        log.info("Granted ROLE_ADMIN & ROLE_DIRECTOR to existing 'admin' user");
+                    }
+                },
+                () -> {
+                    User adminUser = User.builder()
+                            .username("admin")
+                            .email("admin@buildtwin360.com")
+                            .password(passwordEncoder.encode("Admin@123"))
+                            .status("ACTIVE")
+                            .roles(new HashSet<>(Set.of(adminRole, directorRole)))
+                            .build();
 
-            userRepository.save(adminUser);
-            log.info("Initialized default administrator: username='admin', email='admin@buildtwin360.com'");
-        }
+                    userRepository.save(adminUser);
+                    log.info("Initialized default administrator: username='admin', email='admin@buildtwin360.com'");
+                }
+        );
     }
 }

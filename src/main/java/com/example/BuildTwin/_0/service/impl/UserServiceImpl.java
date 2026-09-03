@@ -119,6 +119,101 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<UserDetailResponse> getPendingApprovalUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<User> userPage = userRepository.findByStatus("PENDING_APPROVAL", pageable);
+
+        List<UserDetailResponse> content = userPage.getContent().stream()
+                .map(this::mapToUserDetailResponse)
+                .collect(Collectors.toList());
+
+        return PageResponse.<UserDetailResponse>builder()
+                .content(content)
+                .pageNumber(userPage.getNumber())
+                .pageSize(userPage.getSize())
+                .totalElements(userPage.getTotalElements())
+                .totalPages(userPage.getTotalPages())
+                .isFirst(userPage.isFirst())
+                .isLast(userPage.isLast())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public UserDetailResponse approveUser(Long id, ApproveUserRequest request, String performedBy) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+        if (!"PENDING_APPROVAL".equalsIgnoreCase(user.getStatus()) && !"REJECTED".equalsIgnoreCase(user.getStatus())) {
+            throw new BadRequestException("User with ID " + id + " is already in status: " + user.getStatus());
+        }
+
+        // Optionally update / assign system roles
+        if (request != null && request.getRoles() != null && !request.getRoles().isEmpty()) {
+            user.setRoles(resolveRoles(request.getRoles()));
+        }
+
+        // Set status to ACTIVE
+        user.setStatus("ACTIVE");
+        User approvedUser = userRepository.save(user);
+
+        // Optionally assign to project if provided
+        if (request != null && request.getProjectId() != null) {
+            Project project = projectRepository.findById(request.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.getProjectId()));
+            
+            // Assign primary user role for project
+            Role primaryRole = approvedUser.getRoles().stream().findFirst().orElse(null);
+            if (primaryRole != null) {
+                UserProjectRole userProjectRole = UserProjectRole.builder()
+                        .userId(approvedUser.getId())
+                        .projectId(project.getId())
+                        .roleId(primaryRole.getId())
+                        .build();
+                userProjectRoleRepository.save(userProjectRole);
+            }
+        }
+
+        String remarks = (request != null && request.getRemarks() != null) ? " (Remarks: " + request.getRemarks() + ")" : "";
+        auditService.logAction(
+                performedBy,
+                "APPROVE_USER",
+                "USER",
+                String.valueOf(approvedUser.getId()),
+                "Approved registration for user: " + approvedUser.getUsername() + remarks,
+                null
+        );
+
+        return mapToUserDetailResponse(approvedUser);
+    }
+
+    @Override
+    @Transactional
+    public UserDetailResponse rejectUser(Long id, RejectUserRequest request, String performedBy) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+        if ("admin".equalsIgnoreCase(user.getUsername())) {
+            throw new BadRequestException("The primary administrator account ('admin') cannot be rejected");
+        }
+
+        user.setStatus("REJECTED");
+        User rejectedUser = userRepository.save(user);
+
+        auditService.logAction(
+                performedBy,
+                "REJECT_USER",
+                "USER",
+                String.valueOf(rejectedUser.getId()),
+                "Rejected registration for user: " + rejectedUser.getUsername() + ". Reason: " + request.getReason(),
+                null
+        );
+
+        return mapToUserDetailResponse(rejectedUser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public UserDetailResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));

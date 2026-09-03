@@ -11,6 +11,12 @@ public interface UserService {
 
     PageResponse<UserDetailResponse> getAllUsers(String search, String status, int page, int size, String sortBy, String sortDir);
 
+    PageResponse<UserDetailResponse> getPendingApprovalUsers(int page, int size);
+
+    UserDetailResponse approveUser(Long id, ApproveUserRequest request, String performedBy);
+
+    UserDetailResponse rejectUser(Long id, RejectUserRequest request, String performedBy);
+
     UserDetailResponse getUserById(Long id);
 
     UserDetailResponse getUserByUsername(String username);

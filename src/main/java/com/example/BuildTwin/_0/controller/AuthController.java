@@ -2,6 +2,7 @@ package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.dto.ApiResponse;
 import com.example.BuildTwin._0.dto.auth.*;
+import com.example.BuildTwin._0.dto.user.ChangePasswordRequest;
 import com.example.BuildTwin._0.model.Role;
 import com.example.BuildTwin._0.model.UserProjectRole;
 import com.example.BuildTwin._0.service.AuthService;
@@ -105,8 +106,26 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(userProfile, "Current user profile retrieved successfully"));
     }
 
+    @PostMapping("/change-password")
+    @Operation(
+            summary = "Change own password",
+            description = "Allows an authenticated user to change their own password by verifying current password.",
+            security = @SecurityRequirement(name = "BearerAuth")
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid payload or password requirements not met"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Current password does not match or unauthorized")
+    })
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @Parameter(hidden = true) Authentication authentication) {
+        authService.changePassword(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Password changed successfully"));
+    }
+
     @PostMapping("/assign-project-role")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Assign project role",
             description = "Assigns a specific role to a user for a particular construction project.",
@@ -128,7 +147,7 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('DIRECTOR')")
     @Operation(
             summary = "List all users",
             description = "Retrieves all registered users along with their assigned system roles.",

@@ -31,9 +31,9 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
-            summary = "Create user (Admin)",
+            summary = "Create user (Admin / Director)",
             description = "Creates a new user profile with pre-assigned roles and status."
     )
     @ApiResponses(value = {
@@ -43,7 +43,7 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = UserDetailResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Requires ADMIN role"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Requires ADMIN or DIRECTOR role"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Username or email already exists")
     })
     public ResponseEntity<ApiResponse<UserDetailResponse>> createUser(
@@ -68,13 +68,79 @@ public class UserController {
     })
     public ResponseEntity<ApiResponse<PageResponse<UserDetailResponse>>> getAllUsers(
             @Parameter(description = "Search keyword in username or email") @RequestParam(required = false) String search,
-            @Parameter(description = "Filter by status (ACTIVE, INACTIVE, SUSPENDED)") @RequestParam(required = false) String status,
+            @Parameter(description = "Filter by status (ACTIVE, INACTIVE, SUSPENDED, PENDING_APPROVAL, REJECTED)") @RequestParam(required = false) String status,
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sort field") @RequestParam(defaultValue = "id") String sortBy,
             @Parameter(description = "Sort direction (asc/desc)") @RequestParam(defaultValue = "asc") String sortDir) {
         PageResponse<UserDetailResponse> users = userService.getAllUsers(search, status, page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(users, "Users retrieved successfully"));
+    }
+
+    @GetMapping("/pending-approvals")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
+    @Operation(
+            summary = "List pending user registrations (Admin / Director)",
+            description = "Fetches a list of newly registered users whose accounts are awaiting review and approval."
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Pending registrations retrieved successfully"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Requires ADMIN or DIRECTOR role")
+    })
+    public ResponseEntity<ApiResponse<PageResponse<UserDetailResponse>>> getPendingApprovals(
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
+        PageResponse<UserDetailResponse> pendingUsers = userService.getPendingApprovalUsers(page, size);
+        return ResponseEntity.ok(ApiResponse.success(pendingUsers, "Pending user registrations retrieved successfully"));
+    }
+
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
+    @Operation(
+            summary = "Approve user registration",
+            description = "Approves a pending user registration, sets status to ACTIVE, optionally configures roles or project assignment."
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "User approved successfully",
+                    content = @Content(schema = @Schema(implementation = UserDetailResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request or user not in pending state"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<ApiResponse<UserDetailResponse>> approveUser(
+            @PathVariable Long id,
+            @RequestBody(required = false) ApproveUserRequest request,
+            @Parameter(hidden = true) Authentication authentication) {
+        UserDetailResponse approved = userService.approveUser(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(approved, "User registration approved successfully. Account is now ACTIVE."));
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
+    @Operation(
+            summary = "Reject user registration",
+            description = "Rejects a pending user registration request with recorded reason."
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "User registration rejected successfully",
+                    content = @Content(schema = @Schema(implementation = UserDetailResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request or primary admin target"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<ApiResponse<UserDetailResponse>> rejectUser(
+            @PathVariable Long id,
+            @Valid @RequestBody RejectUserRequest request,
+            @Parameter(hidden = true) Authentication authentication) {
+        UserDetailResponse rejected = userService.rejectUser(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(rejected, "User registration rejected successfully"));
     }
 
     @GetMapping("/{id}")
@@ -97,7 +163,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Update user details",
             description = "Updates email, account status, and assigned system roles for a user."
@@ -121,7 +187,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Delete user",
             description = "Permanently removes a user account and associated project roles (Primary admin protected)."
@@ -139,10 +205,10 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Activate / Deactivate / Suspend user",
-            description = "Changes user account status (ACTIVE, INACTIVE, SUSPENDED)."
+            description = "Changes user account status (ACTIVE, INACTIVE, SUSPENDED, PENDING_APPROVAL, REJECTED)."
     )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User status updated successfully"),
@@ -158,10 +224,10 @@ public class UserController {
     }
 
     @PostMapping("/{id}/reset-password")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
-            summary = "Reset user password (Admin)",
-            description = "Admin override to reset a user's password without knowing old password."
+            summary = "Reset user password",
+            description = "Administrative override to reset a user's password without knowing old password."
     )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully"),
@@ -176,7 +242,7 @@ public class UserController {
     }
 
     @PostMapping("/{id}/roles")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Add roles to user",
             description = "Assigns additional system roles to an existing user."
@@ -194,7 +260,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}/roles/{roleName}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Remove role from user",
             description = "Removes a specific system role from a user."
