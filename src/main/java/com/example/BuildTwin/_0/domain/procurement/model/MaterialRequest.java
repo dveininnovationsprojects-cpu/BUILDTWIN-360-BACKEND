@@ -41,7 +41,35 @@ public class MaterialRequest {
     @Column(name = "status", nullable = false, length = 30)
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED, ORDERED
 
+    @Column(name = "site_id")
+    private Long siteId;
+
+    @Column(name = "wbs_activity_id")
+    private Long wbsActivityId;
+
+    @Column(name = "zone", length = 100)
+    private String zone;
+
+    @Column(name = "contractor_id")
+    private Long contractorId;
+
+    @Column(name = "requested_by", length = 100)
+    private String requestedBy;
+
+    @Column(name = "approved_by", length = 100)
+    private String approvedBy;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    @Column(name = "remarks", length = 500)
+    private String remarks;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

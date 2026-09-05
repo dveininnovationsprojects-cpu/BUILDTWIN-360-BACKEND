@@ -38,6 +38,32 @@ public class MaterialService {
         return materialRepository.save(material);
     }
 
+    @Transactional
+    public Material updateMaterial(Long id, com.example.BuildTwin._0.domain.materials.dto.MaterialUpdateDto dto) {
+        Material material = getMaterialById(id);
+
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            material.setName(dto.getName());
+        }
+        if (dto.getCategory() != null && !dto.getCategory().isBlank()) {
+            material.setCategory(dto.getCategory());
+        }
+        if (dto.getUnit() != null) {
+            material.setUnit(dto.getUnit());
+        }
+        if (dto.getStandardRate() != null) {
+            material.setStandardRate(dto.getStandardRate());
+        }
+        if (dto.getReorderLevel() != null) {
+            material.setReorderLevel(dto.getReorderLevel());
+        }
+        if (dto.getDescription() != null) {
+            material.setDescription(dto.getDescription());
+        }
+
+        return materialRepository.save(material);
+    }
+
     @Transactional(readOnly = true)
     public Material getMaterialById(Long id) {
         return materialRepository.findById(id)

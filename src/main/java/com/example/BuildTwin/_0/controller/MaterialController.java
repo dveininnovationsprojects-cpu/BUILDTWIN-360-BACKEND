@@ -56,6 +56,30 @@ public class MaterialController {
         return ResponseEntity.ok(ApiResponse.success(materials, "Materials filtered by category successfully"));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Update Material Catalog Details", description = "Updates category, unit, specification, standard rate, and reorder level for a material.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Material>> updateMaterial(@PathVariable Long id, @Valid @RequestBody com.example.BuildTwin._0.domain.materials.dto.MaterialUpdateDto request) {
+        Material material = materialService.updateMaterial(id, request);
+        return ResponseEntity.ok(ApiResponse.success(material, "Material updated successfully"));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Material By ID", description = "Retrieves material details by unique primary key ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Material>> getMaterialById(@PathVariable Long id) {
+        Material material = materialService.getMaterialById(id);
+        return ResponseEntity.ok(ApiResponse.success(material, "Material fetched successfully"));
+    }
+
+    @GetMapping("/low-stock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Detect Low Stock Materials", description = "Identifies all materials where current stock balance is less than or equal to reorder level.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<Material>>> getLowStockMaterials() {
+        List<Material> materials = materialService.getLowStockMaterials();
+        return ResponseEntity.ok(ApiResponse.success(materials, "Low stock materials fetched successfully"));
+    }
+
     @GetMapping("/reorder-alerts")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Reorder Threshold Alerts", description = "Retrieves all materials where current stock level is less than or equal to minimum reorder threshold.", security = @SecurityRequirement(name = "BearerAuth"))

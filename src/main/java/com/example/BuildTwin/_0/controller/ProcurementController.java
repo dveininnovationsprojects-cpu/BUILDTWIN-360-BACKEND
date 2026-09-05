@@ -31,12 +31,38 @@ public class ProcurementController {
         return new ResponseEntity<>(ApiResponse.created(created, "Material request raised successfully"), HttpStatus.CREATED);
     }
 
+    @PutMapping("/requests/{id}/approval")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Process Material Request Approval / Rejection (FR-051)", description = "Updates approval status (APPROVED, REJECTED) with metadata and rejection reason.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<MaterialRequest>> updateMaterialRequestApproval(
+            @PathVariable Long id,
+            @Valid @RequestBody com.example.BuildTwin._0.domain.procurement.dto.MaterialRequestApprovalDto approvalDto) {
+        MaterialRequest updated = procurementService.updateMaterialRequestStatus(id, approvalDto);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Material request approval status updated successfully"));
+    }
+
     @GetMapping("/requests/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Material Requests By Project", description = "Retrieves all material requests for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<MaterialRequest>>> getRequestsByProject(@PathVariable Long projectId) {
         List<MaterialRequest> requests = procurementService.getMaterialRequestsByProject(projectId);
         return ResponseEntity.ok(ApiResponse.success(requests, "Material requests fetched successfully"));
+    }
+
+    @GetMapping("/requests/project/{projectId}/status/{status}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Material Requests By Status", description = "Retrieves material requests filtered by project and approval status (PENDING, APPROVED, REJECTED).", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<MaterialRequest>>> getRequestsByStatus(@PathVariable Long projectId, @PathVariable String status) {
+        List<MaterialRequest> requests = procurementService.getMaterialRequestsByStatus(projectId, status);
+        return ResponseEntity.ok(ApiResponse.success(requests, "Filtered material requests fetched successfully"));
+    }
+
+    @GetMapping("/requests/project/{projectId}/projected-shortage")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Detect Projected Material Shortage (FR-056)", description = "Calculates projected inventory shortages by matching active material requests against store balance.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<com.example.BuildTwin._0.domain.materials.dto.ProjectedShortageDto>>> getProjectedShortages(@PathVariable Long projectId) {
+        List<com.example.BuildTwin._0.domain.materials.dto.ProjectedShortageDto> shortages = procurementService.detectProjectedShortage(projectId);
+        return ResponseEntity.ok(ApiResponse.success(shortages, "Projected material shortages calculated successfully"));
     }
 
     @PostMapping("/purchase-orders")

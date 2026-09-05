@@ -38,6 +38,21 @@ public class Grn {
     @Column(name = "rejected_qty", precision = 12, scale = 2)
     private BigDecimal rejectedQty;
 
+    @Column(name = "project_id")
+    private Long projectId;
+
+    @Column(name = "site_id")
+    private Long siteId;
+
+    @Column(name = "grn_number", length = 50)
+    private String grnNumber;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    @Column(name = "received_by", length = 100)
+    private String receivedBy;
+
     @Column(name = "delivery_evidence_url", length = 255)
     private String deliveryEvidenceUrl;
 

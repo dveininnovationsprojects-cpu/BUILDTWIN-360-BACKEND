@@ -4,38 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AnalyticsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AnalyticsController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ContractorController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ContractorController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/CostController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/CostController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DocumentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DocumentController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DprController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DprController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/EquipmentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/EquipmentController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/IssueController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/IssueController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/LabourController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/LabourController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/MaterialController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/MaterialController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProcurementController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProcurementController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProjectController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProjectController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/QualityController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/QualityController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ReportController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ReportController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/RoleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/RoleController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/StockLedgerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/StockLedgerController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/SupplierController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/SupplierController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WbsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WbsController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/LabourDaily.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/LabourDaily.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/exception/GlobalExceptionHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/ProjectRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/UserRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/AuthService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/RoleService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/RoleService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/ProjectRoleServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/ProjectRoleServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/RoleServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/RoleServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/UserServiceImpl.java" afterDir="false" />
-    </list>
+    <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

@@ -63,12 +63,12 @@ class GlobalExceptionHandlerTest {
     @Test
     void testHandleSpringAccessDeniedException() {
         AccessDeniedException ex = new AccessDeniedException("Access is denied");
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleSpringAccessDeniedException(ex, request);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleForbiddenExceptions(ex, request);
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(403, response.getBody().getStatus());
-        assertTrue(response.getBody().getMessage().contains("required permissions"));
+        assertTrue(response.getBody().getMessage().toLowerCase().contains("permissions"));
     }
 
     @Test

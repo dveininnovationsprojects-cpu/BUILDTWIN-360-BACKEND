@@ -26,6 +26,12 @@ public class StockTransactionDto {
     @Schema(description = "WBS Activity ID (for ISSUE and CONSUMPTION tracking)", example = "301")
     private Long activityId;
 
+    @Schema(description = "Zone / Site Section", example = "Zone A - Tower 1")
+    private String zone;
+
+    @Schema(description = "Contractor ID (for material issue/allocation)", example = "42")
+    private Long contractorId;
+
     @NotNull(message = "Material ID is required")
     @Schema(description = "Target material ID", example = "5")
     private Long materialId;

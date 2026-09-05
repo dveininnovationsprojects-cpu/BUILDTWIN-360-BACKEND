@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface MaterialRequestRepository extends JpaRepository<MaterialRequest, Long> {
     List<MaterialRequest> findByProjectId(Long projectId);
+    List<MaterialRequest> findByProjectIdAndStatus(Long projectId, String status);
+    List<MaterialRequest> findByProjectIdAndStatusIn(Long projectId, List<String> statuses);
 }

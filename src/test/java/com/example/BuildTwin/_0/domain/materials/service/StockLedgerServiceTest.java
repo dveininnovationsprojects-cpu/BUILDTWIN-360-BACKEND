@@ -111,4 +111,66 @@ class StockLedgerServiceTest {
         assertThrows(InsufficientStockException.class, () -> stockLedgerService.recordTransaction(dto));
         verify(stockLedgerRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should process WASTAGE transaction and decrease stock balance")
+    void testRecordWastageTransaction() {
+        StockTransactionDto dto = StockTransactionDto.builder()
+                .projectId(100L)
+                .materialId(1L)
+                .quantity(new BigDecimal("10.00"))
+                .zone("Zone B")
+                .contractorId(5L)
+                .remarks("Damaged during slab casting")
+                .build();
+
+        when(materialRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleMaterial));
+        when(stockLedgerRepository.save(any(StockLedger.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        StockLedger result = stockLedgerService.recordWastage(dto);
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("90.00"), sampleMaterial.getCurrentStock());
+        assertEquals(StockTransactionType.WASTAGE, result.getTransactionType());
+        verify(materialRepository).save(sampleMaterial);
+    }
+
+    @Test
+    @DisplayName("Should perform stock reconciliation, update physical stock, and record ADJUSTMENT entry")
+    void testReconcileStock() {
+        com.example.BuildTwin._0.domain.materials.dto.StockReconciliationDto reconDto =
+                com.example.BuildTwin._0.domain.materials.dto.StockReconciliationDto.builder()
+                        .projectId(100L)
+                        .materialId(1L)
+                        .physicalQty(new BigDecimal("85.00")) // System stock is 100.00
+                        .auditedBy("Auditor_Selvam")
+                        .remarks("Physical count 15 bags short due to moisture loss")
+                        .build();
+
+        when(materialRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleMaterial));
+        when(stockLedgerRepository.save(any(StockLedger.class))).thenAnswer(invocation -> {
+            StockLedger saved = invocation.getArgument(0);
+            return StockLedger.builder()
+                    .id(99L)
+                    .projectId(saved.getProjectId())
+                    .material(saved.getMaterial())
+                    .transactionType(saved.getTransactionType())
+                    .quantity(saved.getQuantity())
+                    .remarks(saved.getRemarks())
+                    .build();
+        });
+
+        com.example.BuildTwin._0.domain.materials.dto.StockReconciliationResultDto result =
+                stockLedgerService.reconcileStock(reconDto);
+
+        assertNotNull(result);
+        assertEquals(1L, result.getMaterialId());
+        assertEquals(new BigDecimal("100.00"), result.getSystemStock());
+        assertEquals(new BigDecimal("85.00"), result.getPhysicalStock());
+        assertEquals(new BigDecimal("-15.00"), result.getVariance());
+        assertEquals(99L, result.getAdjustmentTransactionId());
+        assertEquals(new BigDecimal("85.00"), sampleMaterial.getCurrentStock());
+        verify(materialRepository).save(sampleMaterial);
+        verify(stockLedgerRepository).save(any(StockLedger.class));
+    }
 }

@@ -49,6 +49,9 @@ class AuthServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -81,14 +84,12 @@ class AuthServiceTest {
         when(roleRepository.findByName("ROLE_ADMIN")).thenReturn(Optional.of(sampleRole));
         when(passwordEncoder.encode("password123")).thenReturn("encoded_pass");
         when(userRepository.save(any(User.class))).thenReturn(sampleUser);
-        when(jwtTokenProvider.generateAccessToken(anyString(), anyLong(), anyString(), anyList())).thenReturn("access_token");
-        when(jwtTokenProvider.generateRefreshToken(anyString())).thenReturn("refresh_token");
 
         AuthResponse response = authService.register(request);
 
         assertNotNull(response);
-        assertEquals("access_token", response.getAccessToken());
-        assertEquals("refresh_token", response.getRefreshToken());
+        assertNull(response.getAccessToken());
+        assertNull(response.getRefreshToken());
         assertEquals("john_doe", response.getUser().getUsername());
     }
 

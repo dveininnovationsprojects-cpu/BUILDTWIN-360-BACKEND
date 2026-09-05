@@ -41,6 +41,12 @@ public class StockLedger {
     @Column(name = "activity_id", updatable = false)
     private Long activityId;
 
+    @Column(name = "zone", updatable = false, length = 100)
+    private String zone;
+
+    @Column(name = "contractor_id", updatable = false)
+    private Long contractorId;
+
     @NotNull(message = "Material is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_id", updatable = false, nullable = false)

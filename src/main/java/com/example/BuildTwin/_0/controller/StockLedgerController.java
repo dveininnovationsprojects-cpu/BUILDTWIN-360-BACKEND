@@ -32,6 +32,39 @@ public class StockLedgerController {
         return new ResponseEntity<>(ApiResponse.created(entry, "Stock ledger transaction recorded successfully"), HttpStatus.CREATED);
     }
 
+    @PostMapping("/issue")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Issue Material From Store (FR-054)", description = "Issues material from store to specific WBS Activity, Zone, or Contractor.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<StockLedger>> issueMaterial(@Valid @RequestBody StockTransactionDto request) {
+        StockLedger entry = stockLedgerService.issueMaterial(request);
+        return new ResponseEntity<>(ApiResponse.created(entry, "Material issued successfully"), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/consumption")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Record Material Consumption (FR-055)", description = "Records actual material consumption on site work against WBS activity and Zone.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<StockLedger>> recordConsumption(@Valid @RequestBody StockTransactionDto request) {
+        StockLedger entry = stockLedgerService.recordConsumption(request);
+        return new ResponseEntity<>(ApiResponse.created(entry, "Material consumption recorded successfully"), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/wastage")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Record Material Wastage (FR-055)", description = "Tracks material wastage on site and updates stock balance transactionally.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<StockLedger>> recordWastage(@Valid @RequestBody StockTransactionDto request) {
+        StockLedger entry = stockLedgerService.recordWastage(request);
+        return new ResponseEntity<>(ApiResponse.created(entry, "Material wastage recorded successfully"), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/reconcile")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE', 'AUDITOR')")
+    @Operation(summary = "Perform Stock Reconciliation (FR-057)", description = "Compares system stock vs physical stock count, computes variance, and logs stock adjustment.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<com.example.BuildTwin._0.domain.materials.dto.StockReconciliationResultDto>> reconcileStock(
+            @Valid @RequestBody com.example.BuildTwin._0.domain.materials.dto.StockReconciliationDto request) {
+        com.example.BuildTwin._0.domain.materials.dto.StockReconciliationResultDto result = stockLedgerService.reconcileStock(request);
+        return ResponseEntity.ok(ApiResponse.success(result, "Stock reconciliation completed successfully"));
+    }
+
     @GetMapping("/material/{materialId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Audit Trail By Material", description = "Retrieves complete immutable stock audit log for a specific material.", security = @SecurityRequirement(name = "BearerAuth"))
