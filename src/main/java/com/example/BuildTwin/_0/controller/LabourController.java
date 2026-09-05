@@ -29,7 +29,7 @@ public class LabourController {
     private final LabourService labourService;
 
     @PostMapping("/daily")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR')")
     @Operation(summary = "Record Daily Labour & Task Allocations (FR-041)", description = "Captures site-wise, contractor-wise, and trade-wise daily headcount, total hours worked, and activity allocations.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<LabourDaily>> recordDailyLabour(@Valid @RequestBody LabourDailyRecordDto request) {
         LabourDaily record = labourService.recordDailyLabour(request);
@@ -37,7 +37,7 @@ public class LabourController {
     }
 
     @GetMapping("/daily/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Daily Labour Log By ID", description = "Retrieves specific daily labour record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<LabourDaily>> getLabourRecordById(@PathVariable Long id) {
         LabourDaily record = labourService.getLabourRecordById(id);
@@ -45,7 +45,7 @@ public class LabourController {
     }
 
     @PutMapping("/daily/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR')")
     @Operation(summary = "Update Daily Labour Record", description = "Updates daily headcount, standard hours, overtime hours, and task allocations.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<LabourDaily>> updateDailyLabour(@PathVariable Long id, @Valid @RequestBody LabourDailyRecordDto request) {
         LabourDaily updated = labourService.updateDailyLabour(id, request);
@@ -53,7 +53,7 @@ public class LabourController {
     }
 
     @GetMapping("/daily/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Daily Labour Logs By Project", description = "Retrieves all daily labour records for a specific project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<LabourDaily>>> getLabourByProject(@PathVariable Long projectId) {
         List<LabourDaily> records = labourService.getLabourRecordsByProject(projectId);
@@ -61,7 +61,7 @@ public class LabourController {
     }
 
     @GetMapping("/daily/contractor/{contractorId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Daily Labour Logs By Contractor", description = "Retrieves all daily labour records associated with a specific contractor.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<LabourDaily>>> getLabourByContractor(@PathVariable Long contractorId) {
         List<LabourDaily> records = labourService.getLabourRecordsByContractor(contractorId);
@@ -69,7 +69,7 @@ public class LabourController {
     }
 
     @GetMapping("/allocations/activity/{activityId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Task Allocations By WBS Activity", description = "Retrieves daily labour hours and activity allocations for a specific WBS activity.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<LabourAllocation>>> getLabourAllocationsByActivity(@PathVariable Long activityId) {
         List<LabourAllocation> allocations = labourService.getLabourAllocationsByActivity(activityId);
@@ -77,7 +77,7 @@ public class LabourController {
     }
 
     @GetMapping("/hours-summary")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Implement Labour Hour Tracking API", description = "Aggregates headcount, standard hours, and overtime hours across project, contractor, and date range.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<LabourHourSummaryDto>> getLabourHourSummary(
             @RequestParam(required = false) Long projectId,
@@ -89,7 +89,7 @@ public class LabourController {
     }
 
     @GetMapping("/productivity/activity/{activityId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Implement Productivity Calculation API", description = "Calculates productivity based on configured activity unit and labour hours for a WBS activity.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProductivityResponseDto>> getProductivityForActivity(
             @PathVariable Long activityId,
@@ -99,7 +99,7 @@ public class LabourController {
     }
 
     @PostMapping("/productivity/calculate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "On-Demand Productivity Calculator API", description = "Calculates output per hour and man-hours per unit for given completed quantity and labour hours.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProductivityResponseDto>> calculateCustomProductivity(@Valid @RequestBody ProductivityRequestDto request) {
         ProductivityResponseDto result = labourService.calculateCustomProductivity(request);

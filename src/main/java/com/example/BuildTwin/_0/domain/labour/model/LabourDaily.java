@@ -1,6 +1,7 @@
 package com.example.BuildTwin._0.domain.labour.model;
 
 import com.example.BuildTwin._0.domain.labour.enums.TradeCategory;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -11,6 +12,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "labour_daily_records", indexes = {
@@ -38,7 +41,8 @@ public class LabourDaily {
     @Column(name = "site_id")
     private Long siteId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "contractor_id", nullable = false)
     private Contractor contractor;
 
@@ -61,8 +65,8 @@ public class LabourDaily {
     private String remarks;
 
     @Builder.Default
-    @OneToMany(mappedBy = "labourDaily", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<LabourAllocation> allocations = new java.util.ArrayList<>();
+    @OneToMany(mappedBy = "labourDaily", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<LabourAllocation> allocations = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

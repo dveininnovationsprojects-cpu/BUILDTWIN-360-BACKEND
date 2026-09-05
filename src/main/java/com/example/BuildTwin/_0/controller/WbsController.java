@@ -25,7 +25,7 @@ public class WbsController {
     private final WbsService wbsService;
 
     @PostMapping("/activities")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
     @Operation(summary = "Create WBS Activity (FR-020, FR-021)", description = "Creates a WBS activity storing discipline, unit, planned quantity, start/end dates, contractor, and weightage.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Activity>> createActivity(@Valid @RequestBody Activity activity) {
         Activity created = wbsService.createActivity(activity);
@@ -33,7 +33,7 @@ public class WbsController {
     }
 
     @GetMapping("/projects/{projectId}/activities")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Activities By Project", description = "Retrieves all WBS activities for a given project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Activity>>> getActivitiesByProject(@PathVariable Long projectId) {
         List<Activity> activities = wbsService.getActivitiesByProject(projectId);
@@ -41,7 +41,7 @@ public class WbsController {
     }
 
     @GetMapping("/projects/{projectId}/lookahead")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Look-ahead Activities (FR-024)", description = "Retrieves 7-day or 14-day look-ahead activity list for site execution.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Activity>>> getLookaheadActivities(@PathVariable Long projectId,
                                                                                  @RequestParam(defaultValue = "14") int days) {
@@ -50,7 +50,7 @@ public class WbsController {
     }
 
     @PostMapping("/dependencies")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
     @Operation(summary = "Add Activity Dependency (FR-022)", description = "Establishes Finish-to-Start or other dependency links between activities.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ActivityDependency>> addDependency(@Valid @RequestBody ActivityDependency dependency) {
         ActivityDependency created = wbsService.addDependency(dependency);

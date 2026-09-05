@@ -24,7 +24,7 @@ public class IssueController {
     private final IssueService issueService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SAFETY_OFFICER', 'QUALITY_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'QUALITY_ENGINEER')")
     @Operation(summary = "Record Site Blocker / Issue (FR-090)", description = "Creates a site blocker record storing impact area, priority, owner, due date, and linked activity.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<IssueBlocker>> createIssue(@Valid @RequestBody IssueBlocker issue) {
         IssueBlocker created = issueService.createIssue(issue);
@@ -32,7 +32,7 @@ public class IssueController {
     }
 
     @GetMapping("/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'SAFETY_OFFICER', 'QUALITY_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Issues By Project", description = "Retrieves all active site blockers and issues for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<IssueBlocker>>> getIssuesByProject(@PathVariable Long projectId) {
         List<IssueBlocker> issues = issueService.getIssuesByProject(projectId);
@@ -40,7 +40,7 @@ public class IssueController {
     }
 
     @PostMapping("/{id}/resolve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SAFETY_OFFICER', 'QUALITY_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'QUALITY_ENGINEER')")
     @Operation(summary = "Resolve Issue (FR-090)", description = "Marks a site blocker or issue as resolved.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<IssueBlocker>> resolveIssue(@PathVariable Long id) {
         IssueBlocker resolved = issueService.resolveIssue(id);
@@ -48,7 +48,7 @@ public class IssueController {
     }
 
     @PostMapping("/risks")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'SAFETY_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
     @Operation(summary = "Record Project Risk (FR-092)", description = "Registers a project risk with probability, impact rating, and mitigation plan.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProjectRisk>> createRisk(@Valid @RequestBody ProjectRisk risk) {
         ProjectRisk created = issueService.createRisk(risk);
@@ -56,7 +56,7 @@ public class IssueController {
     }
 
     @GetMapping("/risks/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Project Risk Register (FR-092)", description = "Retrieves complete risk register for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<ProjectRisk>>> getRisksByProject(@PathVariable Long projectId) {
         List<ProjectRisk> risks = issueService.getRisksByProject(projectId);

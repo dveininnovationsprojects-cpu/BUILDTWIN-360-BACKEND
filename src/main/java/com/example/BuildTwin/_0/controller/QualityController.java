@@ -32,7 +32,7 @@ public class QualityController {
     }
 
     @GetMapping("/issues/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUALITY_ENGINEER', 'SITE_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Quality Issue Details", description = "Retrieves quality defect details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<QualityIssue>> getQualityIssueById(@PathVariable Long id) {
         QualityIssue issue = qualityService.getQualityIssueById(id);
@@ -40,7 +40,7 @@ public class QualityController {
     }
 
     @GetMapping("/issues/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUALITY_ENGINEER', 'SITE_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Quality Issues By Project", description = "Retrieves all open and closed quality snags/NCRs for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<QualityIssue>>> getQualityIssuesByProject(@PathVariable Long projectId) {
         List<QualityIssue> issues = qualityService.getQualityIssuesByProject(projectId);

@@ -24,7 +24,7 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Upload Document Metadata (FR-110, FR-111)", description = "Stores metadata for drawings, approvals, BOQs, quotations, reports, and invoice evidence.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProjectDocument>> uploadDocument(@Valid @RequestBody ProjectDocument document) {
         ProjectDocument uploaded = documentService.uploadDocument(document);
@@ -32,7 +32,7 @@ public class DocumentController {
     }
 
     @GetMapping("/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Documents By Project (FR-113)", description = "Retrieves all project documents and versions.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<ProjectDocument>>> getDocumentsByProject(@PathVariable Long projectId) {
         List<ProjectDocument> documents = documentService.getDocumentsByProject(projectId);
@@ -40,7 +40,7 @@ public class DocumentController {
     }
 
     @GetMapping("/project/{projectId}/category/{category}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Filter Documents By Category (FR-113)", description = "Filters project documents by category (DRAWING, APPROVAL, BOQ, etc.).", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<ProjectDocument>>> getDocumentsByCategory(@PathVariable Long projectId,
                                                                                        @PathVariable String category) {

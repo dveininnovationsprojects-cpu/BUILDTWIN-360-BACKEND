@@ -36,7 +36,7 @@ public class ContractorController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get All Contractors", description = "Retrieves directory of all contractors.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Contractor>>> getAllContractors() {
         List<Contractor> contractors = contractorService.getAllContractors();
@@ -44,7 +44,7 @@ public class ContractorController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Contractor By ID", description = "Retrieves contractor details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Contractor>> getContractorById(@PathVariable Long id) {
         Contractor contractor = contractorService.getContractorById(id);
@@ -52,7 +52,7 @@ public class ContractorController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
     @Operation(summary = "Update Contractor Profile", description = "Updates contractor/subcontractor information and status.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Contractor>> updateContractor(@PathVariable Long id, @Valid @RequestBody ContractorRequestDto request) {
         Contractor updated = contractorService.updateContractor(id, request);
@@ -60,7 +60,7 @@ public class ContractorController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Deactivate Contractor Profile", description = "Sets contractor status to INACTIVE.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Void>> deleteContractor(@PathVariable Long id) {
         contractorService.deleteContractor(id);
@@ -68,7 +68,7 @@ public class ContractorController {
     }
 
     @GetMapping("/subcontractors")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "List Subcontractors", description = "Retrieves list of all registered subcontractors.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Contractor>>> getSubcontractors() {
         List<Contractor> subcontractors = contractorService.getSubcontractors();
@@ -76,7 +76,7 @@ public class ContractorController {
     }
 
     @GetMapping("/{id}/subcontractors")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Subcontractors By Parent Contractor", description = "Retrieves subcontractors associated with a specific main contractor.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Contractor>>> getSubcontractorsByParent(@PathVariable Long id) {
         List<Contractor> subcontractors = contractorService.getSubcontractorsByParent(id);
@@ -84,7 +84,7 @@ public class ContractorController {
     }
 
     @GetMapping("/trades")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Available Trade Categories", description = "Retrieves list of all supported trade specializations and metadata.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<TradeDto>>> getTradeCategories() {
         List<TradeDto> trades = contractorService.getTradeCategories();
@@ -92,7 +92,7 @@ public class ContractorController {
     }
 
     @GetMapping("/trade/{trade}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Contractors By Trade", description = "Filter contractors by trade specialization.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Contractor>>> getContractorsByTrade(@PathVariable TradeCategory trade) {
         List<Contractor> contractors = contractorService.getContractorsByTrade(trade);
@@ -100,7 +100,7 @@ public class ContractorController {
     }
 
     @GetMapping("/{id}/performance-summary")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Contractor Performance Summary API", description = "Provides comprehensive progress, quality, delay, and productivity metrics for a contractor.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ContractorPerformanceSummaryDto>> getContractorPerformanceSummary(@PathVariable Long id) {
         ContractorPerformanceSummaryDto summary = contractorService.getContractorPerformanceSummary(id);

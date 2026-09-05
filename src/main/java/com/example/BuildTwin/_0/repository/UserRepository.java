@@ -1,6 +1,6 @@
 package com.example.BuildTwin._0.repository;
 
-import com.example.BuildTwin._0.model.User;
+import com.example.BuildTwin._0.domain.identity.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,7 +1,7 @@
 package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.dto.ApiResponse;
-import com.example.BuildTwin._0.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.Role;
 import com.example.BuildTwin._0.service.RoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

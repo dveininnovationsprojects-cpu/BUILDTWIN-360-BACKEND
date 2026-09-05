@@ -2,8 +2,8 @@ package com.example.BuildTwin._0.service;
 
 import com.example.BuildTwin._0.dto.auth.*;
 import com.example.BuildTwin._0.dto.user.ChangePasswordRequest;
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.UserProjectRole;
+import com.example.BuildTwin._0.domain.identity.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.UserProjectRole;
 
 import java.util.List;
 

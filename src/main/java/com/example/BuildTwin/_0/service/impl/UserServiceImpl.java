@@ -7,11 +7,11 @@ import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import com.example.BuildTwin._0.exception.UnauthorizedException;
-import com.example.BuildTwin._0.model.Project;
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.User;
-import com.example.BuildTwin._0.model.UserProjectRole;
-import com.example.BuildTwin._0.repository.ProjectRepository;
+import com.example.BuildTwin._0.domain.projects.model.Project;
+import com.example.BuildTwin._0.domain.identity.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.User;
+import com.example.BuildTwin._0.domain.identity.model.UserProjectRole;
+import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
 import com.example.BuildTwin._0.repository.RoleRepository;
 import com.example.BuildTwin._0.repository.UserProjectRoleRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
@@ -166,9 +166,9 @@ public class UserServiceImpl implements UserService {
             Role primaryRole = approvedUser.getRoles().stream().findFirst().orElse(null);
             if (primaryRole != null) {
                 UserProjectRole userProjectRole = UserProjectRole.builder()
-                        .userId(approvedUser.getId())
+                        .user(approvedUser)
                         .projectId(project.getId())
-                        .roleId(primaryRole.getId())
+                        .role(primaryRole)
                         .build();
                 userProjectRoleRepository.save(userProjectRole);
             }
@@ -432,7 +432,7 @@ public class UserServiceImpl implements UserService {
         List<ProjectRoleResponse> projectRoleDtos = projectRoles.stream()
                 .map(upr -> {
                     Optional<Project> proj = projectRepository.findById(upr.getProjectId());
-                    Optional<Role> role = roleRepository.findById(upr.getRoleId());
+                    Role role = upr.getRole();
                     return ProjectRoleResponse.builder()
                             .id(upr.getId())
                             .userId(user.getId())
@@ -440,9 +440,9 @@ public class UserServiceImpl implements UserService {
                             .userEmail(user.getEmail())
                             .projectId(upr.getProjectId())
                             .projectName(proj.map(Project::getName).orElse("Unknown"))
-                            .roleId(upr.getRoleId())
-                            .roleName(role.map(Role::getName).orElse("Unknown"))
-                            .createdAt(upr.getCreatedAt())
+                            .roleId(role != null ? role.getId() : null)
+                            .roleName(role != null ? role.getName() : "Unknown")
+                            .createdAt(upr.getAssignedAt())
                             .build();
                 })
                 .collect(Collectors.toList());

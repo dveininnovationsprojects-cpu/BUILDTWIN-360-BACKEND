@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -83,11 +81,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
-    @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class, AuthorizationDeniedException.class})
-    public ResponseEntity<ErrorResponse> handleForbiddenException(
+    // Unified Forbidden Exception Handler (Fixes the Ambiguous Exception Crash)
+    @ExceptionHandler({
+            ForbiddenException.class,
+            org.springframework.security.access.AccessDeniedException.class,
+            org.springframework.security.authorization.AuthorizationDeniedException.class
+    })
+    public ResponseEntity<ErrorResponse> handleForbiddenExceptions(
             Exception ex, HttpServletRequest request) {
         log.warn("Forbidden access: {} - Path: {}", ex.getMessage(), request.getRequestURI());
-        String customMsg = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equalsIgnoreCase("Access Denied"))
+
+        String customMsg = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equalsIgnoreCase("Access is denied"))
                 ? ex.getMessage()
                 : "Access Denied: You do not have sufficient permissions to perform this operation.";
 
@@ -95,20 +99,6 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN.value())
                 .error(HttpStatus.FORBIDDEN.getReasonPhrase())
                 .message(customMsg)
-                .path(request.getRequestURI())
-                .timestamp(LocalDateTime.now())
-                .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
-    }
-
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleSpringAccessDeniedException(
-            org.springframework.security.access.AccessDeniedException ex, HttpServletRequest request) {
-        log.warn("Access denied for user on path {}: {}", request.getRequestURI(), ex.getMessage());
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .status(HttpStatus.FORBIDDEN.value())
-                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
-                .message("You do not have the required permissions or role to access this resource.")
                 .path(request.getRequestURI())
                 .timestamp(LocalDateTime.now())
                 .build();

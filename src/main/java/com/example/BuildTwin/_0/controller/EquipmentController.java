@@ -24,7 +24,7 @@ public class EquipmentController {
     private final EquipmentService equipmentService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'STORE_KEEPER', 'SITE_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Register Equipment Asset (FR-100)", description = "Registers concrete mixers, vibrators, generators, scaffolding, cranes, etc.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Equipment>> registerEquipment(@Valid @RequestBody Equipment equipment) {
         Equipment registered = equipmentService.registerEquipment(equipment);
@@ -32,7 +32,7 @@ public class EquipmentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get All Equipment Assets", description = "Retrieves directory of all tracked site equipment.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Equipment>>> getAllEquipment() {
         List<Equipment> equipmentList = equipmentService.getAllEquipment();
@@ -40,7 +40,7 @@ public class EquipmentController {
     }
 
     @PostMapping("/usage")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'STORE_KEEPER', 'SITE_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Record Equipment Daily Usage (FR-101, FR-102)", description = "Captures site asset allocation, usage hours, and downtime hours.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<EquipmentUsage>> recordUsage(@Valid @RequestBody EquipmentUsage usage) {
         EquipmentUsage recorded = equipmentService.recordUsage(usage);
@@ -48,7 +48,7 @@ public class EquipmentController {
     }
 
     @GetMapping("/usage/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Equipment Usage By Project", description = "Retrieves equipment usage and downtime logs for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<EquipmentUsage>>> getUsageByProject(@PathVariable Long projectId) {
         List<EquipmentUsage> usageList = equipmentService.getUsageByProject(projectId);

@@ -21,7 +21,7 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @GetMapping("/project-health/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Project Health Index (Section 11)", description = "Computes composite Project Health Index (0-100) from schedule, cost, quality, material, and critical blocker indicators.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProjectHealthDto>> getProjectHealth(@PathVariable Long projectId) {
         ProjectHealthDto health = analyticsService.calculateProjectHealth(projectId);
@@ -29,7 +29,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/delay-risk/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Delay Risk Score (Section 11)", description = "Computes weighted delay risk score based on predecessor slippage, labour readiness, and active site blockers.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<DelayRiskDto>> getDelayRisk(@PathVariable Long projectId) {
         DelayRiskDto delayRisk = analyticsService.calculateDelayRisk(projectId);

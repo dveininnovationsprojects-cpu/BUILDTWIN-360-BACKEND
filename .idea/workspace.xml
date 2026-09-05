@@ -7,34 +7,34 @@
     <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/BuildTwin360Application.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/BuildTwin360Application.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/config/DataInitializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/config/DataInitializer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AnalyticsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AnalyticsController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/dto/ContractorRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/dto/ContractorRequestDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/dto/LabourDailyRecordDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/dto/LabourDailyRecordDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/Contractor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/Contractor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/LabourAllocation.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/LabourAllocation.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ContractorController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ContractorController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/CostController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/CostController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DocumentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DocumentController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DprController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/DprController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/EquipmentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/EquipmentController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/IssueController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/IssueController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/LabourController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/LabourController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/MaterialController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/MaterialController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProcurementController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProcurementController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProjectController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProjectController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/QualityController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/QualityController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ReportController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ReportController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/RoleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/RoleController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/StockLedgerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/StockLedgerController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/SupplierController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/SupplierController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WbsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WbsController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/LabourDaily.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/model/LabourDaily.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/repository/ContractorRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/repository/ContractorRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/repository/LabourDailyRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/repository/LabourDailyRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/service/ContractorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/service/ContractorService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/service/LabourService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/service/LabourService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/dto/StockTransactionDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/dto/StockTransactionDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/model/StockLedger.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/model/StockLedger.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/repository/StockLedgerRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/repository/StockLedgerRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/service/MaterialService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/service/MaterialService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/service/StockLedgerService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/service/StockLedgerService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/exception/GlobalExceptionHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/RoleRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/RoleRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/UserProjectRoleRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/UserProjectRoleRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/ProjectRepository.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/repository/UserRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/CustomUserDetails.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/CustomUserDetails.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/CustomUserDetailsService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/CustomUserDetailsService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/security/SecurityConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/AuthService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/AuthServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/AuthServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/BuildTwin360ApplicationTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/BuildTwin360ApplicationTests.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/RoleService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/RoleService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/ProjectRoleServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/ProjectRoleServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/RoleServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/RoleServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/UserServiceImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,23 +78,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.1555155321818604" />
-      <entry key="MS500" value="2.213253028754913" />
-      <entry key="S2" value="7.46983710940645" />
-      <entry key="S5" value="17.22141768189844" />
-      <entry key="S10" value="31.99022695939106" />
-      <entry key="S30" value="65.68661057367532" />
-      <entry key="S60" value="85.7207821239302" />
-      <entry key="M2" value="111.13935544978618" />
-      <entry key="M5" value="153.42701955449485" />
-      <entry key="M10" value="179.40353763292757" />
-      <entry key="M15" value="190.22233014704256" />
-      <entry key="M30" value="202.36299991200013" />
-      <entry key="H1" value="208.98268276885926" />
-      <entry key="H2" value="212.44008337845975" />
-      <entry key="H4" value="214.20702762357462" />
-      <entry key="D1" value="215.69934656832666" />
-      <entry key="W1" value="215.95700459724142" />
+      <entry key="MS100" value="1.5574181336709603" />
+      <entry key="MS500" value="3.308794416116973" />
+      <entry key="S2" value="5.459641349018674" />
+      <entry key="S5" value="8.871178180998731" />
+      <entry key="S10" value="12.839912056157457" />
+      <entry key="S30" value="27.186366550582584" />
+      <entry key="S60" value="53.66335214985682" />
+      <entry key="M2" value="95.35963894015151" />
+      <entry key="M5" value="161.52154658954709" />
+      <entry key="M10" value="203.05795263642068" />
+      <entry key="M15" value="220.76179231008246" />
+      <entry key="M30" value="240.93786921047126" />
+      <entry key="H1" value="252.07958110479424" />
+      <entry key="H2" value="257.9386158464451" />
+      <entry key="H4" value="260.9435173055635" />
+      <entry key="D1" value="263.48696117327347" />
+      <entry key="W1" value="263.92661939582933" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -116,23 +116,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.8192568022785126" />
-      <entry key="MS500" value="2.0976974760695106" />
-      <entry key="S2" value="7.38942942867138" />
-      <entry key="S5" value="17.1262860203033" />
-      <entry key="S10" value="31.888060735437886" />
-      <entry key="S30" value="65.61866723561202" />
-      <entry key="S60" value="85.67851914988444" />
-      <entry key="M2" value="111.11360470160773" />
-      <entry key="M5" value="153.41374544313848" />
-      <entry key="M10" value="179.39598535131924" />
-      <entry key="M15" value="190.21704044133625" />
-      <entry key="M30" value="202.36021180332705" />
-      <entry key="H1" value="208.98124960251124" />
-      <entry key="H2" value="212.4393565735276" />
-      <entry key="H4" value="214.2066616081103" />
-      <entry key="D1" value="215.69928519784736" />
-      <entry key="W1" value="215.95699582095452" />
+      <entry key="MS100" value="1.2374222382363544" />
+      <entry key="MS500" value="3.124272387617766" />
+      <entry key="S2" value="5.295551008847568" />
+      <entry key="S5" value="8.745234875268068" />
+      <entry key="S10" value="12.755852511464806" />
+      <entry key="S30" value="27.142849301325896" />
+      <entry key="S60" value="53.628228601561844" />
+      <entry key="M2" value="95.33228642169401" />
+      <entry key="M5" value="161.50499884358035" />
+      <entry key="M10" value="203.04801249962824" />
+      <entry key="M15" value="220.75469998677198" />
+      <entry key="M30" value="240.9340598394956" />
+      <entry key="H1" value="252.0776041405015" />
+      <entry key="H2" value="257.9376084094919" />
+      <entry key="H4" value="260.94300873264825" />
+      <entry key="D1" value="263.4868757268235" />
+      <entry key="W1" value="263.9266071723022" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -149,6 +149,10 @@
     &quot;Maven.BuildTwin-360 [clean].executor&quot;: &quot;Run&quot;,
     &quot;Maven.BuildTwin-360 [install].executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
     &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,

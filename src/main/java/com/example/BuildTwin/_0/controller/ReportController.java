@@ -20,7 +20,7 @@ public class ReportController {
     private final AnalyticsService analyticsService;
 
     @GetMapping("/weekly/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Weekly Management Review Report (FR-135)", description = "Generates comprehensive weekly review report combining progress, cost, labour, material, quality, and risk summaries.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProjectHealthDto>> getWeeklyReport(@PathVariable Long projectId) {
         ProjectHealthDto report = analyticsService.calculateProjectHealth(projectId);

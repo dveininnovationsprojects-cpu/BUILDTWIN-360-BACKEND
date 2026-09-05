@@ -1,6 +1,6 @@
 package com.example.BuildTwin._0.service;
 
-import com.example.BuildTwin._0.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.Role;
 
 import java.util.List;
 

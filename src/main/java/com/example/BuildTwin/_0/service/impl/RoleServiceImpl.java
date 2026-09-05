@@ -1,7 +1,7 @@
 package com.example.BuildTwin._0.service.impl;
 
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
-import com.example.BuildTwin._0.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.Role;
 import com.example.BuildTwin._0.repository.RoleRepository;
 import com.example.BuildTwin._0.service.RoleService;
 import lombok.RequiredArgsConstructor;

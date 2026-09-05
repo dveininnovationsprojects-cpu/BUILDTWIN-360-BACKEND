@@ -25,7 +25,7 @@ public class MaterialController {
     private final MaterialService materialService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'STORE_KEEPER', 'SITE_ENGINEER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Create Material Catalog Item (FR-050)", description = "Registers a new material with SKU code, category classification, standard unit, standard unit rate, and minimum reorder threshold.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Material>> createMaterial(@Valid @RequestBody MaterialRequestDto request) {
         Material material = materialService.createMaterial(request);
@@ -33,7 +33,7 @@ public class MaterialController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get All Materials", description = "Retrieves complete material catalog.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Material>>> getAllMaterials() {
         List<Material> materials = materialService.getAllMaterials();
@@ -41,7 +41,7 @@ public class MaterialController {
     }
 
     @GetMapping("/code/{materialCode}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Material By SKU Code", description = "Retrieves material details by unique SKU code.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Material>> getMaterialByCode(@PathVariable String materialCode) {
         Material material = materialService.getMaterialByCode(materialCode);
@@ -49,7 +49,7 @@ public class MaterialController {
     }
 
     @GetMapping("/category/{category}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Materials By Category", description = "Filter materials by category (CEMENT, STEEL, AGGREGATE, BRICKS, etc.).", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Material>>> getMaterialsByCategory(@PathVariable String category) {
         List<Material> materials = materialService.getMaterialsByCategory(category);
@@ -57,7 +57,7 @@ public class MaterialController {
     }
 
     @GetMapping("/reorder-alerts")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Reorder Threshold Alerts", description = "Retrieves all materials where current stock level is less than or equal to minimum reorder threshold.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Material>>> getReorderAlerts() {
         List<Material> materials = materialService.getMaterialsNeedingReorder();

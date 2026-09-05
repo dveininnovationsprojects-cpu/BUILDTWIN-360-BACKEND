@@ -28,7 +28,7 @@ public class CostController {
     private final CostService costService;
 
     @PostMapping("/budgets")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
     @Operation(summary = "Set Baseline or Authorized Revised Budget (FR-070, FR-071)", description = "Standardized cost codes tied to project work packages with support for Original Baseline Budget and Authorized Revisions.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Budget>> createOrUpdateBudget(@Valid @RequestBody BudgetRequestDto request) {
         Budget budget = costService.createOrUpdateBudget(request);
@@ -36,7 +36,7 @@ public class CostController {
     }
 
     @GetMapping("/budgets/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Budgets By Project", description = "Retrieves baseline and revised budgets for a given project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Budget>>> getBudgetsByProject(@PathVariable Long projectId) {
         List<Budget> budgets = costService.getBudgetsByProject(projectId);
@@ -44,7 +44,7 @@ public class CostController {
     }
 
     @PostMapping("/transactions")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
     @Operation(summary = "Record Cost Transaction (FR-072)", description = "Tracks PO commitments, actual invoice/GRN expenses, and subcontract payouts against budget cost codes.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<CostTransaction>> recordCostTransaction(@Valid @RequestBody CostTransactionRequestDto request) {
         CostTransaction transaction = costService.recordCostTransaction(request);
@@ -52,7 +52,7 @@ public class CostController {
     }
 
     @GetMapping("/transactions/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Cost Transactions By Project", description = "Retrieves all cost commitment & actual expense transactions for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<CostTransaction>>> getCostTransactionsByProject(@PathVariable Long projectId) {
         List<CostTransaction> transactions = costService.getCostTransactionsByProject(projectId);
@@ -60,7 +60,7 @@ public class CostController {
     }
 
     @GetMapping("/evm/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PLANNING_ENGINEER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Earned Value Management (EVM) Analytics (FR-073)", description = "Calculates Planned Value (PV), Earned Value (EV), Actual Cost (AC), Schedule Performance Index (SPI), and Cost Performance Index (CPI).", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<EvmMetricsDto>> getEvmMetrics(@PathVariable Long projectId) {
         EvmMetricsDto metrics = costService.calculateEvmMetrics(projectId);

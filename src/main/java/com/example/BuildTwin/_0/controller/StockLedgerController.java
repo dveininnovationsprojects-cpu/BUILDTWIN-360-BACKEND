@@ -25,7 +25,7 @@ public class StockLedgerController {
     private final StockLedgerService stockLedgerService;
 
     @PostMapping("/transaction")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'STORE_KEEPER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Record Stock Transaction (RECEIPT, ISSUE, CONSUMPTION, RETURN, ADJUSTMENT)", description = "Inserts an immutable ledger audit trail record and atomically updates stock balances with strict negative-stock locks.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<StockLedger>> recordStockTransaction(@Valid @RequestBody StockTransactionDto request) {
         StockLedger entry = stockLedgerService.recordTransaction(request);
@@ -33,7 +33,7 @@ public class StockLedgerController {
     }
 
     @GetMapping("/material/{materialId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Audit Trail By Material", description = "Retrieves complete immutable stock audit log for a specific material.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<StockLedger>>> getLedgerByMaterial(@PathVariable Long materialId) {
         List<StockLedger> entries = stockLedgerService.getLedgerEntriesByMaterial(materialId);
@@ -41,7 +41,7 @@ public class StockLedgerController {
     }
 
     @GetMapping("/project/{projectId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Audit Trail By Project", description = "Retrieves complete immutable stock audit log for a specific project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<StockLedger>>> getLedgerByProject(@PathVariable Long projectId) {
         List<StockLedger> entries = stockLedgerService.getLedgerEntriesByProject(projectId);
@@ -49,7 +49,7 @@ public class StockLedgerController {
     }
 
     @GetMapping("/activity/{activityId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'STORE_KEEPER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Audit Trail By WBS Activity", description = "Retrieves stock issue & consumption audit logs linked to a specific WBS activity.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<StockLedger>>> getLedgerByActivity(@PathVariable Long activityId) {
         List<StockLedger> entries = stockLedgerService.getLedgerEntriesByActivity(activityId);

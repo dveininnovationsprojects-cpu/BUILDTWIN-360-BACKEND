@@ -3,8 +3,8 @@ package com.example.BuildTwin._0.controller;
 import com.example.BuildTwin._0.dto.ApiResponse;
 import com.example.BuildTwin._0.dto.auth.*;
 import com.example.BuildTwin._0.dto.user.ChangePasswordRequest;
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.UserProjectRole;
+import com.example.BuildTwin._0.domain.identity.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.UserProjectRole;
 import com.example.BuildTwin._0.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -87,6 +87,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(
             summary = "Get current user profile",
             description = "Fetches the profile details of the currently authenticated user extracted from the JWT Bearer token.",
@@ -107,6 +108,7 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(
             summary = "Change own password",
             description = "Allows an authenticated user to change their own password by verifying current password.",
@@ -125,7 +127,7 @@ public class AuthController {
     }
 
     @PostMapping("/assign-project-role")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER')")
     @Operation(
             summary = "Assign project role",
             description = "Assigns a specific role to a user for a particular construction project.",
@@ -147,7 +149,7 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER')")
     @Operation(
             summary = "List all users",
             description = "Retrieves all registered users along with their assigned system roles.",
@@ -166,6 +168,7 @@ public class AuthController {
     }
 
     @GetMapping("/roles")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(
             summary = "List all roles",
             description = "Retrieves master list of all standard RBAC system roles in BuildTwin 360.",

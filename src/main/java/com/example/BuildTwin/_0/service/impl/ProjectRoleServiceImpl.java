@@ -4,11 +4,11 @@ import com.example.BuildTwin._0.dto.auth.AssignProjectRoleRequest;
 import com.example.BuildTwin._0.dto.auth.ProjectRoleResponse;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
-import com.example.BuildTwin._0.model.Project;
-import com.example.BuildTwin._0.model.Role;
-import com.example.BuildTwin._0.model.User;
-import com.example.BuildTwin._0.model.UserProjectRole;
-import com.example.BuildTwin._0.repository.ProjectRepository;
+import com.example.BuildTwin._0.domain.projects.model.Project;
+import com.example.BuildTwin._0.domain.identity.model.Role;
+import com.example.BuildTwin._0.domain.identity.model.User;
+import com.example.BuildTwin._0.domain.identity.model.UserProjectRole;
+import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
 import com.example.BuildTwin._0.repository.RoleRepository;
 import com.example.BuildTwin._0.repository.UserProjectRoleRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
@@ -51,9 +51,9 @@ public class ProjectRoleServiceImpl implements ProjectRoleService {
         }
 
         UserProjectRole userProjectRole = UserProjectRole.builder()
-                .userId(user.getId())
+                .user(user)
                 .projectId(project.getId())
-                .roleId(role.getId())
+                .role(role)
                 .build();
 
         UserProjectRole saved = userProjectRoleRepository.save(userProjectRole);
@@ -111,20 +111,20 @@ public class ProjectRoleServiceImpl implements ProjectRoleService {
     }
 
     private ProjectRoleResponse mapToProjectRoleResponse(UserProjectRole upr) {
-        Optional<User> userOpt = userRepository.findById(upr.getUserId());
+        User user = upr.getUser();
+        Role role = upr.getRole();
         Optional<Project> projectOpt = projectRepository.findById(upr.getProjectId());
-        Optional<Role> roleOpt = roleRepository.findById(upr.getRoleId());
 
         return ProjectRoleResponse.builder()
                 .id(upr.getId())
-                .userId(upr.getUserId())
-                .username(userOpt.map(User::getUsername).orElse("Unknown"))
-                .userEmail(userOpt.map(User::getEmail).orElse("Unknown"))
+                .userId(user != null ? user.getId() : null)
+                .username(user != null ? user.getUsername() : "Unknown")
+                .userEmail(user != null ? user.getEmail() : "Unknown")
                 .projectId(upr.getProjectId())
                 .projectName(projectOpt.map(Project::getName).orElse("Unknown"))
-                .roleId(upr.getRoleId())
-                .roleName(roleOpt.map(Role::getName).orElse("Unknown"))
-                .createdAt(upr.getCreatedAt())
+                .roleId(role != null ? role.getId() : null)
+                .roleName(role != null ? role.getName() : "Unknown")
+                .createdAt(upr.getAssignedAt())
                 .build();
     }
 
@@ -138,7 +138,7 @@ public class ProjectRoleServiceImpl implements ProjectRoleService {
                 .projectName(project.getName())
                 .roleId(role.getId())
                 .roleName(role.getName())
-                .createdAt(upr.getCreatedAt())
+                .createdAt(upr.getAssignedAt())
                 .build();
     }
 }

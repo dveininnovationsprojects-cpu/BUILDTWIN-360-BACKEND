@@ -32,7 +32,7 @@ public class ProjectController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get All Projects", description = "Retrieves directory of all active and archived projects.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Project>>> getAllProjects() {
         List<Project> projects = projectService.getAllProjects();
@@ -40,7 +40,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Project By ID", description = "Retrieves project master details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Project>> getProjectById(@PathVariable Long id) {
         Project project = projectService.getProjectById(id);
@@ -57,7 +57,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/buildings")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Buildings By Project", description = "Retrieves all towers/buildings for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Building>>> getBuildingsByProject(@PathVariable Long projectId) {
         List<Building> buildings = projectService.getBuildingsByProject(projectId);
@@ -74,7 +74,7 @@ public class ProjectController {
     }
 
     @GetMapping("/buildings/{buildingId}/levels")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Levels By Building", description = "Retrieves all levels for a building.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Level>>> getLevelsByBuilding(@PathVariable Long buildingId) {
         List<Level> levels = projectService.getLevelsByBuilding(buildingId);
@@ -91,7 +91,7 @@ public class ProjectController {
     }
 
     @GetMapping("/levels/{levelId}/zones")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PLANNING_ENGINEER', 'STORE_KEEPER', 'QUALITY_ENGINEER', 'SAFETY_OFFICER', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Zones By Level", description = "Retrieves all zones for a level.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Zone>>> getZonesByLevel(@PathVariable Long levelId) {
         List<Zone> zones = projectService.getZonesByLevel(levelId);
