@@ -1,22 +1,25 @@
 package com.example.BuildTwin._0.controller;
 
-import com.example.BuildTwin._0.domain.projects.model.Project;
-import com.example.BuildTwin._0.domain.projects.service.ProjectService;
+import com.example.BuildTwin._0.dto.common.PageResponse;
+import com.example.BuildTwin._0.dto.project.CreateProjectRequest;
+import com.example.BuildTwin._0.dto.project.ProjectResponse;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import com.example.BuildTwin._0.security.JwtAuthenticationFilter;
 import com.example.BuildTwin._0.security.JwtTokenProvider;
+import com.example.BuildTwin._0.service.ProjectService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -42,15 +45,14 @@ class ProjectControllerTest {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
     void testCreateProjectSuccess() throws Exception {
-        Project project = Project.builder()
-                .code("PRJ-101")
-                .name("Grand Horizon Towers")
-                .location("Chennai")
-                .status("ACTIVE")
-                .build();
+        CreateProjectRequest request = new CreateProjectRequest();
+        request.setCode("PRJ-101");
+        request.setName("Grand Horizon Towers");
+        request.setLocation("Chennai");
 
-        Project created = Project.builder()
+        ProjectResponse response = ProjectResponse.builder()
                 .id(1L)
                 .code("PRJ-101")
                 .name("Grand Horizon Towers")
@@ -58,11 +60,11 @@ class ProjectControllerTest {
                 .status("ACTIVE")
                 .build();
 
-        when(projectService.createProject(any(Project.class))).thenReturn(created);
+        when(projectService.createProject(any(CreateProjectRequest.class), any())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(project)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -71,16 +73,27 @@ class ProjectControllerTest {
 
     @Test
     void testGetAllProjects() throws Exception {
-        Project p1 = Project.builder().id(1L).code("PRJ-01").name("Site Alpha").build();
-        Project p2 = Project.builder().id(2L).code("PRJ-02").name("Site Beta").build();
+        ProjectResponse p1 = ProjectResponse.builder().id(1L).code("PRJ-01").name("Site Alpha").build();
+        ProjectResponse p2 = ProjectResponse.builder().id(2L).code("PRJ-02").name("Site Beta").build();
 
-        when(projectService.getAllProjects()).thenReturn(List.of(p1, p2));
+        PageResponse<ProjectResponse> pageResponse = PageResponse.<ProjectResponse>builder()
+                .content(List.of(p1, p2))
+                .pageNumber(0)
+                .pageSize(10)
+                .totalElements(2L)
+                .totalPages(1)
+                .isFirst(true)
+                .isLast(true)
+                .build();
+
+        when(projectService.getAllProjects(any(), any(), any(), eq(0), eq(10), anyString(), anyString()))
+                .thenReturn(pageResponse);
 
         mockMvc.perform(get("/api/v1/projects"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].code").value("PRJ-01"))
-                .andExpect(jsonPath("$.data[1].code").value("PRJ-02"));
+                .andExpect(jsonPath("$.data.content[0].code").value("PRJ-01"))
+                .andExpect(jsonPath("$.data.content[1].code").value("PRJ-02"));
     }
 
     @Test
@@ -93,3 +106,4 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.message").value("Project not found with id: '999'"));
     }
 }
+

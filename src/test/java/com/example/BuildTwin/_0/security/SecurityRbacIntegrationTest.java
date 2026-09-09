@@ -3,7 +3,7 @@ package com.example.BuildTwin._0.security;
 import com.example.BuildTwin._0.controller.AuthController;
 import com.example.BuildTwin._0.controller.ProjectController;
 import com.example.BuildTwin._0.domain.identity.model.UserProjectRole;
-import com.example.BuildTwin._0.domain.projects.service.ProjectService;
+import com.example.BuildTwin._0.service.ProjectService;
 import com.example.BuildTwin._0.dto.auth.AssignProjectRoleRequest;
 import com.example.BuildTwin._0.exception.GlobalExceptionHandler;
 import com.example.BuildTwin._0.service.AuthService;
