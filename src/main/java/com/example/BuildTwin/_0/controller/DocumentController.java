@@ -31,6 +31,14 @@ public class DocumentController {
         return new ResponseEntity<>(ApiResponse.created(uploaded, "Document uploaded successfully"), HttpStatus.CREATED);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Document By ID", description = "Retrieves document metadata by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<ProjectDocument>> getDocumentById(@PathVariable Long id) {
+        ProjectDocument document = documentService.getDocumentById(id);
+        return ResponseEntity.ok(ApiResponse.success(document, "Document fetched successfully"));
+    }
+
     @GetMapping("/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Documents By Project (FR-113)", description = "Retrieves all project documents and versions.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -46,5 +54,13 @@ public class DocumentController {
                                                                                        @PathVariable String category) {
         List<ProjectDocument> documents = documentService.getDocumentsByProjectAndCategory(projectId, category);
         return ResponseEntity.ok(ApiResponse.success(documents, "Category documents fetched successfully"));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @Operation(summary = "Delete Project Document", description = "Deletes a project document metadata record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteDocument(@PathVariable Long id) {
+        documentService.deleteDocument(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Document deleted successfully"));
     }
 }

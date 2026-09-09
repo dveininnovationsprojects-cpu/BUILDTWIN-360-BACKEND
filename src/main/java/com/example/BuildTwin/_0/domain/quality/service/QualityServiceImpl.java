@@ -49,6 +49,12 @@ public class QualityServiceImpl implements QualityService {
     }
 
     @Override
+    public void deleteQualityIssue(Long id) {
+        QualityIssue issue = getQualityIssueById(id);
+        qualityIssueRepository.delete(issue);
+    }
+
+    @Override
     public QualityEvidence addEvidence(QualityEvidence evidence) {
         return qualityEvidenceRepository.save(evidence);
     }

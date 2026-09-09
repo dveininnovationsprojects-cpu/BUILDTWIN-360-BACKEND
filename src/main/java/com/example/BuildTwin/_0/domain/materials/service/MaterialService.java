@@ -95,4 +95,10 @@ public class MaterialService {
     public List<Material> getMaterialsNeedingReorder() {
         return materialRepository.findLowStockMaterials();
     }
+
+    @Transactional
+    public void deleteMaterial(Long id) {
+        Material material = getMaterialById(id);
+        materialRepository.delete(material);
+    }
 }

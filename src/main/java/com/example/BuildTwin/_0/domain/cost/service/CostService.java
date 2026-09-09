@@ -12,11 +12,19 @@ public interface CostService {
 
     Budget createOrUpdateBudget(BudgetRequestDto dto);
 
+    Budget getBudgetById(Long id);
+
     List<Budget> getBudgetsByProject(Long projectId);
+
+    void deleteBudget(Long id);
 
     CostTransaction recordCostTransaction(CostTransactionRequestDto dto);
 
+    CostTransaction getCostTransactionById(Long id);
+
     List<CostTransaction> getCostTransactionsByProject(Long projectId);
+
+    void deleteCostTransaction(Long id);
 
     EvmMetricsDto calculateEvmMetrics(Long projectId);
 }

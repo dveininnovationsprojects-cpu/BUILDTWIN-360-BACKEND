@@ -48,4 +48,20 @@ public class SupplierController {
         Supplier supplier = supplierService.getSupplierById(id);
         return ResponseEntity.ok(ApiResponse.success(supplier, "Supplier details fetched successfully"));
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Update Supplier Profile", description = "Updates supplier contact, GSTIN, address, and status.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Supplier>> updateSupplier(@PathVariable Long id, @Valid @RequestBody SupplierCreateDto request) {
+        Supplier updated = supplierService.updateSupplier(id, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Supplier updated successfully"));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Delete Supplier Profile", description = "Deletes a supplier profile by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteSupplier(@PathVariable Long id) {
+        supplierService.deleteSupplier(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Supplier deleted successfully"));
+    }
 }

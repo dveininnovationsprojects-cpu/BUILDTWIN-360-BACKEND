@@ -35,12 +35,28 @@ public class CostController {
         return new ResponseEntity<>(ApiResponse.created(budget, "Budget saved successfully"), HttpStatus.CREATED);
     }
 
+    @GetMapping("/budgets/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Budget By ID", description = "Retrieves budget details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Budget>> getBudgetById(@PathVariable Long id) {
+        Budget budget = costService.getBudgetById(id);
+        return ResponseEntity.ok(ApiResponse.success(budget, "Budget details fetched successfully"));
+    }
+
     @GetMapping("/budgets/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Budgets By Project", description = "Retrieves baseline and revised budgets for a given project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<Budget>>> getBudgetsByProject(@PathVariable Long projectId) {
         List<Budget> budgets = costService.getBudgetsByProject(projectId);
         return ResponseEntity.ok(ApiResponse.success(budgets, "Project budgets fetched successfully"));
+    }
+
+    @DeleteMapping("/budgets/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
+    @Operation(summary = "Delete Budget Head", description = "Deletes budget record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteBudget(@PathVariable Long id) {
+        costService.deleteBudget(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Budget deleted successfully"));
     }
 
     @PostMapping("/transactions")
@@ -51,12 +67,28 @@ public class CostController {
         return new ResponseEntity<>(ApiResponse.created(transaction, "Cost transaction recorded successfully"), HttpStatus.CREATED);
     }
 
+    @GetMapping("/transactions/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Cost Transaction By ID", description = "Retrieves specific cost transaction details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostTransaction>> getCostTransactionById(@PathVariable Long id) {
+        CostTransaction transaction = costService.getCostTransactionById(id);
+        return ResponseEntity.ok(ApiResponse.success(transaction, "Cost transaction fetched successfully"));
+    }
+
     @GetMapping("/transactions/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Cost Transactions By Project", description = "Retrieves all cost commitment & actual expense transactions for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<CostTransaction>>> getCostTransactionsByProject(@PathVariable Long projectId) {
         List<CostTransaction> transactions = costService.getCostTransactionsByProject(projectId);
         return ResponseEntity.ok(ApiResponse.success(transactions, "Cost transactions fetched successfully"));
+    }
+
+    @DeleteMapping("/transactions/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
+    @Operation(summary = "Delete Cost Transaction", description = "Deletes a cost transaction record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteCostTransaction(@PathVariable Long id) {
+        costService.deleteCostTransaction(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Cost transaction deleted successfully"));
     }
 
     @GetMapping("/evm/project/{projectId}")

@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.BuildTwin._0.exception.ResourceNotFoundException;
+
 import java.util.List;
 
 @Service
@@ -28,6 +30,13 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional(readOnly = true)
+    public ProjectDocument getDocumentById(Long id) {
+        return documentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ProjectDocument not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ProjectDocument> getDocumentsByProject(Long projectId) {
         return documentRepository.findByProjectId(projectId);
     }
@@ -36,5 +45,11 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional(readOnly = true)
     public List<ProjectDocument> getDocumentsByProjectAndCategory(Long projectId, String category) {
         return documentRepository.findByProjectIdAndCategory(projectId, category);
+    }
+
+    @Override
+    public void deleteDocument(Long id) {
+        ProjectDocument doc = getDocumentById(id);
+        documentRepository.delete(doc);
     }
 }

@@ -52,6 +52,14 @@ public class LabourController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Daily labour record updated successfully"));
     }
 
+    @DeleteMapping("/daily/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @Operation(summary = "Delete Daily Labour Record", description = "Deletes a daily labour record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteDailyLabour(@PathVariable Long id) {
+        labourService.deleteDailyLabour(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Daily labour record deleted successfully"));
+    }
+
     @GetMapping("/daily/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Daily Labour Logs By Project", description = "Retrieves all daily labour records for a specific project.", security = @SecurityRequirement(name = "BearerAuth"))

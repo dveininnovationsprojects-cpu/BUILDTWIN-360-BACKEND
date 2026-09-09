@@ -39,12 +39,52 @@ public class EquipmentController {
         return ResponseEntity.ok(ApiResponse.success(equipmentList, "Equipment directory fetched successfully"));
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Equipment By ID", description = "Retrieves equipment details by primary key ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Equipment>> getEquipmentById(@PathVariable Long id) {
+        Equipment equipment = equipmentService.getEquipmentById(id);
+        return ResponseEntity.ok(ApiResponse.success(equipment, "Equipment details fetched successfully"));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Update Equipment Asset", description = "Updates equipment status, hourly rate, ownership type, or details.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Equipment>> updateEquipment(@PathVariable Long id, @Valid @RequestBody Equipment equipment) {
+        Equipment updated = equipmentService.updateEquipment(id, equipment);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Equipment asset updated successfully"));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @Operation(summary = "Delete Equipment Asset", description = "Deletes an equipment asset record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteEquipment(@PathVariable Long id) {
+        equipmentService.deleteEquipment(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Equipment asset deleted successfully"));
+    }
+
     @PostMapping("/usage")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Record Equipment Daily Usage (FR-101, FR-102)", description = "Captures site asset allocation, usage hours, and downtime hours.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<EquipmentUsage>> recordUsage(@Valid @RequestBody EquipmentUsage usage) {
         EquipmentUsage recorded = equipmentService.recordUsage(usage);
         return new ResponseEntity<>(ApiResponse.created(recorded, "Equipment usage recorded successfully"), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/usage/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Equipment Usage Log By ID", description = "Retrieves specific equipment usage log by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<EquipmentUsage>> getEquipmentUsageById(@PathVariable Long id) {
+        EquipmentUsage usage = equipmentService.getEquipmentUsageById(id);
+        return ResponseEntity.ok(ApiResponse.success(usage, "Equipment usage log fetched successfully"));
+    }
+
+    @DeleteMapping("/usage/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @Operation(summary = "Delete Equipment Usage Log", description = "Deletes an equipment usage log by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteEquipmentUsage(@PathVariable Long id) {
+        equipmentService.deleteEquipmentUsage(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Equipment usage log deleted successfully"));
     }
 
     @GetMapping("/usage/project/{projectId}")

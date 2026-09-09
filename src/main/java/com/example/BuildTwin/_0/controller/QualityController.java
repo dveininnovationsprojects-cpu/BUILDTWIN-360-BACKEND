@@ -55,6 +55,14 @@ public class QualityController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Quality issue status updated successfully"));
     }
 
+    @DeleteMapping("/issues/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUALITY_ENGINEER')")
+    @Operation(summary = "Delete Quality Issue / Snag", description = "Deletes a quality issue record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteQualityIssue(@PathVariable Long id) {
+        qualityService.deleteQualityIssue(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Quality issue deleted successfully"));
+    }
+
     @PostMapping("/evidence")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUALITY_ENGINEER', 'SITE_ENGINEER')")
     @Operation(summary = "Attach Quality Evidence Photo (FR-083)", description = "Attaches defect capture or rectification closure proof photos.", security = @SecurityRequirement(name = "BearerAuth"))

@@ -31,6 +31,14 @@ public class IssueController {
         return new ResponseEntity<>(ApiResponse.created(created, "Site issue recorded successfully"), HttpStatus.CREATED);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Issue Blocker By ID", description = "Retrieves site blocker issue details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<IssueBlocker>> getIssueById(@PathVariable Long id) {
+        IssueBlocker issue = issueService.getIssueById(id);
+        return ResponseEntity.ok(ApiResponse.success(issue, "Site issue fetched successfully"));
+    }
+
     @GetMapping("/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Issues By Project", description = "Retrieves all active site blockers and issues for a project.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -47,6 +55,14 @@ public class IssueController {
         return ResponseEntity.ok(ApiResponse.success(resolved, "Issue marked as resolved"));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @Operation(summary = "Delete Issue Blocker", description = "Deletes a site blocker issue by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteIssue(@PathVariable Long id) {
+        issueService.deleteIssue(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Site issue deleted successfully"));
+    }
+
     @PostMapping("/risks")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
     @Operation(summary = "Record Project Risk (FR-092)", description = "Registers a project risk with probability, impact rating, and mitigation plan.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -55,11 +71,27 @@ public class IssueController {
         return new ResponseEntity<>(ApiResponse.created(created, "Project risk registered successfully"), HttpStatus.CREATED);
     }
 
+    @GetMapping("/risks/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Project Risk By ID", description = "Retrieves project risk details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<ProjectRisk>> getRiskById(@PathVariable Long id) {
+        ProjectRisk risk = issueService.getRiskById(id);
+        return ResponseEntity.ok(ApiResponse.success(risk, "Project risk fetched successfully"));
+    }
+
     @GetMapping("/risks/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Project Risk Register (FR-092)", description = "Retrieves complete risk register for a project.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<List<ProjectRisk>>> getRisksByProject(@PathVariable Long projectId) {
         List<ProjectRisk> risks = issueService.getRisksByProject(projectId);
         return ResponseEntity.ok(ApiResponse.success(risks, "Project risks fetched successfully"));
+    }
+
+    @DeleteMapping("/risks/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER')")
+    @Operation(summary = "Delete Project Risk", description = "Deletes a project risk by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteRisk(@PathVariable Long id) {
+        issueService.deleteRisk(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Project risk deleted successfully"));
     }
 }

@@ -27,16 +27,28 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    public IssueBlocker getIssueById(Long id) {
+        return issueBlockerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<IssueBlocker> getIssuesByProject(Long projectId) {
         return issueBlockerRepository.findByProjectId(projectId);
     }
 
     @Override
     public IssueBlocker resolveIssue(Long id) {
-        IssueBlocker issue = issueBlockerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + id));
+        IssueBlocker issue = getIssueById(id);
         issue.setStatus("RESOLVED");
         return issueBlockerRepository.save(issue);
+    }
+
+    @Override
+    public void deleteIssue(Long id) {
+        IssueBlocker issue = getIssueById(id);
+        issueBlockerRepository.delete(issue);
     }
 
     @Override
@@ -49,7 +61,20 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    public ProjectRisk getRiskById(Long id) {
+        return projectRiskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ProjectRisk not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ProjectRisk> getRisksByProject(Long projectId) {
         return projectRiskRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public void deleteRisk(Long id) {
+        ProjectRisk risk = getRiskById(id);
+        projectRiskRepository.delete(risk);
     }
 }

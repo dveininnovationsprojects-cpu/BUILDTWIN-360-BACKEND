@@ -57,8 +57,21 @@ public class CostServiceImpl implements CostService {
 
     @Override
     @Transactional(readOnly = true)
+    public Budget getBudgetById(Long id) {
+        return budgetRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Budget not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Budget> getBudgetsByProject(Long projectId) {
         return budgetRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public void deleteBudget(Long id) {
+        Budget budget = getBudgetById(id);
+        budgetRepository.delete(budget);
     }
 
     @Override
@@ -78,8 +91,21 @@ public class CostServiceImpl implements CostService {
 
     @Override
     @Transactional(readOnly = true)
+    public CostTransaction getCostTransactionById(Long id) {
+        return costTransactionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CostTransaction not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<CostTransaction> getCostTransactionsByProject(Long projectId) {
         return costTransactionRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public void deleteCostTransaction(Long id) {
+        CostTransaction tx = getCostTransactionById(id);
+        costTransactionRepository.delete(tx);
     }
 
     @Override

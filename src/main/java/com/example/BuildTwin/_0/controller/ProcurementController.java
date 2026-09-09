@@ -41,6 +41,22 @@ public class ProcurementController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Material request approval status updated successfully"));
     }
 
+    @GetMapping("/requests/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Material Request By ID", description = "Retrieves material request details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<MaterialRequest>> getMaterialRequestById(@PathVariable Long id) {
+        MaterialRequest request = procurementService.getMaterialRequestById(id);
+        return ResponseEntity.ok(ApiResponse.success(request, "Material request fetched successfully"));
+    }
+
+    @DeleteMapping("/requests/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Delete Material Request", description = "Deletes a material request by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteMaterialRequest(@PathVariable Long id) {
+        procurementService.deleteMaterialRequest(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Material request deleted successfully"));
+    }
+
     @GetMapping("/requests/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Material Requests By Project", description = "Retrieves all material requests for a project.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -73,6 +89,22 @@ public class ProcurementController {
         return new ResponseEntity<>(ApiResponse.created(created, "Purchase order created successfully"), HttpStatus.CREATED);
     }
 
+    @GetMapping("/purchase-orders/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Purchase Order By ID", description = "Retrieves purchase order details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<PurchaseOrder>> getPurchaseOrderById(@PathVariable Long id) {
+        PurchaseOrder po = procurementService.getPurchaseOrderById(id);
+        return ResponseEntity.ok(ApiResponse.success(po, "Purchase order fetched successfully"));
+    }
+
+    @DeleteMapping("/purchase-orders/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Delete Purchase Order", description = "Deletes a purchase order by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deletePurchaseOrder(@PathVariable Long id) {
+        procurementService.deletePurchaseOrder(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Purchase order deleted successfully"));
+    }
+
     @GetMapping("/purchase-orders/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Purchase Orders By Project", description = "Retrieves all POs associated with a project.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -87,6 +119,22 @@ public class ProcurementController {
     public ResponseEntity<ApiResponse<Grn>> createGrn(@Valid @RequestBody Grn grn) {
         Grn created = procurementService.createGrn(grn);
         return new ResponseEntity<>(ApiResponse.created(created, "Goods Receipt Note (GRN) recorded successfully"), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/grn/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get GRN By ID", description = "Retrieves Goods Receipt Note details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Grn>> getGrnById(@PathVariable Long id) {
+        Grn grn = procurementService.getGrnById(id);
+        return ResponseEntity.ok(ApiResponse.success(grn, "GRN details fetched successfully"));
+    }
+
+    @DeleteMapping("/grn/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Delete GRN Log", description = "Deletes a GRN record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteGrn(@PathVariable Long id) {
+        procurementService.deleteGrn(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "GRN log deleted successfully"));
     }
 
     @GetMapping("/grn/po/{poId}")

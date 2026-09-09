@@ -9,5 +9,6 @@ public interface QualityService {
     QualityIssue getQualityIssueById(Long id);
     List<QualityIssue> getQualityIssuesByProject(Long projectId);
     QualityIssue updateStatus(Long id, String status);
+    void deleteQualityIssue(Long id);
     QualityEvidence addEvidence(QualityEvidence evidence);
 }

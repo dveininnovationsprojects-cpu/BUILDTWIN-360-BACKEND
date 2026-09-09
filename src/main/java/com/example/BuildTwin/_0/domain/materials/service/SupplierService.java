@@ -12,4 +12,8 @@ public interface SupplierService {
     List<Supplier> getAllSuppliers();
 
     Supplier getSupplierById(Long id);
+
+    Supplier updateSupplier(Long id, SupplierCreateDto dto);
+
+    void deleteSupplier(Long id);
 }

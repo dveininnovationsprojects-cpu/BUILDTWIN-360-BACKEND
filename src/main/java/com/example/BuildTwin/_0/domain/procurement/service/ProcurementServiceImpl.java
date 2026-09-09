@@ -70,6 +70,13 @@ public class ProcurementServiceImpl implements ProcurementService {
 
     @Override
     @Transactional(readOnly = true)
+    public MaterialRequest getMaterialRequestById(Long id) {
+        return materialRequestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("MaterialRequest", "id", id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<MaterialRequest> getMaterialRequestsByProject(Long projectId) {
         return materialRequestRepository.findByProjectId(projectId);
     }
@@ -78,6 +85,12 @@ public class ProcurementServiceImpl implements ProcurementService {
     @Transactional(readOnly = true)
     public List<MaterialRequest> getMaterialRequestsByStatus(Long projectId, String status) {
         return materialRequestRepository.findByProjectIdAndStatus(projectId, status.toUpperCase());
+    }
+
+    @Override
+    public void deleteMaterialRequest(Long id) {
+        MaterialRequest request = getMaterialRequestById(id);
+        materialRequestRepository.delete(request);
     }
 
     @Override
@@ -140,8 +153,21 @@ public class ProcurementServiceImpl implements ProcurementService {
 
     @Override
     @Transactional(readOnly = true)
+    public PurchaseOrder getPurchaseOrderById(Long id) {
+        return purchaseOrderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("PurchaseOrder", "id", id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PurchaseOrder> getPurchaseOrdersByProject(Long projectId) {
         return purchaseOrderRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public void deletePurchaseOrder(Long id) {
+        PurchaseOrder po = getPurchaseOrderById(id);
+        purchaseOrderRepository.delete(po);
     }
 
     @Override
@@ -186,7 +212,20 @@ public class ProcurementServiceImpl implements ProcurementService {
 
     @Override
     @Transactional(readOnly = true)
+    public Grn getGrnById(Long id) {
+        return grnRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Grn", "id", id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Grn> getGrnsByPo(Long poId) {
         return grnRepository.findByPoId(poId);
+    }
+
+    @Override
+    public void deleteGrn(Long id) {
+        Grn grn = getGrnById(id);
+        grnRepository.delete(grn);
     }
 }

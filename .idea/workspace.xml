@@ -49,23 +49,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0000000000000002" />
-      <entry key="MS500" value="1.0007642173501397" />
-      <entry key="S2" value="1.5136819720536572" />
-      <entry key="S5" value="4.4674725398738415" />
-      <entry key="S10" value="11.072675224182396" />
-      <entry key="S30" value="36.972589070620515" />
-      <entry key="S60" value="68.975805507011" />
-      <entry key="M2" value="118.2770836529766" />
-      <entry key="M5" value="198.80264513693191" />
-      <entry key="M10" value="251.02576513383897" />
-      <entry key="M15" value="273.6864741147254" />
-      <entry key="M30" value="299.79612965851226" />
-      <entry key="H1" value="314.341129801455" />
-      <entry key="H2" value="322.0252180972542" />
-      <entry key="H4" value="325.9754768153705" />
-      <entry key="D1" value="329.3240198445284" />
-      <entry key="W1" value="329.90330250493554" />
+      <entry key="MS100" value="1.5139976988234958" />
+      <entry key="MS500" value="2.4479469230073074" />
+      <entry key="S2" value="4.252299293103874" />
+      <entry key="S5" value="7.821020245008382" />
+      <entry key="S10" value="14.153268623785198" />
+      <entry key="S30" value="39.84197155445568" />
+      <entry key="S60" value="72.30873429917453" />
+      <entry key="M2" value="122.43699469334983" />
+      <entry key="M5" value="204.55367745282683" />
+      <entry key="M10" value="257.9748728139719" />
+      <entry key="M15" value="281.19575278431336" />
+      <entry key="M30" value="307.9796053424485" />
+      <entry key="H1" value="322.9130373510411" />
+      <entry key="H2" value="330.8059325214746" />
+      <entry key="H4" value="334.8644871380856" />
+      <entry key="D1" value="338.3053312631927" />
+      <entry key="W1" value="338.9006280043688" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -87,23 +87,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="5.8548835408036106E-5" />
-      <entry key="MS500" value="0.14256813615924108" />
-      <entry key="S2" value="1.0651268569280798" />
-      <entry key="S5" value="4.20230955733374" />
-      <entry key="S10" value="10.909552260008756" />
-      <entry key="S30" value="36.89584679181286" />
-      <entry key="S60" value="68.92241943879782" />
-      <entry key="M2" value="118.23869478747943" />
-      <entry key="M5" value="198.78017151069636" />
-      <entry key="M10" value="251.01234238021047" />
-      <entry key="M15" value="273.6769056067849" />
-      <entry key="M30" value="299.79099171680446" />
-      <entry key="H1" value="314.3384630071635" />
-      <entry key="H2" value="322.0238589489932" />
-      <entry key="H4" value="325.97479063337835" />
-      <entry key="D1" value="329.32390454827083" />
-      <entry key="W1" value="329.90328601100646" />
+      <entry key="MS100" value="1.2762076267946147" />
+      <entry key="MS500" value="2.1811146389061915" />
+      <entry key="S2" value="4.07125857388954" />
+      <entry key="S5" value="7.631045233418245" />
+      <entry key="S10" value="13.99736869704862" />
+      <entry key="S30" value="39.75494114408641" />
+      <entry key="S60" value="72.24814572155087" />
+      <entry key="M2" value="122.39432765119167" />
+      <entry key="M5" value="204.52921413307274" />
+      <entry key="M10" value="257.96037795213965" />
+      <entry key="M15" value="281.18544778279914" />
+      <entry key="M30" value="307.97408669878797" />
+      <entry key="H1" value="322.9101767417204" />
+      <entry key="H2" value="330.804475550349" />
+      <entry key="H4" value="334.8637518092711" />
+      <entry key="D1" value="338.30520774253" />
+      <entry key="W1" value="338.90061033470226" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -114,38 +114,38 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.BuildTwin360Application.executor&quot;: &quot;Run&quot;,
-    &quot;Maven.BuildTwin-360 [clean].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.BuildTwin-360 [install].executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;Spring Boot.BuildTwin360Application.executor&quot;: &quot;Run&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;selva&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;E:/projects folder/construction project&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.annotationProcessors&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.BuildTwin360Application.executor": "Run",
+    "Maven.BuildTwin-360 [clean].executor": "Run",
+    "Maven.BuildTwin-360 [install].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "Spring Boot.BuildTwin360Application.executor": "Run",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "selva",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "E:/projects folder/construction project",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "reference.projectsettings.compiler.annotationProcessors"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="BuildTwin360Application" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="BuildTwin-360" />

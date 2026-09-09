@@ -221,4 +221,10 @@ public class LabourService {
                 .productivityStatus(status)
                 .build();
     }
+
+    @Transactional
+    public void deleteDailyLabour(Long id) {
+        LabourDaily record = getLabourRecordById(id);
+        labourDailyRepository.delete(record);
+    }
 }

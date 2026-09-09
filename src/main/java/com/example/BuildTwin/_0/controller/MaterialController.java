@@ -87,4 +87,12 @@ public class MaterialController {
         List<Material> materials = materialService.getMaterialsNeedingReorder();
         return ResponseEntity.ok(ApiResponse.success(materials, "Reorder alerts fetched successfully"));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Delete Material Catalog Item", description = "Deletes a material item from the catalog by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteMaterial(@PathVariable Long id) {
+        materialService.deleteMaterial(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Material deleted successfully"));
+    }
 }

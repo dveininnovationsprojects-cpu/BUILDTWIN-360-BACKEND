@@ -48,4 +48,23 @@ public class SupplierServiceImpl implements SupplierService {
         return supplierRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with ID: " + id));
     }
+
+    @Override
+    public Supplier updateSupplier(Long id, SupplierCreateDto dto) {
+        Supplier supplier = getSupplierById(id);
+        if (dto.getName() != null) supplier.setName(dto.getName());
+        if (dto.getContactPerson() != null) supplier.setContactPerson(dto.getContactPerson());
+        if (dto.getPhone() != null) supplier.setPhone(dto.getPhone());
+        if (dto.getEmail() != null) supplier.setEmail(dto.getEmail());
+        if (dto.getGstin() != null) supplier.setGstin(dto.getGstin());
+        if (dto.getAddress() != null) supplier.setAddress(dto.getAddress());
+        if (dto.getStatus() != null) supplier.setStatus(dto.getStatus());
+        return supplierRepository.save(supplier);
+    }
+
+    @Override
+    public void deleteSupplier(Long id) {
+        Supplier supplier = getSupplierById(id);
+        supplierRepository.delete(supplier);
+    }
 }
