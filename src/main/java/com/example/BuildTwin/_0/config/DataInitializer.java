@@ -28,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
     private final FloorRepository floorRepository;
     private final ZoneRepository zoneRepository;
     private final WorkPackageRepository workPackageRepository;
+    private final WbsActivityRepository wbsActivityRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -51,6 +52,7 @@ public class DataInitializer implements CommandLineRunner {
         cleanAndSyncExactRoles();
         seedOrUpdateAdminUser();
         seedDefaultProjectAndSites();
+        seedDefaultWbsActivities();
     }
 
     private void fixUserRolesTableConstraints() {
@@ -297,6 +299,132 @@ public class DataInitializer implements CommandLineRunner {
 
             workPackageRepository.saveAll(List.of(wpCivil, wpMep));
             log.info("Initialized default Buildings, Floors, Zones, and Work Packages for Padur project.");
+        }
+    }
+
+    private void seedDefaultWbsActivities() {
+        if (wbsActivityRepository.count() == 0) {
+            projectRepository.findByCode("PADUR-AG-01").ifPresent(project -> {
+                User admin = userRepository.findByUsername("admin").orElse(null);
+
+                workPackageRepository.findByProjectIdAndCode(project.getId(), "WP-CIV-01").ifPresent(wpCivil -> {
+                    Site site = wpCivil.getSite();
+                    Building bld = site != null ? buildingRepository.findBySiteId(site.getId()).stream().findFirst().orElse(null) : null;
+                    Floor flr1 = bld != null ? floorRepository.findByBuildingIdOrderByFloorNumberAsc(bld.getId()).stream()
+                            .filter(f -> f.getFloorNumber() == 1).findFirst().orElse(null) : null;
+                    Zone zn101 = flr1 != null ? zoneRepository.findByFloorId(flr1.getId()).stream()
+                            .filter(z -> "FL1-UNIT-101".equalsIgnoreCase(z.getCode())).findFirst().orElse(null) : null;
+
+                    WbsActivity act1 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .zone(zn101)
+                            .code("ACT-CIV-001")
+                            .name("Floor 1 Column Starter & Rebar Tying")
+                            .discipline("CIVIL")
+                            .description("High-tensile Fe550D rebar tying and column shuttering")
+                            .uom("MT")
+                            .plannedQuantity(25.0)
+                            .completedQuantity(25.0)
+                            .progressPercentage(100.0)
+                            .plannedStartDate(LocalDate.of(2026, 9, 10))
+                            .plannedEndDate(LocalDate.of(2026, 9, 25))
+                            .actualStartDate(LocalDate.of(2026, 9, 12))
+                            .actualEndDate(LocalDate.of(2026, 9, 24))
+                            .status("COMPLETED")
+                            .assignedContractor("L&T Construction (Civil Div)")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(2.0)
+                            .sequenceOrder(1)
+                            .build();
+
+                    WbsActivity act2 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .code("ACT-CIV-002")
+                            .name("Floor 1 Beam Formwork & Slab Concreting")
+                            .discipline("CIVIL")
+                            .description("M35 Grade RMC pouring for Floor 1 deck slab and drop beams")
+                            .uom("CUM")
+                            .plannedQuantity(240.0)
+                            .completedQuantity(120.0)
+                            .progressPercentage(50.0)
+                            .plannedStartDate(LocalDate.of(2026, 9, 26))
+                            .plannedEndDate(LocalDate.of(2026, 10, 20))
+                            .actualStartDate(LocalDate.of(2026, 9, 27))
+                            .status("IN_PROGRESS")
+                            .assignedContractor("L&T Construction (Civil Div)")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(3.0)
+                            .sequenceOrder(2)
+                            .build();
+
+                    WbsActivity act3 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .code("ACT-CIV-003")
+                            .name("Floor 1 Internal AAC Blockwork Masonry")
+                            .discipline("CIVIL")
+                            .description("200mm and 100mm AAC blocks laying with polymer mortar")
+                            .uom("SQFT")
+                            .plannedQuantity(6500.0)
+                            .completedQuantity(0.0)
+                            .progressPercentage(0.0)
+                            .plannedStartDate(LocalDate.of(2026, 10, 21))
+                            .plannedEndDate(LocalDate.of(2026, 11, 25))
+                            .status("PLANNED")
+                            .assignedContractor("L&T Construction (Civil Div)")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(2.0)
+                            .sequenceOrder(3)
+                            .build();
+
+                    wbsActivityRepository.saveAll(List.of(act1, act2, act3));
+                });
+
+                workPackageRepository.findByProjectIdAndCode(project.getId(), "WP-MEP-01").ifPresent(wpMep -> {
+                    Site site = wpMep.getSite();
+                    Building bld = site != null ? buildingRepository.findBySiteId(site.getId()).stream().findFirst().orElse(null) : null;
+                    Floor flr1 = bld != null ? floorRepository.findByBuildingIdOrderByFloorNumberAsc(bld.getId()).stream()
+                            .filter(f -> f.getFloorNumber() == 1).findFirst().orElse(null) : null;
+
+                    WbsActivity actMep1 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpMep)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .code("ACT-MEP-001")
+                            .name("Floor 1 Slab Electrical Conduit Piping")
+                            .discipline("ELECTRICAL")
+                            .description("PVC conduit routing and junction box placement before slab pour")
+                            .uom("POINTS")
+                            .plannedQuantity(350.0)
+                            .completedQuantity(0.0)
+                            .progressPercentage(0.0)
+                            .plannedStartDate(LocalDate.of(2026, 10, 5))
+                            .plannedEndDate(LocalDate.of(2026, 10, 15))
+                            .status("PLANNED")
+                            .assignedContractor("Voltas MEP Solutions")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(1.0)
+                            .sequenceOrder(1)
+                            .build();
+
+                    wbsActivityRepository.save(actMep1);
+                });
+
+                log.info("Initialized default WBS Activities for Padur project work packages.");
+            });
         }
     }
 }
