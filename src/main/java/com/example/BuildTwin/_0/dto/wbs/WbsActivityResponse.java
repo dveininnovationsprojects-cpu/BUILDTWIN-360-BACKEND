@@ -8,16 +8,39 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Response representation of a construction WBS Activity / Task")
+@Schema(description = "Response representation of a construction WBS Activity / Task with Parent-Child Hierarchy")
 public class WbsActivityResponse {
 
     @Schema(description = "Activity ID", example = "1")
     private Long id;
+
+    @Schema(description = "Parent Activity ID if sub-task, null if root activity", example = "null")
+    private Long parentId;
+
+    @Schema(description = "Parent Activity Code", example = "ACT-CIV-001")
+    private String parentCode;
+
+    @Schema(description = "Parent Activity Name", example = "Substructure Works")
+    private String parentName;
+
+    @Schema(description = "WBS Hierarchy Level (1 = Root Task, 2 = Sub-Task, 3 = Micro-Task)", example = "1")
+    private Integer level;
+
+    @Schema(description = "WBS Node Path for easy hierarchy traversal", example = "/1")
+    private String wbsPath;
+
+    @Schema(description = "True if this activity has subordinate sub-activities", example = "false")
+    private Boolean hasChildren;
+
+    @Schema(description = "Count of direct child activities", example = "3")
+    private Integer childCount;
 
     @Schema(description = "Work Package ID", example = "1")
     private Long workPackageId;
@@ -111,6 +134,10 @@ public class WbsActivityResponse {
 
     @Schema(description = "Sequence order", example = "1")
     private Integer sequenceOrder;
+
+    @Builder.Default
+    @Schema(description = "Direct child activities when retrieved as hierarchy tree")
+    private List<WbsActivityResponse> children = new ArrayList<>();
 
     @Schema(description = "Created timestamp")
     private LocalDateTime createdAt;

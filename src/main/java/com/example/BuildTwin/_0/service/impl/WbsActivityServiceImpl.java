@@ -9,12 +9,14 @@ import com.example.BuildTwin._0.model.*;
 import com.example.BuildTwin._0.repository.*;
 import com.example.BuildTwin._0.service.AuditService;
 import com.example.BuildTwin._0.service.WbsActivityService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,10 +65,31 @@ public class WbsActivityServiceImpl implements WbsActivityService {
             throw new DuplicateResourceException("WbsActivity", "code", code + " in Work Package " + workPackage.getName());
         }
 
-        Site site = validateAndResolveSite(request.getSiteId(), project.getId());
-        Building building = validateAndResolveBuilding(request.getBuildingId(), site);
-        Floor floor = validateAndResolveFloor(request.getFloorId(), building);
-        Zone zone = validateAndResolveZone(request.getZoneId(), floor);
+        // Parent WBS resolution
+        WbsActivity parent = null;
+        int level = 1;
+        if (request.getParentId() != null) {
+            parent = wbsActivityRepository.findById(request.getParentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent WbsActivity", "id", request.getParentId()));
+
+            if (!parent.getWorkPackage().getId().equals(workPackageId)) {
+                throw new BadRequestException("Parent Activity ID " + request.getParentId() +
+                        " belongs to Work Package ID " + parent.getWorkPackage().getId() +
+                        ", not to target Work Package ID " + workPackageId);
+            }
+            level = (parent.getLevel() != null ? parent.getLevel() : 1) + 1;
+        }
+
+        // Location resolution (inherit from parent if not explicitly set)
+        Long siteId = request.getSiteId() != null ? request.getSiteId() : (parent != null && parent.getSite() != null ? parent.getSite().getId() : null);
+        Long buildingId = request.getBuildingId() != null ? request.getBuildingId() : (parent != null && parent.getBuilding() != null ? parent.getBuilding().getId() : null);
+        Long floorId = request.getFloorId() != null ? request.getFloorId() : (parent != null && parent.getFloor() != null ? parent.getFloor().getId() : null);
+        Long zoneId = request.getZoneId() != null ? request.getZoneId() : (parent != null && parent.getZone() != null ? parent.getZone().getId() : null);
+
+        Site site = validateAndResolveSite(siteId, project.getId());
+        Building building = validateAndResolveBuilding(buildingId, site);
+        Floor floor = validateAndResolveFloor(floorId, building);
+        Zone zone = validateAndResolveZone(zoneId, floor);
 
         if (request.getInchargeUserId() != null && !userRepository.existsById(request.getInchargeUserId())) {
             throw new ResourceNotFoundException("User (Incharge)", "id", request.getInchargeUserId());
@@ -75,11 +98,21 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         String status = request.getStatus() != null ? validateAndNormalizeStatus(request.getStatus()) : "PLANNED";
         String discipline = request.getDiscipline() != null
                 ? validateAndNormalizeDiscipline(request.getDiscipline())
-                : workPackage.getDiscipline();
+                : (parent != null ? parent.getDiscipline() : workPackage.getDiscipline());
+
+        String contractor = request.getAssignedContractor() != null
+                ? request.getAssignedContractor().trim()
+                : (parent != null && parent.getAssignedContractor() != null ? parent.getAssignedContractor() : workPackage.getAssignedContractor());
+
+        Long inchargeId = request.getInchargeUserId() != null
+                ? request.getInchargeUserId()
+                : (parent != null && parent.getInchargeUserId() != null ? parent.getInchargeUserId() : workPackage.getInchargeUserId());
 
         WbsActivity activity = WbsActivity.builder()
                 .project(project)
                 .workPackage(workPackage)
+                .parent(parent)
+                .level(level)
                 .site(site)
                 .building(building)
                 .floor(floor)
@@ -95,28 +128,155 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                 .plannedStartDate(request.getPlannedStartDate())
                 .plannedEndDate(request.getPlannedEndDate())
                 .status(status)
-                .assignedContractor(request.getAssignedContractor() != null
-                        ? request.getAssignedContractor().trim()
-                        : workPackage.getAssignedContractor())
-                .inchargeUserId(request.getInchargeUserId() != null
-                        ? request.getInchargeUserId()
-                        : workPackage.getInchargeUserId())
+                .assignedContractor(contractor)
+                .inchargeUserId(inchargeId)
                 .weightage(request.getWeightage() != null ? request.getWeightage() : 1.0)
                 .sequenceOrder(request.getSequenceOrder() != null ? request.getSequenceOrder() : 1)
                 .build();
 
         WbsActivity saved = wbsActivityRepository.save(activity);
 
+        // Compute wbsPath: e.g. "/1" or "/1/4"
+        String path = (parent != null && parent.getWbsPath() != null)
+                ? parent.getWbsPath() + "/" + saved.getId()
+                : "/" + saved.getId();
+        saved.setWbsPath(path);
+        saved = wbsActivityRepository.save(saved);
+
+        if (parent != null) {
+            rollupParentProgress(parent);
+        }
+
         auditService.logAction(
                 performedBy,
                 "CREATE_WBS_ACTIVITY",
                 "WBS_ACTIVITY",
                 String.valueOf(saved.getId()),
-                "Created WBS Activity: " + saved.getName() + " (" + saved.getCode() + ") under package: " + workPackage.getName(),
+                "Created WBS Activity: " + saved.getName() + " (" + saved.getCode() + ") at Level " + saved.getLevel() +
+                        (parent != null ? " under Parent: " + parent.getName() : " under package: " + workPackage.getName()),
                 null
         );
 
         return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public WbsActivityResponse createChildActivity(Long parentActivityId, CreateWbsActivityRequest request, String performedBy) {
+        WbsActivity parent = wbsActivityRepository.findById(parentActivityId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parent WbsActivity", "id", parentActivityId));
+
+        request.setParentId(parentActivityId);
+        return createActivity(parent.getWorkPackage().getId(), request, performedBy);
+    }
+
+    @Override
+    @Transactional
+    public WbsActivityResponse reparentActivity(Long id, ReparentWbsActivityRequest request, String performedBy) {
+        WbsActivity act = wbsActivityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
+
+        WbsActivity oldParent = act.getParent();
+        WbsActivity newParent = null;
+
+        if (request.getNewParentId() != null) {
+            if (act.getId().equals(request.getNewParentId())) {
+                throw new BadRequestException("An activity cannot be its own parent (Self-referencing cycle)");
+            }
+
+            newParent = wbsActivityRepository.findById(request.getNewParentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("New Parent WbsActivity", "id", request.getNewParentId()));
+
+            // Parent must be within the same work package
+            if (!newParent.getWorkPackage().getId().equals(act.getWorkPackage().getId())) {
+                throw new BadRequestException("Cannot reparent activity to a parent in a different Work Package.");
+            }
+
+            // Cycle check: new parent cannot be a descendant of this activity!
+            if (newParent.getWbsPath() != null &&
+                    (newParent.getWbsPath().equals(act.getWbsPath()) ||
+                     newParent.getWbsPath().startsWith(act.getWbsPath() + "/"))) {
+                throw new BadRequestException("Cycle detected: Cannot reparent an activity to one of its own descendants.");
+            }
+
+            act.setParent(newParent);
+            act.setLevel((newParent.getLevel() != null ? newParent.getLevel() : 1) + 1);
+            act.setWbsPath(newParent.getWbsPath() + "/" + act.getId());
+        } else {
+            // Reparent to Root
+            act.setParent(null);
+            act.setLevel(1);
+            act.setWbsPath("/" + act.getId());
+        }
+
+        if (request.getNewSequenceOrder() != null) {
+            act.setSequenceOrder(request.getNewSequenceOrder());
+        }
+
+        WbsActivity saved = wbsActivityRepository.save(act);
+
+        // Update levels and wbsPaths for all descendants recursively
+        updateDescendantsPathAndLevel(saved);
+
+        // Re-roll up progress for both old parent and new parent
+        if (oldParent != null) {
+            rollupParentProgress(oldParent);
+        }
+        if (newParent != null) {
+            rollupParentProgress(newParent);
+        }
+
+        auditService.logAction(
+                performedBy,
+                "REPARENT_WBS_ACTIVITY",
+                "WBS_ACTIVITY",
+                String.valueOf(saved.getId()),
+                "Reparented WBS Activity '" + saved.getName() + "' to " + (newParent != null ? "parent '" + newParent.getName() + "'" : "Root level"),
+                null
+        );
+
+        return mapToResponse(saved);
+    }
+
+    private void updateDescendantsPathAndLevel(WbsActivity parent) {
+        List<WbsActivity> children = wbsActivityRepository.findByParentIdOrderBySequenceOrderAsc(parent.getId());
+        for (WbsActivity child : children) {
+            child.setLevel(parent.getLevel() + 1);
+            child.setWbsPath(parent.getWbsPath() + "/" + child.getId());
+            wbsActivityRepository.save(child);
+            updateDescendantsPathAndLevel(child);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WbsActivityResponse> getChildActivities(Long parentId) {
+        if (!wbsActivityRepository.existsById(parentId)) {
+            throw new ResourceNotFoundException("Parent WbsActivity", "id", parentId);
+        }
+        return wbsActivityRepository.findByParentIdOrderBySequenceOrderAsc(parentId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WbsActivityResponse getActivityTree(Long activityId) {
+        WbsActivity act = wbsActivityRepository.findById(activityId)
+                .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", activityId));
+        return mapToRecursiveResponse(act);
+    }
+
+    private WbsActivityResponse mapToRecursiveResponse(WbsActivity act) {
+        WbsActivityResponse res = mapToResponse(act);
+        List<WbsActivity> children = wbsActivityRepository.findByParentIdOrderBySequenceOrderAsc(act.getId());
+        List<WbsActivityResponse> childResponses = children.stream()
+                .map(this::mapToRecursiveResponse)
+                .collect(Collectors.toList());
+        res.setChildren(childResponses);
+        res.setChildCount(children.size());
+        res.setHasChildren(!children.isEmpty());
+        return res;
     }
 
     @Override
@@ -199,6 +359,68 @@ public class WbsActivityServiceImpl implements WbsActivityService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<WbsActivityResponse> searchActivities(
+            Long projectId, Long workPackageId, Long siteId, Long buildingId, Long floorId, Long zoneId,
+            String discipline, String status, String contractor, Long inchargeUserId,
+            int page, int size, String sortBy, String sortDir) {
+
+        Sort sort = "desc".equalsIgnoreCase(sortDir) ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Specification<WbsActivity> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (projectId != null) {
+                predicates.add(cb.equal(root.get("project").get("id"), projectId));
+            }
+            if (workPackageId != null) {
+                predicates.add(cb.equal(root.get("workPackage").get("id"), workPackageId));
+            }
+            if (siteId != null) {
+                predicates.add(cb.equal(root.get("site").get("id"), siteId));
+            }
+            if (buildingId != null) {
+                predicates.add(cb.equal(root.get("building").get("id"), buildingId));
+            }
+            if (floorId != null) {
+                predicates.add(cb.equal(root.get("floor").get("id"), floorId));
+            }
+            if (zoneId != null) {
+                predicates.add(cb.equal(root.get("zone").get("id"), zoneId));
+            }
+            if (discipline != null && !discipline.trim().isEmpty()) {
+                predicates.add(cb.equal(cb.upper(root.get("discipline")), discipline.trim().toUpperCase()));
+            }
+            if (status != null && !status.trim().isEmpty()) {
+                predicates.add(cb.equal(cb.upper(root.get("status")), status.trim().toUpperCase()));
+            }
+            if (contractor != null && !contractor.trim().isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("assignedContractor")), "%" + contractor.trim().toLowerCase() + "%"));
+            }
+            if (inchargeUserId != null) {
+                predicates.add(cb.equal(root.get("inchargeUserId"), inchargeUserId));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<WbsActivity> actPage = wbsActivityRepository.findAll(spec, pageable);
+
+        List<WbsActivityResponse> content = actPage.getContent().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        return PageResponse.<WbsActivityResponse>builder()
+                .content(content)
+                .pageNumber(actPage.getNumber())
+                .pageSize(actPage.getSize())
+                .totalElements(actPage.getTotalElements())
+                .totalPages(actPage.getTotalPages())
+                .isFirst(actPage.isFirst())
+                .isLast(actPage.isLast())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public WbsActivityResponse getActivityById(Long id) {
         WbsActivity act = wbsActivityRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
@@ -257,6 +479,10 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         if (request.getSequenceOrder() != null) act.setSequenceOrder(request.getSequenceOrder());
 
         WbsActivity updated = wbsActivityRepository.save(act);
+
+        if (updated.getParent() != null) {
+            rollupParentProgress(updated.getParent());
+        }
 
         auditService.logAction(
                 performedBy,
@@ -317,6 +543,11 @@ public class WbsActivityServiceImpl implements WbsActivityService {
 
         WbsActivity updated = wbsActivityRepository.save(act);
 
+        // Auto roll up progress to parent activity and ancestor chain
+        if (updated.getParent() != null) {
+            rollupParentProgress(updated.getParent());
+        }
+
         // Auto-update WorkPackage status to IN_PROGRESS if it was PLANNED
         WorkPackage wp = updated.getWorkPackage();
         if ("PLANNED".equalsIgnoreCase(wp.getStatus()) && calculatedProgress > 0.0) {
@@ -339,6 +570,56 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         return mapToResponse(updated);
     }
 
+    private void rollupParentProgress(WbsActivity parent) {
+        if (parent == null) return;
+
+        List<WbsActivity> children = wbsActivityRepository.findByParentIdOrderBySequenceOrderAsc(parent.getId());
+        if (children.isEmpty()) return;
+
+        double totalWeight = 0.0;
+        double weightedProgressSum = 0.0;
+        boolean allCompleted = true;
+        boolean anyStarted = false;
+
+        for (WbsActivity child : children) {
+            double weight = child.getWeightage() != null ? child.getWeightage() : 1.0;
+            double prog = child.getProgressPercentage() != null ? child.getProgressPercentage() : 0.0;
+
+            weightedProgressSum += (prog * weight);
+            totalWeight += weight;
+
+            if (!"COMPLETED".equalsIgnoreCase(child.getStatus())) {
+                allCompleted = false;
+            }
+            if (prog > 0.0 || "IN_PROGRESS".equalsIgnoreCase(child.getStatus())) {
+                anyStarted = true;
+            }
+        }
+
+        double rolledProgress = totalWeight > 0 ? (weightedProgressSum / totalWeight) : 0.0;
+        rolledProgress = BigDecimal.valueOf(rolledProgress).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        parent.setProgressPercentage(rolledProgress);
+
+        if (allCompleted || rolledProgress >= 100.0) {
+            parent.setStatus("COMPLETED");
+            if (parent.getActualEndDate() == null) {
+                parent.setActualEndDate(LocalDate.now());
+            }
+        } else if (anyStarted || rolledProgress > 0.0) {
+            parent.setStatus("IN_PROGRESS");
+            if (parent.getActualStartDate() == null) {
+                parent.setActualStartDate(LocalDate.now());
+            }
+        }
+
+        WbsActivity savedParent = wbsActivityRepository.save(parent);
+
+        // Recursively roll up to grandparent
+        if (savedParent.getParent() != null) {
+            rollupParentProgress(savedParent.getParent());
+        }
+    }
+
     @Override
     @Transactional
     public WbsActivityResponse updateActivityStatus(Long id, UpdateWbsActivityStatusRequest request, String performedBy) {
@@ -359,6 +640,10 @@ public class WbsActivityServiceImpl implements WbsActivityService {
 
         WbsActivity updated = wbsActivityRepository.save(act);
 
+        if (updated.getParent() != null) {
+            rollupParentProgress(updated.getParent());
+        }
+
         auditService.logAction(
                 performedBy,
                 "UPDATE_ACTIVITY_STATUS",
@@ -373,12 +658,113 @@ public class WbsActivityServiceImpl implements WbsActivityService {
 
     @Override
     @Transactional
+    public WbsActivityResponse assignActivity(Long id, AssignActivityRequest request, String performedBy) {
+        WbsActivity act = wbsActivityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
+
+        if (request.getInchargeUserId() != null && !userRepository.existsById(request.getInchargeUserId())) {
+            throw new ResourceNotFoundException("User (Incharge)", "id", request.getInchargeUserId());
+        }
+
+        act.setAssignedContractor(request.getAssignedContractor() != null ? request.getAssignedContractor().trim() : null);
+        act.setInchargeUserId(request.getInchargeUserId());
+
+        WbsActivity saved = wbsActivityRepository.save(act);
+
+        auditService.logAction(
+                performedBy,
+                "ASSIGN_ACTIVITY",
+                "WBS_ACTIVITY",
+                String.valueOf(id),
+                "Assigned Activity '" + saved.getName() + "' to Contractor: '" + saved.getAssignedContractor() + "' (Incharge ID: " + saved.getInchargeUserId() + ")",
+                null
+        );
+
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public WbsActivityResponse scheduleActivity(Long id, ScheduleActivityRequest request, String performedBy) {
+        WbsActivity act = wbsActivityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
+
+        if (request.getPlannedStartDate() != null && request.getPlannedEndDate() != null) {
+            if (request.getPlannedEndDate().isBefore(request.getPlannedStartDate())) {
+                throw new BadRequestException("Planned end date cannot be before planned start date");
+            }
+        }
+        if (request.getPlannedStartDate() != null) {
+            act.setPlannedStartDate(request.getPlannedStartDate());
+        }
+        if (request.getPlannedEndDate() != null) {
+            act.setPlannedEndDate(request.getPlannedEndDate());
+        }
+        if (request.getActualStartDate() != null) {
+            act.setActualStartDate(request.getActualStartDate());
+        }
+        if (request.getActualEndDate() != null) {
+            act.setActualEndDate(request.getActualEndDate());
+        }
+
+        WbsActivity saved = wbsActivityRepository.save(act);
+
+        String remarks = request.getReasonForRevision() != null ? " Reason: " + request.getReasonForRevision() : "";
+        auditService.logAction(
+                performedBy,
+                "SCHEDULE_ACTIVITY",
+                "WBS_ACTIVITY",
+                String.valueOf(id),
+                "Updated schedule for Activity '" + saved.getName() + "'." + remarks,
+                null
+        );
+
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public WbsActivityResponse relocateActivity(Long id, RelocateActivityRequest request, String performedBy) {
+        WbsActivity act = wbsActivityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
+
+        Site site = validateAndResolveSite(request.getSiteId(), act.getProject().getId());
+        Building building = validateAndResolveBuilding(request.getBuildingId(), site);
+        Floor floor = validateAndResolveFloor(request.getFloorId(), building);
+        Zone zone = validateAndResolveZone(request.getZoneId(), floor);
+
+        act.setSite(site);
+        act.setBuilding(building);
+        act.setFloor(floor);
+        act.setZone(zone);
+
+        WbsActivity saved = wbsActivityRepository.save(act);
+
+        auditService.logAction(
+                performedBy,
+                "RELOCATE_ACTIVITY",
+                "WBS_ACTIVITY",
+                String.valueOf(id),
+                "Relocated Activity '" + saved.getName() + "' to location: " + formatLocation(saved),
+                null
+        );
+
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
     public void deleteActivity(Long id, String performedBy) {
         WbsActivity act = wbsActivityRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
 
+        WbsActivity parent = act.getParent();
         String name = act.getName();
         wbsActivityRepository.delete(act);
+
+        if (parent != null) {
+            rollupParentProgress(parent);
+        }
 
         auditService.logAction(
                 performedBy,
@@ -411,9 +797,15 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                 .map(wp -> wp.getBudgetAmount() != null ? wp.getBudgetAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Weighted progress percentage
-        double totalWeight = activities.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
-        double weightedProgressSum = activities.stream()
+        // Overall progress: use root activities to prevent double counting
+        List<WbsActivity> rootActivities = activities.stream()
+                .filter(a -> a.getParent() == null)
+                .collect(Collectors.toList());
+
+        List<WbsActivity> baseForCalculation = rootActivities.isEmpty() ? activities : rootActivities;
+
+        double totalWeight = baseForCalculation.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+        double weightedProgressSum = baseForCalculation.stream()
                 .mapToDouble(a -> (a.getProgressPercentage() != null ? a.getProgressPercentage() : 0.0) * (a.getWeightage() != null ? a.getWeightage() : 1.0))
                 .sum();
 
@@ -450,56 +842,13 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         double projectTotalWeight = 0.0;
 
         for (WorkPackage wp : workPackages) {
-            List<WbsActivity> activities = wbsActivityRepository.findByWorkPackageIdOrderBySequenceOrderAsc(wp.getId());
-            List<WbsTreeResponse.ActivityNode> actNodes = new ArrayList<>();
+            WbsTreeResponse.WorkPackageNode wpNode = buildWorkPackageNode(wp);
+            wpNodes.add(wpNode);
 
-            double wpWeightedSum = 0.0;
-            double wpWeightSum = 0.0;
-            int completedCount = 0;
-
-            for (WbsActivity act : activities) {
-                double weight = act.getWeightage() != null ? act.getWeightage() : 1.0;
-                double prog = act.getProgressPercentage() != null ? act.getProgressPercentage() : 0.0;
-                wpWeightedSum += (prog * weight);
-                wpWeightSum += weight;
-
-                if ("COMPLETED".equalsIgnoreCase(act.getStatus())) {
-                    completedCount++;
-                }
-
-                actNodes.add(WbsTreeResponse.ActivityNode.builder()
-                        .id(act.getId())
-                        .code(act.getCode())
-                        .name(act.getName())
-                        .uom(act.getUom())
-                        .plannedQuantity(act.getPlannedQuantity())
-                        .completedQuantity(act.getCompletedQuantity())
-                        .progressPercentage(prog)
-                        .status(act.getStatus())
-                        .location(formatLocation(act))
-                        .sequenceOrder(act.getSequenceOrder())
-                        .build());
+            if (wpNode.getProgressPercentage() != null) {
+                projectTotalWeightedProgress += wpNode.getProgressPercentage();
+                projectTotalWeight += 1.0;
             }
-
-            double wpProgress = wpWeightSum > 0 ? (wpWeightedSum / wpWeightSum) : 0.0;
-            wpProgress = BigDecimal.valueOf(wpProgress).setScale(2, RoundingMode.HALF_UP).doubleValue();
-
-            projectTotalWeightedProgress += wpWeightedSum;
-            projectTotalWeight += wpWeightSum;
-
-            wpNodes.add(WbsTreeResponse.WorkPackageNode.builder()
-                    .id(wp.getId())
-                    .code(wp.getCode())
-                    .name(wp.getName())
-                    .discipline(wp.getDiscipline())
-                    .status(wp.getStatus())
-                    .budgetAmount(wp.getBudgetAmount())
-                    .assignedContractor(wp.getAssignedContractor())
-                    .progressPercentage(wpProgress)
-                    .totalActivities(activities.size())
-                    .completedActivities(completedCount)
-                    .activities(actNodes)
-                    .build());
         }
 
         double projectProgress = projectTotalWeight > 0 ? (projectTotalWeightedProgress / projectTotalWeight) : 0.0;
@@ -511,6 +860,72 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                 .projectName(project.getName())
                 .overallProgressPercentage(projectProgress)
                 .workPackages(wpNodes)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WbsTreeResponse.WorkPackageNode getWorkPackageWbsTree(Long workPackageId) {
+        WorkPackage wp = workPackageRepository.findById(workPackageId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkPackage", "id", workPackageId));
+        return buildWorkPackageNode(wp);
+    }
+
+    private WbsTreeResponse.WorkPackageNode buildWorkPackageNode(WorkPackage wp) {
+        List<WbsActivity> rootActivities = wbsActivityRepository.findByWorkPackageIdAndParentIsNullOrderBySequenceOrderAsc(wp.getId());
+        List<WbsActivity> allActivities = wbsActivityRepository.findByWorkPackageIdOrderBySequenceOrderAsc(wp.getId());
+
+        List<WbsTreeResponse.ActivityNode> actNodes = rootActivities.stream()
+                .map(this::buildRecursiveActivityNode)
+                .collect(Collectors.toList());
+
+        int completedCount = (int) allActivities.stream().filter(a -> "COMPLETED".equalsIgnoreCase(a.getStatus())).count();
+
+        // Calculate WorkPackage Progress from root activities
+        double totalWeight = rootActivities.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+        double weightedSum = rootActivities.stream()
+                .mapToDouble(a -> (a.getProgressPercentage() != null ? a.getProgressPercentage() : 0.0) * (a.getWeightage() != null ? a.getWeightage() : 1.0))
+                .sum();
+        double wpProgress = totalWeight > 0 ? (weightedSum / totalWeight) : 0.0;
+        wpProgress = BigDecimal.valueOf(wpProgress).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+        return WbsTreeResponse.WorkPackageNode.builder()
+                .id(wp.getId())
+                .code(wp.getCode())
+                .name(wp.getName())
+                .discipline(wp.getDiscipline())
+                .status(wp.getStatus())
+                .budgetAmount(wp.getBudgetAmount())
+                .assignedContractor(wp.getAssignedContractor())
+                .progressPercentage(wpProgress)
+                .totalActivities(allActivities.size())
+                .completedActivities(completedCount)
+                .activities(actNodes)
+                .build();
+    }
+
+    private WbsTreeResponse.ActivityNode buildRecursiveActivityNode(WbsActivity act) {
+        List<WbsActivity> children = wbsActivityRepository.findByParentIdOrderBySequenceOrderAsc(act.getId());
+        List<WbsTreeResponse.ActivityNode> childNodes = children.stream()
+                .map(this::buildRecursiveActivityNode)
+                .collect(Collectors.toList());
+
+        return WbsTreeResponse.ActivityNode.builder()
+                .id(act.getId())
+                .parentId(act.getParent() != null ? act.getParent().getId() : null)
+                .level(act.getLevel())
+                .wbsPath(act.getWbsPath())
+                .hasChildren(!children.isEmpty())
+                .code(act.getCode())
+                .name(act.getName())
+                .uom(act.getUom())
+                .plannedQuantity(act.getPlannedQuantity())
+                .completedQuantity(act.getCompletedQuantity())
+                .progressPercentage(act.getProgressPercentage())
+                .status(act.getStatus())
+                .location(formatLocation(act))
+                .sequenceOrder(act.getSequenceOrder())
+                .children(childNodes)
                 .build();
     }
 
@@ -587,8 +1002,17 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                     .orElse(null);
         }
 
+        long childCount = wbsActivityRepository.countByParentId(act.getId());
+
         return WbsActivityResponse.builder()
                 .id(act.getId())
+                .parentId(act.getParent() != null ? act.getParent().getId() : null)
+                .parentCode(act.getParent() != null ? act.getParent().getCode() : null)
+                .parentName(act.getParent() != null ? act.getParent().getName() : null)
+                .level(act.getLevel() != null ? act.getLevel() : 1)
+                .wbsPath(act.getWbsPath())
+                .hasChildren(childCount > 0)
+                .childCount((int) childCount)
                 .workPackageId(act.getWorkPackage().getId())
                 .workPackageCode(act.getWorkPackage().getCode())
                 .workPackageName(act.getWorkPackage().getName())

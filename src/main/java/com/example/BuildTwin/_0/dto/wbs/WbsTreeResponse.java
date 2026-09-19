@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Hierarchical WBS Breakdown Tree (Project -> Work Packages -> Activities)")
+@Schema(description = "Hierarchical WBS Breakdown Tree (Project -> Work Packages -> Parent Activities -> Child Activities)")
 public class WbsTreeResponse {
 
     @Schema(description = "Project ID", example = "1")
@@ -59,6 +59,10 @@ public class WbsTreeResponse {
     @AllArgsConstructor
     public static class ActivityNode {
         private Long id;
+        private Long parentId;
+        private Integer level;
+        private String wbsPath;
+        private Boolean hasChildren;
         private String code;
         private String name;
         private String uom;
@@ -68,5 +72,8 @@ public class WbsTreeResponse {
         private String status;
         private String location; // e.g. "Tower A > First Typical Floor > 3BHK Luxury Flat 101"
         private Integer sequenceOrder;
+
+        @Builder.Default
+        private List<ActivityNode> children = new ArrayList<>();
     }
 }

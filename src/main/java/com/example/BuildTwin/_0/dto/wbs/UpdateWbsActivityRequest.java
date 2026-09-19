@@ -19,6 +19,9 @@ import java.time.LocalDate;
 @Schema(description = "Request payload for updating a WBS Activity")
 public class UpdateWbsActivityRequest {
 
+    @Schema(description = "Parent WBS Activity ID. Null if root task under work package.", example = "1")
+    private Long parentId;
+
     @NotBlank(message = "Activity code is required")
     @Schema(description = "Activity code", example = "ACT-CIV-001")
     private String code;

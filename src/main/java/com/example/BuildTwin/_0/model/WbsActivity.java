@@ -8,9 +8,17 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "wbs_activities")
+@Table(name = "wbs_activities", indexes = {
+        @Index(name = "idx_wbs_act_work_pkg", columnList = "work_package_id"),
+        @Index(name = "idx_wbs_act_proj", columnList = "project_id"),
+        @Index(name = "idx_wbs_act_parent", columnList = "parent_id"),
+        @Index(name = "idx_wbs_act_status", columnList = "status"),
+        @Index(name = "idx_wbs_act_discipline", columnList = "discipline")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -33,6 +41,23 @@ public class WbsActivity {
     private WorkPackage workPackage;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    @JsonIgnore
+    private WbsActivity parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sequenceOrder ASC")
+    @Builder.Default
+    private List<WbsActivity> children = new ArrayList<>();
+
+    @Column(name = "wbs_level")
+    @Builder.Default
+    private Integer level = 1; // 1 = Top-level task under WorkPackage, 2 = Sub-task, 3 = Micro-task
+
+    @Column(name = "wbs_path", length = 500)
+    private String wbsPath; // e.g. "/1" or "/1/4" or "/1/4/9"
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id")
     @JsonIgnore
     private Site site;
@@ -53,10 +78,10 @@ public class WbsActivity {
     private Zone zone;
 
     @Column(name = "code", nullable = false)
-    private String code; // e.g., "ACT-CIV-001"
+    private String code; // e.g., "ACT-CIV-001" or "WBS-1.1"
 
     @Column(name = "name", nullable = false)
-    private String name; // e.g., "Column Starter & Rebar Tying"
+    private String name; // e.g., "Substructure Concrete Works"
 
     @Column(name = "discipline", nullable = false)
     private String discipline; // CIVIL, STRUCTURAL, MEP, ELECTRICAL, PLUMBING, HVAC, FINISHING
@@ -65,7 +90,7 @@ public class WbsActivity {
     private String description;
 
     @Column(name = "uom", nullable = false, length = 30)
-    private String uom; // Unit of Measure: CUM, SQFT, SQM, RMT, KG, MT, NOS, POINTS
+    private String uom; // Unit of Measure: CUM, SQFT, SQM, RMT, KG, MT, NOS, POINTS, PERCENT
 
     @Column(name = "planned_quantity", nullable = false)
     private Double plannedQuantity;
@@ -115,4 +140,8 @@ public class WbsActivity {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public boolean hasChildren() {
+        return children != null && !children.isEmpty();
+    }
 }

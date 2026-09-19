@@ -4,17 +4,24 @@ import com.example.BuildTwin._0.model.WbsActivity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface WbsActivityRepository extends JpaRepository<WbsActivity, Long> {
+public interface WbsActivityRepository extends JpaRepository<WbsActivity, Long>, JpaSpecificationExecutor<WbsActivity> {
 
     List<WbsActivity> findByWorkPackageIdOrderBySequenceOrderAsc(Long workPackageId);
 
+    List<WbsActivity> findByWorkPackageIdAndParentIsNullOrderBySequenceOrderAsc(Long workPackageId);
+
+    List<WbsActivity> findByParentIdOrderBySequenceOrderAsc(Long parentId);
+
     List<WbsActivity> findByProjectIdOrderBySequenceOrderAsc(Long projectId);
+
+    List<WbsActivity> findByProjectIdAndParentIsNullOrderBySequenceOrderAsc(Long projectId);
 
     Page<WbsActivity> findByWorkPackageId(Long workPackageId, Pageable pageable);
 
@@ -32,9 +39,13 @@ public interface WbsActivityRepository extends JpaRepository<WbsActivity, Long> 
 
     boolean existsByWorkPackageIdAndCodeAndIdNot(Long workPackageId, String code, Long id);
 
+    boolean existsByParentId(Long parentId);
+
     long countByWorkPackageId(Long workPackageId);
 
     long countByWorkPackageIdAndStatus(Long workPackageId, String status);
+
+    long countByParentId(Long parentId);
 
     long countByProjectId(Long projectId);
 

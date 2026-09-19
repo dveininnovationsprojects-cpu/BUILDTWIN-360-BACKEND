@@ -19,6 +19,9 @@ import java.time.LocalDate;
 @Schema(description = "Request payload for creating a WBS Activity under a Work Package")
 public class CreateWbsActivityRequest {
 
+    @Schema(description = "Optional parent WBS Activity ID for creating sub-tasks (Parent-Child WBS). Omit or null for root tasks.", example = "1")
+    private Long parentId;
+
     @NotBlank(message = "Activity code is required")
     @Schema(description = "Unique activity code within work package", example = "ACT-CIV-001")
     private String code;
@@ -34,7 +37,7 @@ public class CreateWbsActivityRequest {
     private String description;
 
     @NotBlank(message = "Unit of Measure (UOM) is required")
-    @Schema(description = "Unit of Measure: CUM, SQFT, SQM, RMT, KG, MT, NOS, POINTS", example = "CUM")
+    @Schema(description = "Unit of Measure: CUM, SQFT, SQM, RMT, KG, MT, NOS, POINTS, PERCENT", example = "CUM")
     private String uom;
 
     @NotNull(message = "Planned quantity is required")
