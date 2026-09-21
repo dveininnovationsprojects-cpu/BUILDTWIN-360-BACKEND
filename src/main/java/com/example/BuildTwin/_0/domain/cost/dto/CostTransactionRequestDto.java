@@ -20,6 +20,7 @@ public class CostTransactionRequestDto {
 
     @NotNull(message = "Project ID is required")
     private Long projectId;
+    
 
     private Long activityId;
 

@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="pull selva code">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/cost/dto/CostTransactionRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/cost/dto/CostTransactionRequestDto.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
