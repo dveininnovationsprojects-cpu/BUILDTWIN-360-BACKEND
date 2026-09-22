@@ -16,10 +16,12 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Initializes exact specification roles, default admin user, and sample hierarchical project data.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -27,25 +29,28 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
     private final ProjectRepository projectRepository;
     private final SiteRepository siteRepository;
     private final BuildingRepository buildingRepository;
     private final FloorRepository floorRepository;
     private final ZoneRepository zoneRepository;
     private final WorkPackageRepository workPackageRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JdbcTemplate jdbcTemplate;
+    private final WbsActivityRepository wbsActivityRepository;
 
-    // Exactly the 10 Stakeholder & User Roles from BuildTwin 360 SRS Section 7
+    /**
+     * Exact 10 roles defined in BuildTwin 360 SRS Document (Section 7).
+     */
     private static final List<String> EXACT_SPECIFICATION_ROLES = List.of(
-            "ROLE_DIRECTOR",                   // 1. Director / Management
-            "ROLE_PROJECT_MANAGER",            // 2. Project Manager
-            "ROLE_SITE_ENGINEER",              // 3. Site Engineer
-            "ROLE_SITE_SUPERVISOR",            // 4. Site Supervisor
-            "ROLE_PROCUREMENT_STORE",          // 5. Procurement / Store
-            "ROLE_QUANTITY_COST_COORDINATOR",  // 6. Quantity / Cost Coordinator
-            "ROLE_QUALITY_ENGINEER",           // 7. Quality Engineer
-            "ROLE_DATA_ANALYST",               // 8. Data / Management Analyst
+            "ROLE_DIRECTOR",                   // 1. Executive / Board Level
+            "ROLE_PROJECT_MANAGER",            // 2. Project Execution Head
+            "ROLE_SITE_ENGINEER",              // 3. Field Execution & Verification
+            "ROLE_SITE_SUPERVISOR",            // 4. Daily Site Reporting & Gang Tracking
+            "ROLE_PROCUREMENT_STORE",          // 5. Material & Store Management
+            "ROLE_QUANTITY_COST_COORDINATOR",  // 6. QS & Cost Estimation
+            "ROLE_QUALITY_ENGINEER",           // 7. QA/QC & Material Testing
+            "ROLE_DATA_ANALYST",               // 8. Progress & MIS Analytics
             "ROLE_ADMIN",                      // 9. System Administrator
             "ROLE_AUDITOR"                     // 10. Auditor / Reviewer
     );
@@ -53,9 +58,11 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         fixUserRolesTableConstraints();
+        fixWbsActivitiesTableConstraints();
         cleanAndSyncExactRoles();
         seedOrUpdateAdminUser();
         seedDefaultProjectAndSites();
+        seedDefaultWbsActivities();
     }
 
     private void fixUserRolesTableConstraints() {
@@ -66,6 +73,18 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Updated 'user_roles' table constraints for created_at.");
         } catch (Exception e) {
             log.debug("Database constraint adjustment on user_roles skipped: {}", e.getMessage());
+        }
+    }
+
+    private void fixWbsActivitiesTableConstraints() {
+        try {
+            jdbcTemplate.execute("ALTER TABLE IF EXISTS wbs_activities ADD COLUMN IF NOT EXISTS wbs_level integer DEFAULT 1;");
+            jdbcTemplate.execute("UPDATE wbs_activities SET wbs_level = 1 WHERE wbs_level IS NULL;");
+            jdbcTemplate.execute("ALTER TABLE IF EXISTS wbs_activities ADD COLUMN IF NOT EXISTS wbs_path varchar(500);");
+            jdbcTemplate.execute("UPDATE wbs_activities SET wbs_path = '/' || id WHERE wbs_path IS NULL;");
+            log.info("Ensured 'wbs_activities' hierarchy columns wbs_level and wbs_path exist and are populated.");
+        } catch (Exception e) {
+            log.debug("Database constraint adjustment on wbs_activities skipped: {}", e.getMessage());
         }
     }
 
@@ -101,104 +120,110 @@ public class DataInitializer implements CommandLineRunner {
         for (String roleName : EXACT_SPECIFICATION_ROLES) {
             if (roleRepository.findByName(roleName).isEmpty()) {
                 roleRepository.save(Role.builder().name(roleName).build());
-                log.info("Initialized SRS Section 7 Role: {}", roleName);
             }
         }
+        log.info("Synchronized BuildTwin 360 roles to exact {} specification roles.", EXACT_SPECIFICATION_ROLES.size());
     }
 
     private void seedOrUpdateAdminUser() {
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_ADMIN").build()));
-        Role directorRole = roleRepository.findByName("ROLE_DIRECTOR")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_DIRECTOR").build()));
+                .orElseThrow(() -> new IllegalStateException("ROLE_ADMIN not found"));
 
         userRepository.findByUsername("admin").ifPresentOrElse(
-                existingAdmin -> {
-                    boolean hasAdmin = existingAdmin.getRoles().stream().anyMatch(r -> "ROLE_ADMIN".equals(r.getName()));
-                    if (!hasAdmin) {
-                        existingAdmin.getRoles().add(adminRole);
-                        existingAdmin.getRoles().add(directorRole);
-                        userRepository.save(existingAdmin);
-                        log.info("Granted ROLE_ADMIN & ROLE_DIRECTOR to existing 'admin' user");
+                user -> {
+                    boolean needsUpdate = false;
+                    if (!passwordEncoder.matches("Admin@123", user.getPassword())) {
+                        user.setPassword(passwordEncoder.encode("Admin@123"));
+                        needsUpdate = true;
+                    }
+                    if (!user.getRoles().contains(adminRole)) {
+                        user.setRoles(Set.of(adminRole));
+                        needsUpdate = true;
+                    }
+                    if (!"ACTIVE".equals(user.getStatus())) {
+                        user.setStatus("ACTIVE");
+                        needsUpdate = true;
+                    }
+                    if (needsUpdate) {
+                        userRepository.save(user);
+                        log.info("Updated existing 'admin' user with correct credentials and active status.");
                     }
                 },
                 () -> {
-                    User adminUser = User.builder()
+                    User admin = User.builder()
                             .username("admin")
                             .email("admin@buildtwin360.com")
                             .password(passwordEncoder.encode("Admin@123"))
                             .status("ACTIVE")
-                            .roles(new HashSet<>(Set.of(adminRole, directorRole)))
+                            .roles(Set.of(adminRole))
                             .build();
-
-                    userRepository.save(adminUser);
-                    log.info("Initialized default administrator: username='admin', email='admin@buildtwin360.com'");
+                    userRepository.save(admin);
+                    log.info("Created default system administrator user 'admin' (password: Admin@123).");
                 }
         );
     }
 
     private void seedDefaultProjectAndSites() {
-        String defaultCode = "PADUR-AG-01";
-        if (!projectRepository.existsByCode(defaultCode)) {
+        if (projectRepository.findByCode("PADUR-AG-01").isEmpty()) {
             User admin = userRepository.findByUsername("admin").orElse(null);
 
             Project project = Project.builder()
                     .name("Ashok Grandeur - Padur, Chennai")
-                    .code(defaultCode)
-                    .description("Flagship 18-storey twin-tower residential community with 220 luxury units and club facilities in Padur, OMR, Chennai.")
-                    .clientName("Ashok Builders & Developers")
+                    .code("PADUR-AG-01")
+                    .description("High-rise residential and commercial gated community spanning 12 acres with 3 residential towers and a luxury clubhouse.")
+                    .clientName("Ashok Residential Infrastructure Pvt Ltd")
                     .projectType("RESIDENTIAL")
-                    .location("Old Mahabalipuram Road (OMR), Padur, Chennai - 603103")
-                    .status("ACTIVE")
-                    .plannedStartDate(LocalDate.of(2026, 9, 1))
+                    .status("IN_PROGRESS")
+                    .location("Old Mahabalipuram Road (OMR), Padur, Chennai, Tamil Nadu - 603103")
+                    .plannedStartDate(LocalDate.of(2026, 1, 15))
                     .plannedEndDate(LocalDate.of(2028, 6, 30))
-                    .actualStartDate(LocalDate.of(2026, 9, 5))
-                    .estimatedBudget(BigDecimal.valueOf(45000000.00))
+                    .actualStartDate(LocalDate.of(2026, 2, 1))
+                    .estimatedBudget(BigDecimal.valueOf(185000000.00))
                     .currency("INR")
-                    .totalBuiltUpAreaSqFt(350000.0)
+                    .totalBuiltUpAreaSqFt(485000.0)
                     .projectManagerId(admin != null ? admin.getId() : null)
                     .build();
 
             Project saved = projectRepository.save(project);
-            log.info("Initialized master construction project: '{}' ({})", saved.getName(), saved.getCode());
+            log.info("Initialized default Project: '{}' (ID: {})", saved.getName(), saved.getId());
 
             Site siteA = Site.builder()
                     .project(saved)
-                    .code("PADUR-TWR-A")
                     .name("Tower A (Stilt + 18 Floors)")
-                    .siteType("BUILDING_TOWER")
-                    .location("North Sector, Ashok Grandeur Campus, Padur")
+                    .code("SITE-TWR-A")
+                    .location("Padur OMR Chennai")
+                    .latitude(12.8021)
+                    .longitude(80.2274)
+                    .siteIncharge("R. Sundararaman - Lead Site Engineer")
+                    .siteType("RESIDENTIAL_TOWER")
                     .status("ACTIVE")
-                    .latitude(12.7932)
-                    .longitude(80.2241)
                     .areaSqFt(180000.0)
-                    .siteIncharge("Karthik Raman (PM)")
                     .build();
 
             Site siteB = Site.builder()
                     .project(saved)
-                    .code("PADUR-TWR-B")
                     .name("Tower B (Stilt + 18 Floors)")
-                    .siteType("BUILDING_TOWER")
-                    .location("South Sector, Ashok Grandeur Campus, Padur")
-                    .status("ACTIVE")
-                    .latitude(12.7935)
-                    .longitude(80.2245)
-                    .areaSqFt(150000.0)
-                    .siteIncharge("Suresh Kumar (Site Eng)")
+                    .code("SITE-TWR-B")
+                    .location("Padur OMR Chennai")
+                    .latitude(12.8025)
+                    .longitude(80.2280)
+                    .siteIncharge("K. Manikandan - Senior Field Engineer")
+                    .siteType("RESIDENTIAL_TOWER")
+                    .status("PLANNED")
+                    .areaSqFt(180000.0)
                     .build();
 
             Site siteClub = Site.builder()
                     .project(saved)
-                    .code("PADUR-CLUB-01")
-                    .name("Clubhouse & Podium Amenities")
-                    .siteType("AMENITIES")
-                    .location("Central Podium, Ashok Grandeur Campus")
+                    .name("Grandeur Luxury Clubhouse & Amenities")
+                    .code("SITE-CLUB-01")
+                    .location("Padur OMR Chennai")
+                    .latitude(12.8018)
+                    .longitude(80.2268)
+                    .siteIncharge("S. Praveen - Facilities Engineer")
+                    .siteType("COMMERCIAL_AMENITY")
                     .status("ACTIVE")
-                    .latitude(12.7930)
-                    .longitude(80.2238)
-                    .areaSqFt(20000.0)
-                    .siteIncharge("Anand (QC Lead)")
+                    .areaSqFt(35000.0)
                     .build();
 
             siteRepository.saveAll(List.of(siteA, siteB, siteClub));
@@ -262,25 +287,25 @@ public class DataInitializer implements CommandLineRunner {
                     .code("FL1-LIFT-LOBBY")
                     .name("Floor 1 Lift & Service Lobby")
                     .zoneType("COMMON_AREA")
-                    .areaSqFt(800.0)
+                    .areaSqFt(900.0)
                     .status("IN_PROGRESS")
                     .build();
 
             zoneRepository.saveAll(List.of(zone101, zone102, zoneCorridor));
 
-            // 4. Seed Work Packages under Project
+            // 4. Seed Standard Work Packages
             WorkPackage wpCivil = WorkPackage.builder()
                     .project(saved)
                     .site(siteA)
                     .code("WP-CIV-01")
                     .name("Substructure & RCC Framing Works")
                     .discipline("CIVIL")
-                    .description("RCC columns, beams, and slab casting up to 10th floor")
+                    .description("Excavation, raft footing, columns, beams, and slab cast works")
                     .status("IN_PROGRESS")
-                    .plannedStartDate(LocalDate.of(2026, 9, 1))
-                    .plannedEndDate(LocalDate.of(2027, 4, 30))
-                    .actualStartDate(LocalDate.of(2026, 9, 10))
-                    .budgetAmount(BigDecimal.valueOf(18000000.00))
+                    .plannedStartDate(LocalDate.of(2026, 2, 1))
+                    .plannedEndDate(LocalDate.of(2027, 3, 31))
+                    .actualStartDate(LocalDate.of(2026, 2, 5))
+                    .budgetAmount(BigDecimal.valueOf(45000000.00))
                     .assignedContractor("L&T Construction (Civil Div)")
                     .inchargeUserId(admin != null ? admin.getId() : null)
                     .build();
@@ -289,7 +314,7 @@ public class DataInitializer implements CommandLineRunner {
                     .project(saved)
                     .site(siteA)
                     .code("WP-MEP-01")
-                    .name("MEP - Plumbing, Conduit & Fire Piping")
+                    .name("Electrical & Plumbing (MEP) First Fix")
                     .discipline("MEP")
                     .description("Conduit laying, soil/waste piping, and fire hydrant pipelines")
                     .status("PLANNED")
@@ -302,6 +327,239 @@ public class DataInitializer implements CommandLineRunner {
 
             workPackageRepository.saveAll(List.of(wpCivil, wpMep));
             log.info("Initialized default Buildings, Floors, Zones, and Work Packages for Padur project.");
+        }
+    }
+
+    private void seedDefaultWbsActivities() {
+        if (wbsActivityRepository.count() == 0) {
+            projectRepository.findByCode("PADUR-AG-01").ifPresent(project -> {
+                User admin = userRepository.findByUsername("admin").orElse(null);
+
+                workPackageRepository.findByProjectIdAndCode(project.getId(), "WP-CIV-01").ifPresent(wpCivil -> {
+                    Site site = wpCivil.getSite();
+                    Building bld = site != null ? buildingRepository.findBySiteId(site.getId()).stream().findFirst().orElse(null) : null;
+                    Floor flr1 = bld != null ? floorRepository.findByBuildingIdOrderByFloorNumberAsc(bld.getId()).stream()
+                            .filter(f -> f.getFloorNumber() == 1).findFirst().orElse(null) : null;
+                    Zone zn101 = flr1 != null ? zoneRepository.findByFloorId(flr1.getId()).stream()
+                            .filter(z -> "FL1-UNIT-101".equalsIgnoreCase(z.getCode())).findFirst().orElse(null) : null;
+
+                    // 1. Parent Summary Task: RCC Structural Works (Level 1)
+                    WbsActivity parentRcc = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .level(1)
+                            .code("WBS-CIV-01")
+                            .name("Floor 1 RCC Structural Works")
+                            .discipline("CIVIL")
+                            .description("Summary Task covering column rebar, shuttering, and slab concreting")
+                            .uom("PERCENT")
+                            .plannedQuantity(100.0)
+                            .completedQuantity(70.0)
+                            .progressPercentage(70.0)
+                            .plannedStartDate(LocalDate.of(2026, 9, 10))
+                            .plannedEndDate(LocalDate.of(2026, 10, 20))
+                            .actualStartDate(LocalDate.of(2026, 9, 12))
+                            .status("IN_PROGRESS")
+                            .assignedContractor("L&T Construction (Civil Div)")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(5.0)
+                            .sequenceOrder(1)
+                            .build();
+                    WbsActivity savedParentRcc = wbsActivityRepository.save(parentRcc);
+                    savedParentRcc.setWbsPath("/" + savedParentRcc.getId());
+                    savedParentRcc = wbsActivityRepository.save(savedParentRcc);
+
+                    // Child 1 under parentRcc (Level 2)
+                    WbsActivity act1 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .parent(savedParentRcc)
+                            .level(2)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .zone(zn101)
+                            .code("ACT-CIV-001")
+                            .name("Floor 1 Column Starter & Rebar Tying")
+                            .discipline("CIVIL")
+                            .description("High-tensile Fe550D rebar tying and column shuttering")
+                            .uom("MT")
+                            .plannedQuantity(25.0)
+                            .completedQuantity(25.0)
+                            .progressPercentage(100.0)
+                            .plannedStartDate(LocalDate.of(2026, 9, 10))
+                            .plannedEndDate(LocalDate.of(2026, 9, 25))
+                            .actualStartDate(LocalDate.of(2026, 9, 12))
+                            .actualEndDate(LocalDate.of(2026, 9, 24))
+                            .status("COMPLETED")
+                            .assignedContractor("L&T Construction (Civil Div)")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(2.0)
+                            .sequenceOrder(1)
+                            .build();
+                    WbsActivity savedAct1 = wbsActivityRepository.save(act1);
+                    savedAct1.setWbsPath(savedParentRcc.getWbsPath() + "/" + savedAct1.getId());
+                    wbsActivityRepository.save(savedAct1);
+
+                    // Child 2 under parentRcc (Level 2)
+                    WbsActivity act2 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .parent(savedParentRcc)
+                            .level(2)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .zone(zn101)
+                            .code("ACT-CIV-002")
+                            .name("Floor 1 Beam Formwork & Slab Concreting")
+                            .discipline("CIVIL")
+                            .description("M25 Grade ready-mix concrete pouring for suspended floor slab")
+                            .uom("CUM")
+                            .plannedQuantity(240.0)
+                            .completedQuantity(120.0)
+                            .progressPercentage(50.0)
+                            .plannedStartDate(LocalDate.of(2026, 9, 26))
+                            .plannedEndDate(LocalDate.of(2026, 10, 20))
+                            .actualStartDate(LocalDate.of(2026, 9, 28))
+                            .status("IN_PROGRESS")
+                            .assignedContractor("L&T Construction (Civil Div)")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(3.0)
+                            .sequenceOrder(2)
+                            .build();
+                    WbsActivity savedAct2 = wbsActivityRepository.save(act2);
+                    savedAct2.setWbsPath(savedParentRcc.getWbsPath() + "/" + savedAct2.getId());
+                    wbsActivityRepository.save(savedAct2);
+
+                    // 2. Parent Summary Task: Masonry Works (Level 1)
+                    WbsActivity parentMasonry = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .level(1)
+                            .code("WBS-CIV-02")
+                            .name("Floor 1 Masonry Works")
+                            .discipline("CIVIL")
+                            .description("AAC blockwork and internal division partition walls")
+                            .uom("PERCENT")
+                            .plannedQuantity(100.0)
+                            .completedQuantity(0.0)
+                            .progressPercentage(0.0)
+                            .plannedStartDate(LocalDate.of(2026, 10, 21))
+                            .plannedEndDate(LocalDate.of(2026, 11, 20))
+                            .status("PLANNED")
+                            .assignedContractor("Shapoorji Masonry Contractors")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(3.0)
+                            .sequenceOrder(2)
+                            .build();
+                    WbsActivity savedParentMasonry = wbsActivityRepository.save(parentMasonry);
+                    savedParentMasonry.setWbsPath("/" + savedParentMasonry.getId());
+                    savedParentMasonry = wbsActivityRepository.save(savedParentMasonry);
+
+                    // Child 1 under parentMasonry (Level 2)
+                    WbsActivity act3 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpCivil)
+                            .parent(savedParentMasonry)
+                            .level(2)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .zone(zn101)
+                            .code("ACT-CIV-003")
+                            .name("Internal AAC Blockwork Masonry")
+                            .discipline("CIVIL")
+                            .description("200mm thick AAC block external and 100mm internal partitions")
+                            .uom("SQFT")
+                            .plannedQuantity(6500.0)
+                            .completedQuantity(0.0)
+                            .progressPercentage(0.0)
+                            .plannedStartDate(LocalDate.of(2026, 10, 21))
+                            .plannedEndDate(LocalDate.of(2026, 11, 20))
+                            .status("PLANNED")
+                            .assignedContractor("Shapoorji Masonry Contractors")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(3.0)
+                            .sequenceOrder(1)
+                            .build();
+                    WbsActivity savedAct3 = wbsActivityRepository.save(act3);
+                    savedAct3.setWbsPath(savedParentMasonry.getWbsPath() + "/" + savedAct3.getId());
+                    wbsActivityRepository.save(savedAct3);
+                });
+
+                workPackageRepository.findByProjectIdAndCode(project.getId(), "WP-MEP-01").ifPresent(wpMep -> {
+                    Site site = wpMep.getSite();
+                    Building bld = site != null ? buildingRepository.findBySiteId(site.getId()).stream().findFirst().orElse(null) : null;
+                    Floor flr1 = bld != null ? floorRepository.findByBuildingIdOrderByFloorNumberAsc(bld.getId()).stream()
+                            .filter(f -> f.getFloorNumber() == 1).findFirst().orElse(null) : null;
+
+                    // Parent Summary Task: MEP First Fix (Level 1)
+                    WbsActivity parentMep = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpMep)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .level(1)
+                            .code("WBS-MEP-01")
+                            .name("Floor 1 Electrical Installation")
+                            .discipline("MEP")
+                            .description("Slab conduit laying and electrical wiring first fix")
+                            .uom("PERCENT")
+                            .plannedQuantity(100.0)
+                            .completedQuantity(0.0)
+                            .progressPercentage(0.0)
+                            .plannedStartDate(LocalDate.of(2026, 11, 1))
+                            .plannedEndDate(LocalDate.of(2026, 12, 15))
+                            .status("PLANNED")
+                            .assignedContractor("Voltas MEP Solutions")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(4.0)
+                            .sequenceOrder(1)
+                            .build();
+                    WbsActivity savedParentMep = wbsActivityRepository.save(parentMep);
+                    savedParentMep.setWbsPath("/" + savedParentMep.getId());
+                    savedParentMep = wbsActivityRepository.save(savedParentMep);
+
+                    // Child under parentMep (Level 2)
+                    WbsActivity act4 = WbsActivity.builder()
+                            .project(project)
+                            .workPackage(wpMep)
+                            .parent(savedParentMep)
+                            .level(2)
+                            .site(site)
+                            .building(bld)
+                            .floor(flr1)
+                            .code("ACT-MEP-001")
+                            .name("Slab Conduit & Junction Box Laying")
+                            .discipline("MEP")
+                            .description("Heavy duty PVC conduits embedded in RCC slab before casting")
+                            .uom("RMT")
+                            .plannedQuantity(1200.0)
+                            .completedQuantity(0.0)
+                            .progressPercentage(0.0)
+                            .plannedStartDate(LocalDate.of(2026, 11, 1))
+                            .plannedEndDate(LocalDate.of(2026, 11, 25))
+                            .status("PLANNED")
+                            .assignedContractor("Voltas MEP Solutions")
+                            .inchargeUserId(admin != null ? admin.getId() : null)
+                            .weightage(4.0)
+                            .sequenceOrder(1)
+                            .build();
+                    WbsActivity savedAct4 = wbsActivityRepository.save(act4);
+                    savedAct4.setWbsPath(savedParentMep.getWbsPath() + "/" + savedAct4.getId());
+                    wbsActivityRepository.save(savedAct4);
+                });
+
+                log.info("Initialized default hierarchical WBS Activities (Summary tasks & child activities) for Padur project.");
+            });
         }
     }
 }
