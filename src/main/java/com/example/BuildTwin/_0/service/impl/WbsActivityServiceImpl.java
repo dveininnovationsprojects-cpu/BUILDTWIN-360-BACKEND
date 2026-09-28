@@ -51,6 +51,7 @@ public class WbsActivityServiceImpl implements WbsActivityService {
     private final ZoneRepository zoneRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final ActivityDependencyRepository activityDependencyRepository;
 
     @Override
     @Transactional
@@ -80,6 +81,11 @@ public class WbsActivityServiceImpl implements WbsActivityService {
             level = (parent.getLevel() != null ? parent.getLevel() : 1) + 1;
         }
 
+        // Date validations
+        validateDatesOrder(request.getPlannedStartDate(), request.getPlannedEndDate(), null, null);
+        validateDatesWithinWorkPackage(workPackage, request.getPlannedStartDate(), request.getPlannedEndDate());
+        validateDatesWithinParent(parent, request.getPlannedStartDate(), request.getPlannedEndDate());
+
         // Location resolution (inherit from parent if not explicitly set)
         Long siteId = request.getSiteId() != null ? request.getSiteId() : (parent != null && parent.getSite() != null ? parent.getSite().getId() : null);
         Long buildingId = request.getBuildingId() != null ? request.getBuildingId() : (parent != null && parent.getBuilding() != null ? parent.getBuilding().getId() : null);
@@ -108,6 +114,19 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                 ? request.getInchargeUserId()
                 : (parent != null && parent.getInchargeUserId() != null ? parent.getInchargeUserId() : workPackage.getInchargeUserId());
 
+        double initialProgress = 0.0;
+        double initialCompletedQty = 0.0;
+        LocalDate actualStart = null;
+        LocalDate actualEnd = null;
+        if ("COMPLETED".equalsIgnoreCase(status)) {
+            initialProgress = 100.0;
+            initialCompletedQty = request.getPlannedQuantity();
+            actualStart = request.getPlannedStartDate() != null ? request.getPlannedStartDate() : LocalDate.now();
+            actualEnd = request.getPlannedEndDate() != null ? request.getPlannedEndDate() : LocalDate.now();
+        } else if ("IN_PROGRESS".equalsIgnoreCase(status)) {
+            actualStart = LocalDate.now();
+        }
+
         WbsActivity activity = WbsActivity.builder()
                 .project(project)
                 .workPackage(workPackage)
@@ -123,10 +142,12 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                 .description(request.getDescription())
                 .uom(request.getUom().trim().toUpperCase())
                 .plannedQuantity(request.getPlannedQuantity())
-                .completedQuantity(0.0)
-                .progressPercentage(0.0)
+                .completedQuantity(initialCompletedQty)
+                .progressPercentage(initialProgress)
                 .plannedStartDate(request.getPlannedStartDate())
                 .plannedEndDate(request.getPlannedEndDate())
+                .actualStartDate(actualStart)
+                .actualEndDate(actualEnd)
                 .status(status)
                 .assignedContractor(contractor)
                 .inchargeUserId(inchargeId)
@@ -162,11 +183,11 @@ public class WbsActivityServiceImpl implements WbsActivityService {
 
     @Override
     @Transactional
-    public WbsActivityResponse createChildActivity(Long parentActivityId, CreateWbsActivityRequest request, String performedBy) {
-        WbsActivity parent = wbsActivityRepository.findById(parentActivityId)
-                .orElseThrow(() -> new ResourceNotFoundException("Parent WbsActivity", "id", parentActivityId));
+    public WbsActivityResponse createChildActivity(Long parentId, CreateWbsActivityRequest request, String performedBy) {
+        WbsActivity parent = wbsActivityRepository.findById(parentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parent WbsActivity", "id", parentId));
 
-        request.setParentId(parentActivityId);
+        request.setParentId(parentId);
         return createActivity(parent.getWorkPackage().getId(), request, performedBy);
     }
 
@@ -180,24 +201,18 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         WbsActivity newParent = null;
 
         if (request.getNewParentId() != null) {
-            if (act.getId().equals(request.getNewParentId())) {
-                throw new BadRequestException("An activity cannot be its own parent (Self-referencing cycle)");
-            }
-
             newParent = wbsActivityRepository.findById(request.getNewParentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("New Parent WbsActivity", "id", request.getNewParentId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent WbsActivity", "id", request.getNewParentId()));
 
-            // Parent must be within the same work package
-            if (!newParent.getWorkPackage().getId().equals(act.getWorkPackage().getId())) {
-                throw new BadRequestException("Cannot reparent activity to a parent in a different Work Package.");
+            if (!newParent.getProject().getId().equals(act.getProject().getId())) {
+                throw new BadRequestException("Cannot reparent activity to a parent in a different project.");
             }
 
-            // Cycle check: new parent cannot be a descendant of this activity!
-            if (newParent.getWbsPath() != null &&
-                    (newParent.getWbsPath().equals(act.getWbsPath()) ||
-                     newParent.getWbsPath().startsWith(act.getWbsPath() + "/"))) {
+            if (isDescendantOf(newParent, act)) {
                 throw new BadRequestException("Cycle detected: Cannot reparent an activity to one of its own descendants.");
             }
+
+            validateDatesWithinParent(newParent, act.getPlannedStartDate(), act.getPlannedEndDate());
 
             act.setParent(newParent);
             act.setLevel((newParent.getLevel() != null ? newParent.getLevel() : 1) + 1);
@@ -231,7 +246,7 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                 "REPARENT_WBS_ACTIVITY",
                 "WBS_ACTIVITY",
                 String.valueOf(saved.getId()),
-                "Reparented WBS Activity '" + saved.getName() + "' to " + (newParent != null ? "parent '" + newParent.getName() + "'" : "Root level"),
+                "Reparented WBS Activity '" + saved.getName() + "' to " + (newParent != null ? "parent ID " + newParent.getId() : "Root level"),
                 null
         );
 
@@ -246,6 +261,19 @@ public class WbsActivityServiceImpl implements WbsActivityService {
             wbsActivityRepository.save(child);
             updateDescendantsPathAndLevel(child);
         }
+    }
+
+    private boolean isDescendantOf(WbsActivity candidate, WbsActivity ancestor) {
+        if (candidate.getId().equals(ancestor.getId())) return true;
+        if (candidate.getWbsPath() != null && ancestor.getWbsPath() != null) {
+            return candidate.getWbsPath().startsWith(ancestor.getWbsPath() + "/");
+        }
+        WbsActivity curr = candidate.getParent();
+        while (curr != null) {
+            if (curr.getId().equals(ancestor.getId())) return true;
+            curr = curr.getParent();
+        }
+        return false;
     }
 
     @Override
@@ -448,6 +476,50 @@ public class WbsActivityServiceImpl implements WbsActivityService {
             throw new ResourceNotFoundException("User (Incharge)", "id", request.getInchargeUserId());
         }
 
+        // Date validations
+        LocalDate targetPlannedStart = request.getPlannedStartDate() != null ? request.getPlannedStartDate() : act.getPlannedStartDate();
+        LocalDate targetPlannedEnd = request.getPlannedEndDate() != null ? request.getPlannedEndDate() : act.getPlannedEndDate();
+        LocalDate targetActualStart = request.getActualStartDate() != null ? request.getActualStartDate() : act.getActualStartDate();
+        LocalDate targetActualEnd = request.getActualEndDate() != null ? request.getActualEndDate() : act.getActualEndDate();
+
+        validateDatesOrder(targetPlannedStart, targetPlannedEnd, targetActualStart, targetActualEnd);
+        validateDatesWithinWorkPackage(act.getWorkPackage(), targetPlannedStart, targetPlannedEnd);
+        validateDatesWithinParent(act.getParent(), targetPlannedStart, targetPlannedEnd);
+        validateSchedulePrecedence(act, targetPlannedStart, targetPlannedEnd);
+
+        // Status transition & predecessor validation
+        if (request.getStatus() != null) {
+            String newStatus = validateAndNormalizeStatus(request.getStatus());
+            if (!newStatus.equalsIgnoreCase(act.getStatus())) {
+                if ("PLANNED".equalsIgnoreCase(newStatus) && ("IN_PROGRESS".equalsIgnoreCase(act.getStatus()) || "COMPLETED".equalsIgnoreCase(act.getStatus()))) {
+                    double currentProg = request.getProgressPercentage() != null ? request.getProgressPercentage() : (act.getProgressPercentage() != null ? act.getProgressPercentage() : 0.0);
+                    if (currentProg > 0.0) {
+                        throw new BadRequestException("Cannot revert activity status to PLANNED when progress is greater than 0% (current: " + currentProg + "%). Please reset progress to 0% first.");
+                    }
+                }
+                validatePredecessorsForStatusTransition(act, newStatus);
+                act.setStatus(newStatus);
+            }
+        }
+
+        // Progress validation
+        if (request.getProgressPercentage() != null) {
+            if (request.getProgressPercentage() < 0.0 || request.getProgressPercentage() > 100.0) {
+                throw new BadRequestException("Progress percentage must be between 0 and 100");
+            }
+            if (request.getProgressPercentage() > 0.0) {
+                validatePredecessorsForProgress(act, request.getProgressPercentage());
+            }
+            act.setProgressPercentage(request.getProgressPercentage());
+        }
+
+        if (request.getCompletedQuantity() != null) {
+            if (request.getCompletedQuantity() < 0.0) {
+                throw new BadRequestException("Completed quantity cannot be negative");
+            }
+            act.setCompletedQuantity(request.getCompletedQuantity());
+        }
+
         act.setCode(newCode);
         act.setName(request.getName().trim());
         if (request.getDiscipline() != null) {
@@ -456,12 +528,6 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         act.setDescription(request.getDescription());
         act.setUom(request.getUom().trim().toUpperCase());
         act.setPlannedQuantity(request.getPlannedQuantity());
-        if (request.getCompletedQuantity() != null) {
-            act.setCompletedQuantity(request.getCompletedQuantity());
-        }
-        if (request.getProgressPercentage() != null) {
-            act.setProgressPercentage(request.getProgressPercentage());
-        }
         act.setSite(site);
         act.setBuilding(building);
         act.setFloor(floor);
@@ -470,9 +536,24 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         act.setPlannedEndDate(request.getPlannedEndDate());
         act.setActualStartDate(request.getActualStartDate());
         act.setActualEndDate(request.getActualEndDate());
-        if (request.getStatus() != null) {
-            act.setStatus(validateAndNormalizeStatus(request.getStatus()));
+
+        if ("COMPLETED".equalsIgnoreCase(act.getStatus())) {
+            if (act.getProgressPercentage() == null || act.getProgressPercentage() < 100.0) {
+                act.setProgressPercentage(100.0);
+                act.setCompletedQuantity(act.getPlannedQuantity());
+            }
+            if (act.getActualStartDate() == null) {
+                act.setActualStartDate(act.getPlannedStartDate() != null ? act.getPlannedStartDate() : LocalDate.now());
+            }
+            if (act.getActualEndDate() == null) {
+                act.setActualEndDate(LocalDate.now());
+            }
+        } else if ("IN_PROGRESS".equalsIgnoreCase(act.getStatus())) {
+            if (act.getActualStartDate() == null) {
+                act.setActualStartDate(LocalDate.now());
+            }
         }
+
         act.setAssignedContractor(request.getAssignedContractor());
         act.setInchargeUserId(request.getInchargeUserId());
         if (request.getWeightage() != null) act.setWeightage(request.getWeightage());
@@ -502,6 +583,16 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         WbsActivity act = wbsActivityRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
 
+        if (request.getProgressPercentage() != null && (request.getProgressPercentage() < 0.0 || request.getProgressPercentage() > 100.0)) {
+            throw new BadRequestException("Progress percentage must be between 0 and 100");
+        }
+        if (request.getCompletedQuantity() != null && request.getCompletedQuantity() < 0.0) {
+            throw new BadRequestException("Completed quantity cannot be negative");
+        }
+        if (request.getActualStartDate() != null && request.getActualEndDate() != null && request.getActualEndDate().isBefore(request.getActualStartDate())) {
+            throw new BadRequestException("Actual end date (" + request.getActualEndDate() + ") cannot be before actual start date (" + request.getActualStartDate() + ")");
+        }
+
         if (request.getCompletedQuantity() != null) {
             act.setCompletedQuantity(request.getCompletedQuantity());
         }
@@ -513,13 +604,18 @@ public class WbsActivityServiceImpl implements WbsActivityService {
             calculatedProgress = (act.getCompletedQuantity() / act.getPlannedQuantity()) * 100.0;
             calculatedProgress = Math.min(100.0, Math.max(0.0, calculatedProgress));
         } else {
-            calculatedProgress = act.getProgressPercentage();
+            calculatedProgress = act.getProgressPercentage() != null ? act.getProgressPercentage() : 0.0;
         }
 
         // Round to 2 decimal places
         calculatedProgress = BigDecimal.valueOf(calculatedProgress)
                 .setScale(2, RoundingMode.HALF_UP)
                 .doubleValue();
+
+        if (calculatedProgress > 0.0) {
+            validatePredecessorsForProgress(act, calculatedProgress);
+        }
+
         act.setProgressPercentage(calculatedProgress);
 
         if (request.getActualStartDate() != null) {
@@ -570,42 +666,29 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         return mapToResponse(updated);
     }
 
+    /**
+     * Recursively computes weighted progress of children and updates parent's progress.
+     */
     private void rollupParentProgress(WbsActivity parent) {
-        if (parent == null) return;
-
         List<WbsActivity> children = wbsActivityRepository.findByParentIdOrderBySequenceOrderAsc(parent.getId());
         if (children.isEmpty()) return;
 
-        double totalWeight = 0.0;
-        double weightedProgressSum = 0.0;
-        boolean allCompleted = true;
-        boolean anyStarted = false;
-
-        for (WbsActivity child : children) {
-            double weight = child.getWeightage() != null ? child.getWeightage() : 1.0;
-            double prog = child.getProgressPercentage() != null ? child.getProgressPercentage() : 0.0;
-
-            weightedProgressSum += (prog * weight);
-            totalWeight += weight;
-
-            if (!"COMPLETED".equalsIgnoreCase(child.getStatus())) {
-                allCompleted = false;
-            }
-            if (prog > 0.0 || "IN_PROGRESS".equalsIgnoreCase(child.getStatus())) {
-                anyStarted = true;
-            }
-        }
+        double totalWeight = children.stream().mapToDouble(c -> c.getWeightage() != null ? c.getWeightage() : 1.0).sum();
+        double weightedProgressSum = children.stream()
+                .mapToDouble(c -> (c.getProgressPercentage() != null ? c.getProgressPercentage() : 0.0) * (c.getWeightage() != null ? c.getWeightage() : 1.0))
+                .sum();
 
         double rolledProgress = totalWeight > 0 ? (weightedProgressSum / totalWeight) : 0.0;
         rolledProgress = BigDecimal.valueOf(rolledProgress).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
         parent.setProgressPercentage(rolledProgress);
 
-        if (allCompleted || rolledProgress >= 100.0) {
+        if (rolledProgress >= 100.0) {
             parent.setStatus("COMPLETED");
             if (parent.getActualEndDate() == null) {
                 parent.setActualEndDate(LocalDate.now());
             }
-        } else if (anyStarted || rolledProgress > 0.0) {
+        } else if (rolledProgress > 0.0 && "PLANNED".equalsIgnoreCase(parent.getStatus())) {
             parent.setStatus("IN_PROGRESS");
             if (parent.getActualStartDate() == null) {
                 parent.setActualStartDate(LocalDate.now());
@@ -629,12 +712,29 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         String oldStatus = act.getStatus();
         String newStatus = validateAndNormalizeStatus(request.getStatus());
 
+        if ("PLANNED".equalsIgnoreCase(newStatus) && ("IN_PROGRESS".equalsIgnoreCase(oldStatus) || "COMPLETED".equalsIgnoreCase(oldStatus))) {
+            if (act.getProgressPercentage() != null && act.getProgressPercentage() > 0.0) {
+                throw new BadRequestException("Cannot revert activity status to PLANNED when progress is greater than 0% (current: " + act.getProgressPercentage() + "%). Please reset progress first.");
+            }
+        }
+
+        validatePredecessorsForStatusTransition(act, newStatus);
+
         act.setStatus(newStatus);
-        if ("COMPLETED".equalsIgnoreCase(newStatus) && act.getProgressPercentage() < 100.0) {
-            act.setProgressPercentage(100.0);
-            act.setCompletedQuantity(act.getPlannedQuantity());
+        if ("COMPLETED".equalsIgnoreCase(newStatus)) {
+            if (act.getProgressPercentage() == null || act.getProgressPercentage() < 100.0) {
+                act.setProgressPercentage(100.0);
+                act.setCompletedQuantity(act.getPlannedQuantity());
+            }
+            if (act.getActualStartDate() == null) {
+                act.setActualStartDate(act.getPlannedStartDate() != null ? act.getPlannedStartDate() : LocalDate.now());
+            }
             if (act.getActualEndDate() == null) {
                 act.setActualEndDate(LocalDate.now());
+            }
+        } else if ("IN_PROGRESS".equalsIgnoreCase(newStatus)) {
+            if (act.getActualStartDate() == null) {
+                act.setActualStartDate(LocalDate.now());
             }
         }
 
@@ -689,11 +789,16 @@ public class WbsActivityServiceImpl implements WbsActivityService {
         WbsActivity act = wbsActivityRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", id));
 
-        if (request.getPlannedStartDate() != null && request.getPlannedEndDate() != null) {
-            if (request.getPlannedEndDate().isBefore(request.getPlannedStartDate())) {
-                throw new BadRequestException("Planned end date cannot be before planned start date");
-            }
-        }
+        LocalDate targetPlannedStart = request.getPlannedStartDate() != null ? request.getPlannedStartDate() : act.getPlannedStartDate();
+        LocalDate targetPlannedEnd = request.getPlannedEndDate() != null ? request.getPlannedEndDate() : act.getPlannedEndDate();
+        LocalDate targetActualStart = request.getActualStartDate() != null ? request.getActualStartDate() : act.getActualStartDate();
+        LocalDate targetActualEnd = request.getActualEndDate() != null ? request.getActualEndDate() : act.getActualEndDate();
+
+        validateDatesOrder(targetPlannedStart, targetPlannedEnd, targetActualStart, targetActualEnd);
+        validateDatesWithinWorkPackage(act.getWorkPackage(), targetPlannedStart, targetPlannedEnd);
+        validateDatesWithinParent(act.getParent(), targetPlannedStart, targetPlannedEnd);
+        validateSchedulePrecedence(act, targetPlannedStart, targetPlannedEnd);
+
         if (request.getPlannedStartDate() != null) {
             act.setPlannedStartDate(request.getPlannedStartDate());
         }
@@ -760,6 +865,7 @@ public class WbsActivityServiceImpl implements WbsActivityService {
 
         WbsActivity parent = act.getParent();
         String name = act.getName();
+        activityDependencyRepository.deleteByActivityId(id);
         wbsActivityRepository.delete(act);
 
         if (parent != null) {
@@ -992,6 +1098,129 @@ public class WbsActivityServiceImpl implements WbsActivityService {
             throw new BadRequestException("Invalid discipline: '" + discipline + "'. Allowed: " + ALLOWED_DISCIPLINES);
         }
         return normalized;
+    }
+
+    private void validateDatesOrder(LocalDate plannedStartDate, LocalDate plannedEndDate,
+                                    LocalDate actualStartDate, LocalDate actualEndDate) {
+        if (plannedStartDate != null && plannedEndDate != null && plannedEndDate.isBefore(plannedStartDate)) {
+            throw new BadRequestException("Planned end date (" + plannedEndDate + ") cannot be before planned start date (" + plannedStartDate + ")");
+        }
+        if (actualStartDate != null && actualEndDate != null && actualEndDate.isBefore(actualStartDate)) {
+            throw new BadRequestException("Actual end date (" + actualEndDate + ") cannot be before actual start date (" + actualStartDate + ")");
+        }
+        if (actualEndDate != null && actualStartDate == null) {
+            throw new BadRequestException("Actual end date cannot be set without an actual start date");
+        }
+    }
+
+    private void validateDatesWithinWorkPackage(WorkPackage wp, LocalDate plannedStartDate, LocalDate plannedEndDate) {
+        if (wp == null) return;
+        if (wp.getPlannedStartDate() != null && plannedStartDate != null && plannedStartDate.isBefore(wp.getPlannedStartDate())) {
+            throw new BadRequestException("Activity planned start date (" + plannedStartDate +
+                    ") cannot be earlier than Work Package planned start date (" + wp.getPlannedStartDate() + ")");
+        }
+        if (wp.getPlannedEndDate() != null && plannedEndDate != null && plannedEndDate.isAfter(wp.getPlannedEndDate())) {
+            throw new BadRequestException("Activity planned end date (" + plannedEndDate +
+                    ") cannot be later than Work Package planned end date (" + wp.getPlannedEndDate() + ")");
+        }
+    }
+
+    private void validateDatesWithinParent(WbsActivity parent, LocalDate plannedStartDate, LocalDate plannedEndDate) {
+        if (parent == null) return;
+        if (parent.getPlannedStartDate() != null && plannedStartDate != null && plannedStartDate.isBefore(parent.getPlannedStartDate())) {
+            throw new BadRequestException("Activity planned start date (" + plannedStartDate +
+                    ") cannot be earlier than parent activity planned start date (" + parent.getPlannedStartDate() + ")");
+        }
+        if (parent.getPlannedEndDate() != null && plannedEndDate != null && plannedEndDate.isAfter(parent.getPlannedEndDate())) {
+            throw new BadRequestException("Activity planned end date (" + plannedEndDate +
+                    ") cannot be later than parent activity planned end date (" + parent.getPlannedEndDate() + ")");
+        }
+    }
+
+    private void validatePredecessorsForStatusTransition(WbsActivity activity, String newStatus) {
+        List<ActivityDependency> dependencies = activityDependencyRepository.findBySuccessorId(activity.getId());
+        if (dependencies.isEmpty()) return;
+
+        for (ActivityDependency dep : dependencies) {
+            WbsActivity pred = dep.getPredecessor();
+            if (dep.getDependencyType() == DependencyType.FS) {
+                if (("IN_PROGRESS".equalsIgnoreCase(newStatus) || "COMPLETED".equalsIgnoreCase(newStatus))
+                        && !"COMPLETED".equalsIgnoreCase(pred.getStatus())) {
+                    throw new BadRequestException("Cannot change status to " + newStatus + " for activity '" +
+                            activity.getName() + "' (" + activity.getCode() + ") because Finish-to-Start predecessor '" +
+                            pred.getName() + "' (" + pred.getCode() + ") is not yet COMPLETED (current status: " +
+                            pred.getStatus() + ").");
+                }
+            } else if (dep.getDependencyType() == DependencyType.SS) {
+                if (("IN_PROGRESS".equalsIgnoreCase(newStatus) || "COMPLETED".equalsIgnoreCase(newStatus))
+                        && "PLANNED".equalsIgnoreCase(pred.getStatus())) {
+                    throw new BadRequestException("Cannot start activity '" + activity.getName() + "' (" +
+                            activity.getCode() + ") because Start-to-Start predecessor '" + pred.getName() +
+                            "' (" + pred.getCode() + ") has not yet started.");
+                }
+            } else if (dep.getDependencyType() == DependencyType.FF) {
+                if ("COMPLETED".equalsIgnoreCase(newStatus) && !"COMPLETED".equalsIgnoreCase(pred.getStatus())) {
+                    throw new BadRequestException("Cannot complete activity '" + activity.getName() + "' (" +
+                            activity.getCode() + ") because Finish-to-Finish predecessor '" + pred.getName() +
+                            "' (" + pred.getCode() + ") is not yet COMPLETED.");
+                }
+            }
+        }
+    }
+
+    private void validatePredecessorsForProgress(WbsActivity activity, double newProgress) {
+        if (newProgress <= 0.0) return;
+        List<ActivityDependency> dependencies = activityDependencyRepository.findBySuccessorId(activity.getId());
+        for (ActivityDependency dep : dependencies) {
+            WbsActivity pred = dep.getPredecessor();
+            if (dep.getDependencyType() == DependencyType.FS && !"COMPLETED".equalsIgnoreCase(pred.getStatus())) {
+                throw new BadRequestException("Cannot log progress for activity '" + activity.getName() +
+                        "' (" + activity.getCode() + ") because Finish-to-Start predecessor '" +
+                        pred.getName() + "' (" + pred.getCode() + ") is not yet COMPLETED (current status: " +
+                        pred.getStatus() + ").");
+            } else if (dep.getDependencyType() == DependencyType.SS && "PLANNED".equalsIgnoreCase(pred.getStatus())) {
+                throw new BadRequestException("Cannot log progress for activity '" + activity.getName() +
+                        "' (" + activity.getCode() + ") because Start-to-Start predecessor '" +
+                        pred.getName() + "' (" + pred.getCode() + ") has not yet started.");
+            } else if (dep.getDependencyType() == DependencyType.FF && newProgress >= 100.0 && !"COMPLETED".equalsIgnoreCase(pred.getStatus())) {
+                throw new BadRequestException("Cannot mark activity '" + activity.getName() +
+                        "' (" + activity.getCode() + ") 100% complete because Finish-to-Finish predecessor '" +
+                        pred.getName() + "' (" + pred.getCode() + ") is not yet COMPLETED.");
+            }
+        }
+    }
+
+    private void validateSchedulePrecedence(WbsActivity activity, LocalDate plannedStart, LocalDate plannedEnd) {
+        List<ActivityDependency> dependencies = activityDependencyRepository.findBySuccessorId(activity.getId());
+        for (ActivityDependency dep : dependencies) {
+            WbsActivity pred = dep.getPredecessor();
+            int lag = dep.getLagDays() != null ? dep.getLagDays() : 0;
+            if (dep.getDependencyType() == DependencyType.FS && pred.getPlannedEndDate() != null && plannedStart != null) {
+                LocalDate minStart = pred.getPlannedEndDate().plusDays(lag);
+                if (plannedStart.isBefore(minStart)) {
+                    throw new BadRequestException("Schedule conflict: Activity planned start date (" + plannedStart +
+                            ") violates Finish-to-Start dependency with predecessor '" + pred.getName() +
+                            "' (" + pred.getCode() + "). Earliest allowed start is " + minStart + " (predecessor end " +
+                            pred.getPlannedEndDate() + " + lag " + lag + " days).");
+                }
+            } else if (dep.getDependencyType() == DependencyType.SS && pred.getPlannedStartDate() != null && plannedStart != null) {
+                LocalDate minStart = pred.getPlannedStartDate().plusDays(lag);
+                if (plannedStart.isBefore(minStart)) {
+                    throw new BadRequestException("Schedule conflict: Activity planned start date (" + plannedStart +
+                            ") violates Start-to-Start dependency with predecessor '" + pred.getName() +
+                            "' (" + pred.getCode() + "). Earliest allowed start is " + minStart + " (predecessor start " +
+                            pred.getPlannedStartDate() + " + lag " + lag + " days).");
+                }
+            } else if (dep.getDependencyType() == DependencyType.FF && pred.getPlannedEndDate() != null && plannedEnd != null) {
+                LocalDate minEnd = pred.getPlannedEndDate().plusDays(lag);
+                if (plannedEnd.isBefore(minEnd)) {
+                    throw new BadRequestException("Schedule conflict: Activity planned end date (" + plannedEnd +
+                            ") violates Finish-to-Finish dependency with predecessor '" + pred.getName() +
+                            "' (" + pred.getCode() + "). Earliest allowed end is " + minEnd + " (predecessor end " +
+                            pred.getPlannedEndDate() + " + lag " + lag + " days).");
+                }
+            }
+        }
     }
 
     private WbsActivityResponse mapToResponse(WbsActivity act) {
