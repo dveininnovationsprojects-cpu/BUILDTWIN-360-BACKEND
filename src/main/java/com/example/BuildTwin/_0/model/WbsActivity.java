@@ -1,5 +1,7 @@
 package com.example.BuildTwin._0.model;
 
+import com.example.BuildTwin._0.domain.projects.model.Project;
+import com.example.BuildTwin._0.domain.projects.model.Site;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;

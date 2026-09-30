@@ -1,3 +1,6 @@
+
+
+
 package com.example.BuildTwin._0.service.impl;
 
 import com.example.BuildTwin._0.dto.common.PageResponse;
@@ -8,13 +11,16 @@ import com.example.BuildTwin._0.dto.wbs.WorkPackageResponse;
 import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
+import com.example.BuildTwin._0.domain.identity.model.User;
 import com.example.BuildTwin._0.domain.projects.model.Project;
 import com.example.BuildTwin._0.domain.projects.model.Site;
-import com.example.BuildTwin._0.domain.identity.model.User;
-import com.example.BuildTwin._0.model.WorkPackage;
 import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
+import com.example.BuildTwin._0.model.WbsActivity;
+import com.example.BuildTwin._0.model.WorkPackage;
+import com.example.BuildTwin._0.repository.ActivityDependencyRepository;
 import com.example.BuildTwin._0.repository.SiteRepository;
 import com.example.BuildTwin._0.repository.UserRepository;
+import com.example.BuildTwin._0.repository.WbsActivityRepository;
 import com.example.BuildTwin._0.repository.WorkPackageRepository;
 import com.example.BuildTwin._0.service.AuditService;
 import com.example.BuildTwin._0.service.WorkPackageService;
@@ -28,6 +34,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +58,8 @@ public class WorkPackageServiceImpl implements WorkPackageService {
     private final ProjectRepository projectRepository;
     private final SiteRepository siteRepository;
     private final UserRepository userRepository;
+    private final WbsActivityRepository wbsActivityRepository;
+    private final ActivityDependencyRepository activityDependencyRepository;
     private final AuditService auditService;
 
     @Override
@@ -75,6 +85,10 @@ public class WorkPackageServiceImpl implements WorkPackageService {
         if (request.getInchargeUserId() != null && !userRepository.existsById(request.getInchargeUserId())) {
             throw new ResourceNotFoundException("User (Incharge)", "id", request.getInchargeUserId());
         }
+
+        // Validate dates
+        validateWorkPackageDates(request.getPlannedStartDate(), request.getPlannedEndDate(),
+                request.getActualStartDate(), null, project);
 
         String status = request.getStatus() != null ? validateAndNormalizeStatus(request.getStatus()) : "PLANNED";
         String discipline = validateAndNormalizeDiscipline(request.getDiscipline());
@@ -179,11 +193,21 @@ public class WorkPackageServiceImpl implements WorkPackageService {
             throw new ResourceNotFoundException("User (Incharge)", "id", request.getInchargeUserId());
         }
 
+        // Validate dates
+        validateWorkPackageDates(request.getPlannedStartDate(), request.getPlannedEndDate(),
+                request.getActualStartDate(), request.getActualEndDate(), wp.getProject());
+
         wp.setCode(newCode);
         wp.setName(request.getName().trim());
         wp.setDiscipline(validateAndNormalizeDiscipline(request.getDiscipline()));
         wp.setDescription(request.getDescription());
-        if (request.getStatus() != null) wp.setStatus(validateAndNormalizeStatus(request.getStatus()));
+        if (request.getStatus() != null) {
+            String newStatus = validateAndNormalizeStatus(request.getStatus());
+            if ("COMPLETED".equalsIgnoreCase(newStatus) && !"COMPLETED".equalsIgnoreCase(wp.getStatus())) {
+                validateAllActivitiesCompleted(wp.getId());
+            }
+            wp.setStatus(newStatus);
+        }
         wp.setPlannedStartDate(request.getPlannedStartDate());
         wp.setPlannedEndDate(request.getPlannedEndDate());
         wp.setActualStartDate(request.getActualStartDate());
@@ -215,6 +239,15 @@ public class WorkPackageServiceImpl implements WorkPackageService {
         String oldStatus = wp.getStatus();
         String validatedStatus = validateAndNormalizeStatus(request.getStatus());
 
+        if ("COMPLETED".equalsIgnoreCase(validatedStatus) && !"COMPLETED".equalsIgnoreCase(oldStatus)) {
+            validateAllActivitiesCompleted(wp.getId());
+            if (wp.getActualEndDate() == null) {
+                wp.setActualEndDate(LocalDate.now());
+            }
+        } else if ("IN_PROGRESS".equalsIgnoreCase(validatedStatus) && wp.getActualStartDate() == null) {
+            wp.setActualStartDate(LocalDate.now());
+        }
+
         wp.setStatus(validatedStatus);
         WorkPackage updated = workPackageRepository.save(wp);
 
@@ -237,6 +270,14 @@ public class WorkPackageServiceImpl implements WorkPackageService {
                 .orElseThrow(() -> new ResourceNotFoundException("WorkPackage", "id", id));
 
         String name = wp.getName();
+
+        // Safely cascade delete activities and their dependencies first
+        List<WbsActivity> activities = wbsActivityRepository.findByWorkPackageIdOrderBySequenceOrderAsc(id);
+        for (WbsActivity act : activities) {
+            activityDependencyRepository.deleteByActivityId(act.getId());
+        }
+        wbsActivityRepository.deleteAll(activities);
+
         workPackageRepository.delete(wp);
 
         auditService.logAction(
@@ -244,9 +285,44 @@ public class WorkPackageServiceImpl implements WorkPackageService {
                 "DELETE_WORK_PACKAGE",
                 "WORK_PACKAGE",
                 String.valueOf(id),
-                "Deleted work package: " + name,
+                "Deleted work package: " + name + " and its " + activities.size() + " activities cleanly.",
                 null
         );
+    }
+
+    private void validateWorkPackageDates(LocalDate plannedStart, LocalDate plannedEnd,
+                                          LocalDate actualStart, LocalDate actualEnd, Project project) {
+        if (plannedStart != null && plannedEnd != null && plannedEnd.isBefore(plannedStart)) {
+            throw new BadRequestException("Planned end date (" + plannedEnd + ") cannot be before planned start date (" + plannedStart + ")");
+        }
+        if (actualStart != null && actualEnd != null && actualEnd.isBefore(actualStart)) {
+            throw new BadRequestException("Actual end date (" + actualEnd + ") cannot be before actual start date (" + actualStart + ")");
+        }
+        if (actualEnd != null && actualStart == null) {
+            throw new BadRequestException("Actual end date cannot be set without an actual start date");
+        }
+        if (project != null) {
+            if (project.getPlannedStartDate() != null && plannedStart != null && plannedStart.isBefore(project.getPlannedStartDate())) {
+                throw new BadRequestException("Work Package planned start date (" + plannedStart +
+                        ") cannot be earlier than Project planned start date (" + project.getPlannedStartDate() + ")");
+            }
+            if (project.getPlannedEndDate() != null && plannedEnd != null && plannedEnd.isAfter(project.getPlannedEndDate())) {
+                throw new BadRequestException("Work Package planned end date (" + plannedEnd +
+                        ") cannot be later than Project planned end date (" + project.getPlannedEndDate() + ")");
+            }
+        }
+    }
+
+    private void validateAllActivitiesCompleted(Long workPackageId) {
+        List<WbsActivity> activities = wbsActivityRepository.findByWorkPackageIdOrderBySequenceOrderAsc(workPackageId);
+        long incompleteCount = activities.stream()
+                .filter(a -> !"COMPLETED".equalsIgnoreCase(a.getStatus()))
+                .count();
+
+        if (incompleteCount > 0) {
+            throw new BadRequestException("Cannot set Work Package status to COMPLETED: " + incompleteCount +
+                    " activity/activities under this package are not yet COMPLETED.");
+        }
     }
 
     private String validateAndNormalizeStatus(String status) {
@@ -279,6 +355,21 @@ public class WorkPackageServiceImpl implements WorkPackageService {
                     .orElse(null);
         }
 
+        List<WbsActivity> rootActivities = wbsActivityRepository.findByWorkPackageIdAndParentIsNullOrderBySequenceOrderAsc(wp.getId());
+        List<WbsActivity> allActivities = wbsActivityRepository.findByWorkPackageIdOrderBySequenceOrderAsc(wp.getId());
+
+        int totalCount = allActivities.size();
+        int completedCount = (int) allActivities.stream()
+                .filter(a -> "COMPLETED".equalsIgnoreCase(a.getStatus()))
+                .count();
+
+        double totalWeight = rootActivities.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+        double weightedSum = rootActivities.stream()
+                .mapToDouble(a -> (a.getProgressPercentage() != null ? a.getProgressPercentage() : 0.0) * (a.getWeightage() != null ? a.getWeightage() : 1.0))
+                .sum();
+        double wpProgress = totalWeight > 0 ? (weightedSum / totalWeight) : 0.0;
+        wpProgress = BigDecimal.valueOf(wpProgress).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
         return WorkPackageResponse.builder()
                 .id(wp.getId())
                 .projectId(wp.getProject() != null ? wp.getProject().getId() : null)
@@ -298,6 +389,9 @@ public class WorkPackageServiceImpl implements WorkPackageService {
                 .assignedContractor(wp.getAssignedContractor())
                 .inchargeUserId(wp.getInchargeUserId())
                 .inchargeUserName(inchargeName)
+                .totalActivities(totalCount)
+                .completedActivities(completedCount)
+                .progressPercentage(wpProgress)
                 .createdAt(wp.getCreatedAt())
                 .updatedAt(wp.getUpdatedAt())
                 .build();
