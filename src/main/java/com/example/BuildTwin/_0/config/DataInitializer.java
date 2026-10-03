@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,6 +55,8 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         fixUserRolesTableConstraints();
         fixWbsActivitiesTableConstraints();
+        fixScheduleRevisionsTableConstraints();
+        fixLookaheadTableConstraints();
         cleanAndSyncExactRoles();
         seedOrUpdateAdminUser();
         seedDefaultProjectAndSites();
@@ -80,6 +83,70 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Ensured 'wbs_activities' hierarchy columns wbs_level and wbs_path exist and are populated.");
         } catch (Exception e) {
             log.debug("Database constraint adjustment on wbs_activities skipped: {}", e.getMessage());
+        }
+    }
+
+    private void fixScheduleRevisionsTableConstraints() {
+        try {
+            List<Map<String, Object>> notNullCols = jdbcTemplate.queryForList(
+                    "SELECT column_name FROM information_schema.columns " +
+                    "WHERE table_name = 'schedule_revisions' " +
+                    "  AND is_nullable = 'NO' " +
+                    "  AND column_name NOT IN ('id', 'project_id', 'revision_code', 'revision_name', 'revision_date', 'status');"
+            );
+            for (Map<String, Object> col : notNullCols) {
+                String colName = (String) col.get("column_name");
+                try {
+                    jdbcTemplate.execute("ALTER TABLE schedule_revisions ALTER COLUMN \"" + colName + "\" DROP NOT NULL;");
+                    log.info("Dropped NOT NULL constraint on schedule_revisions column '{}'.", colName);
+                } catch (Exception ex) {
+                    log.debug("Could not drop NOT NULL on schedule_revisions.{}: {}", colName, ex.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Database constraint adjustment on schedule_revisions skipped: {}", e.getMessage());
+        }
+
+        try {
+            List<Map<String, Object>> notNullCols = jdbcTemplate.queryForList(
+                    "SELECT column_name FROM information_schema.columns " +
+                    "WHERE table_name = 'schedule_revision_items' " +
+                    "  AND is_nullable = 'NO' " +
+                    "  AND column_name NOT IN ('id', 'schedule_revision_id', 'activity_id');"
+            );
+            for (Map<String, Object> col : notNullCols) {
+                String colName = (String) col.get("column_name");
+                try {
+                    jdbcTemplate.execute("ALTER TABLE schedule_revision_items ALTER COLUMN \"" + colName + "\" DROP NOT NULL;");
+                    log.info("Dropped NOT NULL constraint on schedule_revision_items column '{}'.", colName);
+                } catch (Exception ex) {
+                    log.debug("Could not drop NOT NULL on schedule_revision_items.{}: {}", colName, ex.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Database constraint adjustment on schedule_revision_items skipped: {}", e.getMessage());
+        }
+    }
+
+    private void fixLookaheadTableConstraints() {
+        try {
+            List<Map<String, Object>> notNullCols = jdbcTemplate.queryForList(
+                    "SELECT column_name FROM information_schema.columns " +
+                    "WHERE table_name = 'lookahead_commitments' " +
+                    "  AND is_nullable = 'NO' " +
+                    "  AND column_name NOT IN ('id', 'project_id', 'activity_id', 'week_start_date', 'week_end_date', 'status');"
+            );
+            for (Map<String, Object> col : notNullCols) {
+                String colName = (String) col.get("column_name");
+                try {
+                    jdbcTemplate.execute("ALTER TABLE lookahead_commitments ALTER COLUMN \"" + colName + "\" DROP NOT NULL;");
+                    log.info("Dropped NOT NULL constraint on lookahead_commitments column '{}'.", colName);
+                } catch (Exception ex) {
+                    log.debug("Could not drop NOT NULL on lookahead_commitments.{}: {}", colName, ex.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Database constraint adjustment on lookahead_commitments skipped: {}", e.getMessage());
         }
     }
 
@@ -558,3 +625,4 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 }
+

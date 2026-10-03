@@ -1,0 +1,461 @@
+{
+  "info": {
+    "_postman_id": "b360-14day-lookahead-sprint-module-v1",
+    "name": "BuildTwin 360 - 14-Day (Two-Week / Sprint) Look-Ahead Schedule Module",
+    "description": "Enterprise Postman collection for 14-Day Look-Ahead Schedule & Sprint Work Planning in BuildTwin 360.\nIncludes:\n- Week 1 (Immediate Commitment & Daily Execution Window - Days 1 to 7)\n- Week 2 (Make-Ready Lookahead & Constraint Removal Window - Days 8 to 14)\n- 14-Day Continuous Daily Workload Matrix (Day 1 to Day 14)\n- Comparative Metrics & Lookahead Health Assessment\n- Field Hindrance / Constraint Checklist\n- Weekly Work Plan Commitments CRUD\nBase URL: http://localhost:8080/api/v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "commitment_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Extract Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.collectionVariables.set('token', response.data.accessToken);",
+                  "    console.log('JWT Token successfully stored in {{token}} variable');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"admin\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates user and stores the Bearer JWT token in the collection variable {{token}}."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. 14-Day Look-Ahead Schedule (Two-Week / Sprint)",
+      "item": [
+        {
+          "name": "Get 14-Day Lookahead Schedule (Two-Week Rolling)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/14-day?startDate=2026-10-01",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "14-day"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01",
+                  "description": "Start date of the 14-day sprint window (YYYY-MM-DD)"
+                }
+              ]
+            },
+            "description": "Retrieves the complete 14-Day lookahead plan broken down into Week 1 (Days 1 to 7) for immediate execution and Week 2 (Days 8 to 14) for make-ready constraint clearance, along with a full 14-day daily workload matrix."
+          }
+        },
+        {
+          "name": "Get 14-Day Lookahead with Discipline & Hierarchy Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/14-day?startDate=2026-10-01&discipline=CIVIL&includeOverdue=true",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "14-day"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "discipline",
+                  "value": "CIVIL",
+                  "description": "Filter by discipline (CIVIL, MEP, FINISHING, etc.)"
+                },
+                {
+                  "key": "workPackageId",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "siteId",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "buildingId",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "IN_PROGRESS",
+                  "disabled": true
+                },
+                {
+                  "key": "includeOverdue",
+                  "value": "true",
+                  "description": "Include delayed backlog activities whose planned end date has passed"
+                }
+              ]
+            },
+            "description": "Filters the 14-day lookahead schedule for specific discipline, work package, building, or status."
+          }
+        },
+        {
+          "name": "Get 14-Day Metrics & Trend Comparison (Week 1 vs Week 2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/14-day/metrics?startDate=2026-10-01",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "14-day", "metrics"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                }
+              ]
+            },
+            "description": "Returns high-level comparative metrics: Week 1 immediate commitment readiness vs Week 2 make-ready readiness, overall lookahead health rating, and planner summary note."
+          }
+        },
+        {
+          "name": "Get 14-Day Constraints & Hindrance Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/14-day/constraints?startDate=2026-10-01",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "14-day", "constraints"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                }
+              ]
+            },
+            "description": "Identifies all constraints across the 14-day lookahead window: missing materials, incomplete predecessor activities, missing GFC drawings, equipment breakdown, or missing permits."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Standard / Rolling Look-Ahead Schedule (7-Day / Custom Days)",
+      "item": [
+        {
+          "name": "Get Rolling 7-Day Look-Ahead Schedule",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead"]
+            },
+            "description": "Fetches standard 7-day rolling schedule from today."
+          }
+        },
+        {
+          "name": "Get Lookahead Schedule with Custom Window (e.g. 14 Days)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead?startDate=2026-10-01&days=14",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "days",
+                  "value": "14"
+                }
+              ]
+            },
+            "description": "Retrieves lookahead schedule with custom duration."
+          }
+        },
+        {
+          "name": "Get Lookahead KPIs & Readiness Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/metrics?startDate=2026-10-01&days=7",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "metrics"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "days",
+                  "value": "7"
+                }
+              ]
+            },
+            "description": "Calculates high-level KPIs for a specified day window."
+          }
+        },
+        {
+          "name": "Get Lookahead Constraints Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/constraints?startDate=2026-10-01&days=7",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "constraints"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "days",
+                  "value": "7"
+                }
+              ]
+            },
+            "description": "Returns pending constraints for the specified day window."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Weekly Work Plan Commitments (Sprint Tasks)",
+      "item": [
+        {
+          "name": "Create Work Plan Commitment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.id) {",
+                  "    pm.collectionVariables.set('commitment_id', response.data.id);",
+                  "    console.log('Saved commitment_id: ' + response.data.id);",
+                  "}",
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": 1,\n  \"weekStartDate\": \"2026-10-01\",\n  \"weekEndDate\": \"2026-10-07\",\n  \"targetQuantity\": 25.0,\n  \"uom\": \"CUM\",\n  \"crewSize\": 8,\n  \"assignedContractor\": \"L&T Construction (Civil Div)\",\n  \"status\": \"COMMITTED\",\n  \"materialsReady\": true,\n  \"drawingsReady\": true,\n  \"equipmentReady\": true,\n  \"manpowerReady\": true,\n  \"safetyPermitApproved\": true,\n  \"accessClear\": true,\n  \"blockerReason\": null,\n  \"notes\": \"Targeting footing concrete casting in Week 1 before column starter rebar works\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/commitments",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "commitments"]
+            },
+            "description": "Creates a weekly work plan commitment for an activity with field constraint checklist and target execution quantities."
+          }
+        },
+        {
+          "name": "List Project Commitments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/commitments?weekStartDate=2026-10-01",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "commitments"],
+              "query": [
+                {
+                  "key": "weekStartDate",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "status",
+                  "value": "COMMITTED",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lists all commitments made for this project, optionally filtered by week start date and status."
+          }
+        },
+        {
+          "name": "Get Commitment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lookahead/commitments/{{commitment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["lookahead", "commitments", "{{commitment_id}}"]
+            },
+            "description": "Retrieves detailed single commitment information, actual achievements, and readiness flags."
+          }
+        },
+        {
+          "name": "Update Commitment Progress & Constraints",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetQuantity\": 25.0,\n  \"actualQuantityAchieved\": 25.0,\n  \"crewSize\": 10,\n  \"assignedContractor\": \"L&T Construction (Civil Div)\",\n  \"status\": \"COMPLETED\",\n  \"materialsReady\": true,\n  \"drawingsReady\": true,\n  \"equipmentReady\": true,\n  \"manpowerReady\": true,\n  \"safetyPermitApproved\": true,\n  \"accessClear\": true,\n  \"varianceReason\": null,\n  \"notes\": \"Work successfully finished 100% on schedule without safety incidents.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lookahead/commitments/{{commitment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["lookahead", "commitments", "{{commitment_id}}"]
+            },
+            "description": "Updates commitment achievement, actual quantities, and checklist."
+          }
+        },
+        {
+          "name": "Delete Commitment by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lookahead/commitments/{{commitment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["lookahead", "commitments", "{{commitment_id}}"]
+            },
+            "description": "Deletes a commitment from the work plan."
+          }
+        }
+      ]
+    }
+  ]
+}
