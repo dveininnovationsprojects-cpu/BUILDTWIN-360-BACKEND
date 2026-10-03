@@ -9,11 +9,13 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -32,6 +34,14 @@ public class StockLedgerController {
         return new ResponseEntity<>(ApiResponse.created(entry, "Stock ledger transaction recorded successfully"), HttpStatus.CREATED);
     }
 
+    @PostMapping("/receipt")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Record Material Receipt / Inward Stock", description = "Records material receipt into inventory store (Opening Stock or direct GRN inward) and atomically increments current stock.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<StockLedger>> recordReceipt(@Valid @RequestBody StockTransactionDto request) {
+        StockLedger entry = stockLedgerService.recordReceipt(request);
+        return new ResponseEntity<>(ApiResponse.created(entry, "Material receipt recorded successfully"), HttpStatus.CREATED);
+    }
+
     @PostMapping("/issue")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Issue Material From Store (FR-054)", description = "Issues material from store to specific WBS Activity, Zone, or Contractor.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -40,8 +50,16 @@ public class StockLedgerController {
         return new ResponseEntity<>(ApiResponse.created(entry, "Material issued successfully"), HttpStatus.CREATED);
     }
 
-    @PostMapping("/consumption")
+    @PostMapping("/return")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Return Surplus Material to Store", description = "Returns surplus material from site/contractor back to inventory ledger and increments stock balance.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<StockLedger>> returnMaterial(@Valid @RequestBody StockTransactionDto request) {
+        StockLedger entry = stockLedgerService.returnMaterial(request);
+        return new ResponseEntity<>(ApiResponse.created(entry, "Material returned to store successfully"), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/consumption")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE')")
     @Operation(summary = "Record Material Consumption (FR-055)", description = "Records actual material consumption on site work against WBS activity and Zone.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<StockLedger>> recordConsumption(@Valid @RequestBody StockTransactionDto request) {
         StockLedger entry = stockLedgerService.recordConsumption(request);
@@ -49,7 +67,7 @@ public class StockLedgerController {
     }
 
     @PostMapping("/wastage")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE')")
     @Operation(summary = "Record Material Wastage (FR-055)", description = "Tracks material wastage on site and updates stock balance transactionally.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<StockLedger>> recordWastage(@Valid @RequestBody StockTransactionDto request) {
         StockLedger entry = stockLedgerService.recordWastage(request);
@@ -67,9 +85,13 @@ public class StockLedgerController {
 
     @GetMapping("/material/{materialId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
-    @Operation(summary = "Get Audit Trail By Material", description = "Retrieves complete immutable stock audit log for a specific material.", security = @SecurityRequirement(name = "BearerAuth"))
-    public ResponseEntity<ApiResponse<List<StockLedger>>> getLedgerByMaterial(@PathVariable Long materialId) {
-        List<StockLedger> entries = stockLedgerService.getLedgerEntriesByMaterial(materialId);
+    @Operation(summary = "Get Audit Trail By Material", description = "Retrieves complete chronological stock history (ledger trail) for a specific material with optional date range and project filters.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<StockLedger>>> getLedgerByMaterial(
+            @PathVariable Long materialId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) Long projectId) {
+        List<StockLedger> entries = stockLedgerService.getLedgerEntriesByMaterial(materialId, projectId, startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success(entries, "Stock ledger audit entries fetched successfully"));
     }
 

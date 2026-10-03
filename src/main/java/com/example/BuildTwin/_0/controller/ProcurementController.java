@@ -31,6 +31,14 @@ public class ProcurementController {
         return new ResponseEntity<>(ApiResponse.created(created, "Material request raised successfully"), HttpStatus.CREATED);
     }
 
+    @PutMapping("/requests/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Update Material Request", description = "Updates an existing pending material request (e.g. quantity, required date, site, or remarks). Only PENDING requests can be edited.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<MaterialRequest>> updateMaterialRequest(@PathVariable Long id, @RequestBody MaterialRequest request) {
+        MaterialRequest updated = procurementService.updateMaterialRequest(id, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Material request updated successfully"));
+    }
+
     @PutMapping("/requests/{id}/approval")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Process Material Request Approval / Rejection (FR-051)", description = "Updates approval status (APPROVED, REJECTED) with metadata and rejection reason.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -83,10 +91,36 @@ public class ProcurementController {
 
     @PostMapping("/purchase-orders")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
-    @Operation(summary = "Create Purchase Order (FR-052)", description = "Records vendor purchase order reference, supplier, amount, and expected delivery date.", security = @SecurityRequirement(name = "BearerAuth"))
+    @Operation(summary = "Create Purchase Order (FR-052)", description = "Records vendor purchase order reference, supplier, amount, and expected delivery date with default PENDING_APPROVAL status.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<PurchaseOrder>> createPurchaseOrder(@Valid @RequestBody PurchaseOrder po) {
         PurchaseOrder created = procurementService.createPurchaseOrder(po);
         return new ResponseEntity<>(ApiResponse.created(created, "Purchase order created successfully"), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/purchase-orders/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Update Purchase Order", description = "Updates purchase order details (amount, delivery date, supplier, or items).", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<PurchaseOrder>> updatePurchaseOrder(@PathVariable Long id, @RequestBody PurchaseOrder po) {
+        PurchaseOrder updated = procurementService.updatePurchaseOrder(id, po);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Purchase order updated successfully"));
+    }
+
+    @PutMapping("/purchase-orders/{id}/approval")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @Operation(summary = "Process Purchase Order Financial Approval (FR-052)", description = "Financial sign-off by Project Manager / Director for PO (APPROVED, REJECTED, or ISSUED).", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<PurchaseOrder>> updatePurchaseOrderApproval(
+            @PathVariable Long id,
+            @Valid @RequestBody com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderApprovalDto approvalDto) {
+        PurchaseOrder approved = procurementService.updatePurchaseOrderApproval(id, approvalDto);
+        return ResponseEntity.ok(ApiResponse.success(approved, "Purchase order approval status updated successfully"));
+    }
+
+    @GetMapping("/purchase-orders/{id}/fulfillment")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get PO Fulfillment & Delivery Status", description = "Calculates total ordered vs received/accepted quantities across all GRNs and current fulfillment progress.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto>> getPoFulfillmentStatus(@PathVariable Long id) {
+        com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto status = procurementService.getPoFulfillmentStatus(id);
+        return ResponseEntity.ok(ApiResponse.success(status, "PO fulfillment status fetched successfully"));
     }
 
     @GetMapping("/purchase-orders/{id}")

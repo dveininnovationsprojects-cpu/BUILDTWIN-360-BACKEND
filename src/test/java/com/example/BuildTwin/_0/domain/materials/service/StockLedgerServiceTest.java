@@ -173,4 +173,122 @@ class StockLedgerServiceTest {
         verify(materialRepository).save(sampleMaterial);
         verify(stockLedgerRepository).save(any(StockLedger.class));
     }
+
+    @Test
+    @DisplayName("Should process CONSUMPTION transaction and decrease stock balance")
+    void testRecordConsumptionSuccess() {
+        StockTransactionDto dto = StockTransactionDto.builder()
+                .projectId(100L)
+                .materialId(1L)
+                .activityId(301L)
+                .quantity(new BigDecimal("25.00"))
+                .remarks("Consumed in Slab 1 Concreting")
+                .build();
+
+        when(materialRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleMaterial));
+        when(stockLedgerRepository.save(any(StockLedger.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockLedger result = stockLedgerService.recordConsumption(dto);
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("75.00"), sampleMaterial.getCurrentStock());
+        assertEquals(StockTransactionType.CONSUMPTION, result.getTransactionType());
+        verify(materialRepository).save(sampleMaterial);
+    }
+
+    @Test
+    @DisplayName("Should throw InsufficientStockException when consumption quantity exceeds current stock")
+    void testRecordConsumptionInsufficientStock() {
+        StockTransactionDto dto = StockTransactionDto.builder()
+                .projectId(100L)
+                .materialId(1L)
+                .activityId(301L)
+                .quantity(new BigDecimal("150.00")) // Exceeds 100.00
+                .build();
+
+        when(materialRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleMaterial));
+
+        assertThrows(InsufficientStockException.class, () -> stockLedgerService.recordConsumption(dto));
+        verify(stockLedgerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should process RETURN transaction and increase stock balance")
+    void testReturnMaterialSuccess() {
+        StockTransactionDto dto = StockTransactionDto.builder()
+                .projectId(100L)
+                .contractorId(5L)
+                .materialId(1L)
+                .quantity(new BigDecimal("20.00"))
+                .remarks("Contractor returned surplus 20 bags")
+                .build();
+
+        when(materialRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleMaterial));
+        when(stockLedgerRepository.save(any(StockLedger.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockLedger result = stockLedgerService.returnMaterial(dto);
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("120.00"), sampleMaterial.getCurrentStock());
+        assertEquals(StockTransactionType.RETURN, result.getTransactionType());
+        verify(materialRepository).save(sampleMaterial);
+        verify(stockLedgerRepository).save(any(StockLedger.class));
+    }
+
+    @Test
+    @DisplayName("Should record Opening Stock as RECEIPT with remarks and increment stock balance")
+    void testOpeningStockReceipt() {
+        Material zeroStockMaterial = Material.builder()
+                .id(2L)
+                .materialCode("MAT-SAND-01")
+                .name("River Sand M-Sand")
+                .unit(MaterialUnit.CU_M)
+                .standardRate(new BigDecimal("1500.00"))
+                .currentStock(BigDecimal.ZERO)
+                .build();
+
+        StockTransactionDto dto = StockTransactionDto.builder()
+                .projectId(100L)
+                .materialId(2L)
+                .transactionType(StockTransactionType.RECEIPT)
+                .quantity(new BigDecimal("50.00"))
+                .remarks("Opening Balance")
+                .build();
+
+        when(materialRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(zeroStockMaterial));
+        when(stockLedgerRepository.save(any(StockLedger.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockLedger result = stockLedgerService.recordTransaction(dto);
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("50.00"), zeroStockMaterial.getCurrentStock());
+        assertEquals(StockTransactionType.RECEIPT, result.getTransactionType());
+        assertEquals("Opening Balance", result.getRemarks());
+        verify(materialRepository).save(zeroStockMaterial);
+    }
+
+    @Test
+    @DisplayName("Should fetch chronological ledger history with project and date range filters")
+    void testGetLedgerEntriesByMaterialWithFilters() {
+        java.time.LocalDateTime start = java.time.LocalDateTime.now().minusDays(7);
+        java.time.LocalDateTime end = java.time.LocalDateTime.now();
+
+        StockLedger entry = StockLedger.builder()
+                .id(1L)
+                .projectId(100L)
+                .material(sampleMaterial)
+                .transactionType(StockTransactionType.RECEIPT)
+                .quantity(new BigDecimal("100.00"))
+                .build();
+
+        when(stockLedgerRepository.findByMaterialIdAndProjectIdAndTimestampBetweenOrderByTimestampAsc(1L, 100L, start, end))
+                .thenReturn(java.util.List.of(entry));
+
+        java.util.List<StockLedger> results = stockLedgerService.getLedgerEntriesByMaterial(1L, 100L, start, end);
+
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        assertEquals(1L, results.get(0).getId());
+        verify(stockLedgerRepository).findByMaterialIdAndProjectIdAndTimestampBetweenOrderByTimestampAsc(1L, 100L, start, end);
+    }
 }

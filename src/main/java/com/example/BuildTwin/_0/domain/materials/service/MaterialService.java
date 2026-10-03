@@ -1,7 +1,9 @@
 package com.example.BuildTwin._0.domain.materials.service;
 
+import com.example.BuildTwin._0.domain.materials.dto.MaterialStockBalanceDto;
 import com.example.BuildTwin._0.domain.materials.model.Material;
 import com.example.BuildTwin._0.domain.materials.repository.MaterialRepository;
+import com.example.BuildTwin._0.domain.materials.repository.StockLedgerRepository;
 import com.example.BuildTwin._0.domain.materials.dto.MaterialRequestDto;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -17,6 +20,7 @@ import java.util.List;
 public class MaterialService {
 
     private final MaterialRepository materialRepository;
+    private final StockLedgerRepository stockLedgerRepository;
 
     @Transactional
     public Material createMaterial(MaterialRequestDto dto) {
@@ -87,7 +91,41 @@ public class MaterialService {
     }
 
     @Transactional(readOnly = true)
+    public MaterialStockBalanceDto getStockBalance(Long id) {
+        Material material = getMaterialById(id);
+        BigDecimal currentStock = material.getCurrentStock() != null ? material.getCurrentStock() : BigDecimal.ZERO;
+        BigDecimal reorderLevel = material.getReorderLevel() != null ? material.getReorderLevel() : BigDecimal.ZERO;
+        BigDecimal standardRate = material.getStandardRate() != null ? material.getStandardRate() : BigDecimal.ZERO;
+        BigDecimal totalValue = currentStock.multiply(standardRate).setScale(2, java.math.RoundingMode.HALF_UP);
+        boolean lowStock = material.getReorderLevel() != null && currentStock.compareTo(reorderLevel) <= 0;
+
+        LocalDateTime lastTxnTime = stockLedgerRepository.findLatestTimestampByMaterialId(id).orElse(null);
+
+        return MaterialStockBalanceDto.builder()
+                .materialId(material.getId())
+                .materialCode(material.getMaterialCode())
+                .name(material.getName())
+                .category(material.getCategory())
+                .unit(material.getUnit())
+                .currentStock(currentStock)
+                .reorderLevel(reorderLevel)
+                .standardRate(standardRate)
+                .totalStockValue(totalValue)
+                .lowStock(lowStock)
+                .lastTransactionTimestamp(lastTxnTime)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public List<Material> getLowStockMaterials() {
+        return getLowStockMaterials(null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Material> getLowStockMaterials(Long projectId) {
+        if (projectId != null) {
+            return materialRepository.findLowStockMaterialsByProjectId(projectId);
+        }
         return materialRepository.findLowStockMaterials();
     }
 

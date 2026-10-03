@@ -94,6 +94,23 @@ public class ProcurementServiceImpl implements ProcurementService {
     }
 
     @Override
+    public MaterialRequest updateMaterialRequest(Long id, MaterialRequest request) {
+        MaterialRequest existing = getMaterialRequestById(id);
+        if (!"PENDING".equalsIgnoreCase(existing.getStatus())) {
+            throw new BadRequestException("Cannot update material request in '" + existing.getStatus() + "' status. Only PENDING requests can be edited.");
+        }
+        if (request.getRequiredQty() != null) existing.setRequiredQty(request.getRequiredQty());
+        if (request.getRequiredDate() != null) existing.setRequiredDate(request.getRequiredDate());
+        if (request.getMaterialId() != null) existing.setMaterialId(request.getMaterialId());
+        if (request.getSiteId() != null) existing.setSiteId(request.getSiteId());
+        if (request.getWbsActivityId() != null) existing.setWbsActivityId(request.getWbsActivityId());
+        if (request.getZone() != null) existing.setZone(request.getZone());
+        if (request.getContractorId() != null) existing.setContractorId(request.getContractorId());
+        if (request.getRemarks() != null) existing.setRemarks(request.getRemarks());
+        return materialRequestRepository.save(existing);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ProjectedShortageDto> detectProjectedShortage(Long projectId) {
         List<MaterialRequest> activeRequests = materialRequestRepository.findByProjectIdAndStatusIn(
@@ -145,10 +162,94 @@ public class ProcurementServiceImpl implements ProcurementService {
 
     @Override
     public PurchaseOrder createPurchaseOrder(PurchaseOrder po) {
-        if (po.getStatus() == null) {
-            po.setStatus("ISSUED");
+        if (po.getStatus() == null || po.getStatus().isBlank()) {
+            po.setStatus("PENDING_APPROVAL");
+        } else {
+            po.setStatus(po.getStatus().toUpperCase());
+        }
+        if (po.getPoNumber() == null || po.getPoNumber().isBlank()) {
+            po.setPoNumber("PO-" + System.currentTimeMillis());
         }
         return purchaseOrderRepository.save(po);
+    }
+
+    @Override
+    public PurchaseOrder updatePurchaseOrder(Long id, PurchaseOrder request) {
+        PurchaseOrder existing = getPurchaseOrderById(id);
+        if (List.of("DELIVERED", "FULFILLED", "CANCELLED").contains(existing.getStatus().toUpperCase())) {
+            throw new BadRequestException("Cannot edit Purchase Order in '" + existing.getStatus() + "' status.");
+        }
+        if (request.getAmount() != null) existing.setAmount(request.getAmount());
+        if (request.getDeliveryDate() != null) existing.setDeliveryDate(request.getDeliveryDate());
+        if (request.getSupplierId() != null) existing.setSupplierId(request.getSupplierId());
+        if (request.getMaterialId() != null) existing.setMaterialId(request.getMaterialId());
+        if (request.getOrderQty() != null) existing.setOrderQty(request.getOrderQty());
+        if (request.getUnitRate() != null) existing.setUnitRate(request.getUnitRate());
+        if (request.getPoNumber() != null) existing.setPoNumber(request.getPoNumber());
+        if (request.getRemarks() != null) existing.setRemarks(request.getRemarks());
+        return purchaseOrderRepository.save(existing);
+    }
+
+    @Override
+    public PurchaseOrder updatePurchaseOrderApproval(Long id, com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderApprovalDto approvalDto) {
+        PurchaseOrder existing = getPurchaseOrderById(id);
+        String newStatus = approvalDto.getStatus().toUpperCase();
+        if (!List.of("APPROVED", "REJECTED", "ISSUED", "PENDING_APPROVAL").contains(newStatus)) {
+            throw new BadRequestException("Invalid PO approval status: " + approvalDto.getStatus() + ". Must be APPROVED, REJECTED, or ISSUED.");
+        }
+        existing.setStatus(newStatus);
+        if ("REJECTED".equals(newStatus)) {
+            existing.setRejectionReason(approvalDto.getRejectionReason());
+        }
+        if (approvalDto.getApprovedBy() != null) {
+            existing.setApprovedBy(approvalDto.getApprovedBy());
+        }
+        if (approvalDto.getRemarks() != null) {
+            existing.setRemarks(approvalDto.getRemarks());
+        }
+        return purchaseOrderRepository.save(existing);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto getPoFulfillmentStatus(Long id) {
+        PurchaseOrder po = getPurchaseOrderById(id);
+        List<Grn> grns = grnRepository.findByPoId(id);
+
+        BigDecimal totalReceived = BigDecimal.ZERO;
+        BigDecimal totalAccepted = BigDecimal.ZERO;
+        BigDecimal totalRejected = BigDecimal.ZERO;
+
+        for (Grn grn : grns) {
+            if (grn.getReceivedQty() != null) totalReceived = totalReceived.add(grn.getReceivedQty());
+            if (grn.getAcceptedQty() != null) totalAccepted = totalAccepted.add(grn.getAcceptedQty());
+            if (grn.getRejectedQty() != null) totalRejected = totalRejected.add(grn.getRejectedQty());
+        }
+
+        BigDecimal orderQty = po.getOrderQty() != null ? po.getOrderQty() : BigDecimal.ZERO;
+        BigDecimal remaining = orderQty.compareTo(totalAccepted) > 0 ? orderQty.subtract(totalAccepted) : BigDecimal.ZERO;
+
+        String percentage = "0.00%";
+        if (orderQty.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal pct = totalAccepted.multiply(new BigDecimal("100")).divide(orderQty, 2, java.math.RoundingMode.HALF_UP);
+            percentage = pct.toString() + "%";
+        }
+
+        return com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto.builder()
+                .poId(po.getId())
+                .poNumber(po.getPoNumber())
+                .supplierId(po.getSupplierId())
+                .projectId(po.getProjectId())
+                .materialId(po.getMaterialId())
+                .orderQty(orderQty)
+                .totalReceivedQty(totalReceived)
+                .totalAcceptedQty(totalAccepted)
+                .totalRejectedQty(totalRejected)
+                .remainingQty(remaining)
+                .status(po.getStatus())
+                .expectedDeliveryDate(po.getDeliveryDate())
+                .fulfillmentPercentage(percentage)
+                .build();
     }
 
     @Override
@@ -205,6 +306,24 @@ public class ProcurementServiceImpl implements ProcurementService {
                     .build();
 
             stockLedgerService.recordTransaction(stockTxn);
+        }
+
+        // Auto-update PO status based on delivery progress
+        if (savedGrn.getPoId() != null) {
+            purchaseOrderRepository.findById(savedGrn.getPoId()).ifPresent(po -> {
+                List<Grn> poGrns = grnRepository.findByPoId(po.getId());
+                BigDecimal cumAccepted = poGrns.stream()
+                        .map(g -> g.getAcceptedQty() != null ? g.getAcceptedQty() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                if (po.getOrderQty() != null && po.getOrderQty().compareTo(BigDecimal.ZERO) > 0) {
+                    if (cumAccepted.compareTo(po.getOrderQty()) >= 0) {
+                        po.setStatus("FULFILLED");
+                    } else if (cumAccepted.compareTo(BigDecimal.ZERO) > 0) {
+                        po.setStatus("PARTIALLY_DELIVERED");
+                    }
+                    purchaseOrderRepository.save(po);
+                }
+            });
         }
 
         return savedGrn;

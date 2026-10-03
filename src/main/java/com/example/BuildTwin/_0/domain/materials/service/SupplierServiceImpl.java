@@ -50,6 +50,19 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Supplier getSupplierByCode(String code) {
+        return supplierRepository.findBySupplierCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with code: " + code));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Supplier> getSuppliersByStatus(String status) {
+        return supplierRepository.findByStatus(status);
+    }
+
+    @Override
     public Supplier updateSupplier(Long id, SupplierCreateDto dto) {
         Supplier supplier = getSupplierById(id);
         if (dto.getName() != null) supplier.setName(dto.getName());

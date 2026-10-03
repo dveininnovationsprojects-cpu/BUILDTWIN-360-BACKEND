@@ -16,6 +16,14 @@ public interface StockLedgerRepository extends JpaRepository<StockLedger, Long> 
 
     List<StockLedger> findByMaterialId(Long materialId);
 
+    List<StockLedger> findByMaterialIdOrderByTimestampAsc(Long materialId);
+
+    List<StockLedger> findByMaterialIdAndTimestampBetweenOrderByTimestampAsc(Long materialId, LocalDateTime start, LocalDateTime end);
+
+    List<StockLedger> findByMaterialIdAndProjectIdOrderByTimestampAsc(Long materialId, Long projectId);
+
+    List<StockLedger> findByMaterialIdAndProjectIdAndTimestampBetweenOrderByTimestampAsc(Long materialId, Long projectId, LocalDateTime start, LocalDateTime end);
+
     List<StockLedger> findByProjectId(Long projectId);
 
     List<StockLedger> findByActivityId(Long activityId);
@@ -23,6 +31,9 @@ public interface StockLedgerRepository extends JpaRepository<StockLedger, Long> 
     List<StockLedger> findByMaterialIdAndProjectId(Long materialId, Long projectId);
 
     List<StockLedger> findByProjectIdAndTimestampBetween(Long projectId, LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT MAX(s.timestamp) FROM StockLedger s WHERE s.material.id = :materialId")
+    java.util.Optional<LocalDateTime> findLatestTimestampByMaterialId(@Param("materialId") Long materialId);
 
     @Query("SELECT SUM(s.quantity) FROM StockLedger s WHERE s.material.id = :materialId AND s.projectId = :projectId AND s.transactionType = :txnType")
     BigDecimal getTotalQuantityByType(@Param("materialId") Long materialId, @Param("projectId") Long projectId, @Param("txnType") StockTransactionType txnType);

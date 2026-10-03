@@ -10,6 +10,7 @@ import com.example.BuildTwin._0.domain.procurement.model.Grn;
 import com.example.BuildTwin._0.domain.procurement.model.MaterialRequest;
 import com.example.BuildTwin._0.domain.procurement.repository.GrnRepository;
 import com.example.BuildTwin._0.domain.procurement.repository.MaterialRequestRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository;
 import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,9 @@ class ProcurementServiceImplTest {
 
     @Mock
     private GrnRepository grnRepository;
+
+    @Mock
+    private PurchaseOrderRepository purchaseOrderRepository;
 
     @Mock
     private MaterialRepository materialRepository;
@@ -181,5 +185,94 @@ class ProcurementServiceImplTest {
         assertEquals(new BigDecimal("300.00"), dto.getTotalRequestedQty());
         assertEquals(new BigDecimal("200.00"), dto.getProjectedShortage());
         assertEquals("SHORTAGE", dto.getStatus());
+    }
+
+    @Test
+    @DisplayName("Should update pending material request successfully")
+    void testUpdateMaterialRequest_Success() {
+        MaterialRequest updatePayload = MaterialRequest.builder()
+                .requiredQty(new BigDecimal("250.00"))
+                .remarks("Typo corrected from 2500 to 250")
+                .build();
+
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+        when(materialRequestRepository.save(any(MaterialRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        MaterialRequest updated = procurementService.updateMaterialRequest(10L, updatePayload);
+
+        assertEquals(new BigDecimal("250.00"), updated.getRequiredQty());
+        assertEquals("Typo corrected from 2500 to 250", updated.getRemarks());
+        verify(materialRequestRepository).save(sampleRequest);
+    }
+
+    @Test
+    @DisplayName("Should throw BadRequestException when updating non-pending material request")
+    void testUpdateMaterialRequest_ThrowsWhenNotPending() {
+        sampleRequest.setStatus("APPROVED");
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+
+        MaterialRequest updatePayload = MaterialRequest.builder().requiredQty(new BigDecimal("200.00")).build();
+
+        assertThrows(BadRequestException.class, () -> procurementService.updateMaterialRequest(10L, updatePayload));
+        verify(materialRequestRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should process purchase order approval and update status")
+    void testUpdatePurchaseOrderApproval_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .supplierId(3L)
+                .projectId(100L)
+                .amount(new BigDecimal("150000.00"))
+                .status("PENDING_APPROVAL")
+                .build();
+
+        com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderApprovalDto approvalDto = com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderApprovalDto.builder()
+                .status("APPROVED")
+                .approvedBy("Director_Murugan")
+                .remarks("Approved with credit terms")
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(purchaseOrderRepository.save(any(com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder approvedPo = procurementService.updatePurchaseOrderApproval(50L, approvalDto);
+
+        assertEquals("APPROVED", approvedPo.getStatus());
+        assertEquals("Director_Murugan", approvedPo.getApprovedBy());
+        verify(purchaseOrderRepository).save(po);
+    }
+
+    @Test
+    @DisplayName("Should calculate PO fulfillment metrics correctly from GRNs")
+    void testGetPoFulfillmentStatus_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .supplierId(3L)
+                .projectId(100L)
+                .materialId(1L)
+                .orderQty(new BigDecimal("500.00"))
+                .status("PARTIALLY_DELIVERED")
+                .build();
+
+        Grn grn1 = Grn.builder()
+                .poId(50L)
+                .receivedQty(new BigDecimal("300.00"))
+                .acceptedQty(new BigDecimal("290.00"))
+                .rejectedQty(new BigDecimal("10.00"))
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(grnRepository.findByPoId(50L)).thenReturn(List.of(grn1));
+
+        com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto fulfillment = procurementService.getPoFulfillmentStatus(50L);
+
+        assertNotNull(fulfillment);
+        assertEquals(new BigDecimal("500.00"), fulfillment.getOrderQty());
+        assertEquals(new BigDecimal("300.00"), fulfillment.getTotalReceivedQty());
+        assertEquals(new BigDecimal("290.00"), fulfillment.getTotalAcceptedQty());
+        assertEquals(new BigDecimal("210.00"), fulfillment.getRemainingQty());
+        assertEquals("58.00%", fulfillment.getFulfillmentPercentage());
     }
 }

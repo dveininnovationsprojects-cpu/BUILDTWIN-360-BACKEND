@@ -49,6 +49,22 @@ public class SupplierController {
         return ResponseEntity.ok(ApiResponse.success(supplier, "Supplier details fetched successfully"));
     }
 
+    @GetMapping("/code/{code}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Supplier By Code", description = "Retrieves supplier profile by unique supplier code.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Supplier>> getSupplierByCode(@PathVariable String code) {
+        Supplier supplier = supplierService.getSupplierByCode(code);
+        return ResponseEntity.ok(ApiResponse.success(supplier, "Supplier details fetched by code successfully"));
+    }
+
+    @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Suppliers By Status", description = "Filter suppliers by status (e.g. ACTIVE, INACTIVE).", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<Supplier>>> getSuppliersByStatus(@PathVariable String status) {
+        List<Supplier> suppliers = supplierService.getSuppliersByStatus(status);
+        return ResponseEntity.ok(ApiResponse.success(suppliers, "Suppliers filtered by status successfully"));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Update Supplier Profile", description = "Updates supplier contact, GSTIN, address, and status.", security = @SecurityRequirement(name = "BearerAuth"))

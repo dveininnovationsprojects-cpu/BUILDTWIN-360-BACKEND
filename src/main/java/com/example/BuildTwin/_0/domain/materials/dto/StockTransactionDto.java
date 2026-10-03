@@ -36,8 +36,7 @@ public class StockTransactionDto {
     @Schema(description = "Target material ID", example = "5")
     private Long materialId;
 
-    @NotNull(message = "Transaction type is required")
-    @Schema(description = "Type of inventory movement: RECEIPT, ISSUE, CONSUMPTION, RETURN, ADJUSTMENT", example = "RECEIPT")
+    @Schema(description = "Type of inventory movement: RECEIPT, ISSUE, CONSUMPTION, RETURN, ADJUSTMENT (Optional if using dedicated endpoints)", example = "RECEIPT")
     private StockTransactionType transactionType;
 
     @NotNull(message = "Quantity is required")

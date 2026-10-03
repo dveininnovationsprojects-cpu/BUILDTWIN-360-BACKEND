@@ -20,8 +20,11 @@ public interface MaterialRepository extends JpaRepository<Material, Long> {
 
     List<Material> findByCategory(String category);
 
-    @Query("SELECT m FROM Material m WHERE m.currentStock <= m.reorderLevel")
+    @Query("SELECT m FROM Material m WHERE m.reorderLevel IS NOT NULL AND m.currentStock <= m.reorderLevel")
     List<Material> findLowStockMaterials();
+
+    @Query("SELECT DISTINCT s.material FROM StockLedger s WHERE s.projectId = :projectId AND s.material.reorderLevel IS NOT NULL AND s.material.currentStock <= s.material.reorderLevel")
+    List<Material> findLowStockMaterialsByProjectId(@Param("projectId") Long projectId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT m FROM Material m WHERE m.id = :id")

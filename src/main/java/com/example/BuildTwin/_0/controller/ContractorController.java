@@ -51,6 +51,14 @@ public class ContractorController {
         return ResponseEntity.ok(ApiResponse.success(contractor, "Contractor details fetched successfully"));
     }
 
+    @GetMapping("/code/{code}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Contractor By Code", description = "Retrieves contractor details by unique contractor code.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Contractor>> getContractorByCode(@PathVariable String code) {
+        Contractor contractor = contractorService.getContractorByCode(code);
+        return ResponseEntity.ok(ApiResponse.success(contractor, "Contractor details fetched by code successfully"));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
     @Operation(summary = "Update Contractor Profile", description = "Updates contractor/subcontractor information and status.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -100,7 +108,7 @@ public class ContractorController {
     }
 
     @GetMapping("/{id}/performance-summary")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'DATA_ANALYST', 'AUDITOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Contractor Performance Summary API", description = "Provides comprehensive progress, quality, delay, and productivity metrics for a contractor.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ContractorPerformanceSummaryDto>> getContractorPerformanceSummary(@PathVariable Long id) {
         ContractorPerformanceSummaryDto summary = contractorService.getContractorPerformanceSummary(id);

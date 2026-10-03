@@ -40,6 +40,9 @@ public class StockLedgerService {
 
         BigDecimal quantity = dto.getQuantity();
         StockTransactionType txnType = dto.getTransactionType();
+        if (txnType == null) {
+            throw new com.example.BuildTwin._0.exception.BadRequestException("Transaction type is required");
+        }
         BigDecimal currentStock = material.getCurrentStock() != null ? material.getCurrentStock() : BigDecimal.ZERO;
 
         // Stock ledger calculation logic
@@ -82,6 +85,12 @@ public class StockLedgerService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
+    public StockLedger recordReceipt(StockTransactionDto dto) {
+        dto.setTransactionType(StockTransactionType.RECEIPT);
+        return recordTransaction(dto);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public StockLedger issueMaterial(StockTransactionDto dto) {
         dto.setTransactionType(StockTransactionType.ISSUE);
         return recordTransaction(dto);
@@ -90,6 +99,12 @@ public class StockLedgerService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public StockLedger recordConsumption(StockTransactionDto dto) {
         dto.setTransactionType(StockTransactionType.CONSUMPTION);
+        return recordTransaction(dto);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public StockLedger returnMaterial(StockTransactionDto dto) {
+        dto.setTransactionType(StockTransactionType.RETURN);
         return recordTransaction(dto);
     }
 
@@ -145,7 +160,22 @@ public class StockLedgerService {
 
     @Transactional(readOnly = true)
     public List<StockLedger> getLedgerEntriesByMaterial(Long materialId) {
-        return stockLedgerRepository.findByMaterialId(materialId);
+        return getLedgerEntriesByMaterial(materialId, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockLedger> getLedgerEntriesByMaterial(Long materialId, Long projectId, LocalDateTime startDate, LocalDateTime endDate) {
+        if (projectId != null && startDate != null && endDate != null) {
+            return stockLedgerRepository.findByMaterialIdAndProjectIdAndTimestampBetweenOrderByTimestampAsc(materialId, projectId, startDate, endDate);
+        } else if (projectId != null) {
+            return stockLedgerRepository.findByMaterialIdAndProjectIdOrderByTimestampAsc(materialId, projectId);
+        } else if (startDate != null && endDate != null) {
+            return stockLedgerRepository.findByMaterialIdAndTimestampBetweenOrderByTimestampAsc(materialId, startDate, endDate);
+        } else if (startDate != null) {
+            return stockLedgerRepository.findByMaterialIdAndTimestampBetweenOrderByTimestampAsc(materialId, startDate, LocalDateTime.now());
+        } else {
+            return stockLedgerRepository.findByMaterialIdOrderByTimestampAsc(materialId);
+        }
     }
 
     @Transactional(readOnly = true)
