@@ -58,6 +58,12 @@ public class CostTransaction {
     @Column(name = "reference_number", length = 60)
     private String referenceNumber;
 
+    @Column(name = "vendor_or_payee", length = 100)
+    private String vendorOrPayee;
+
+    @Column(name = "remarks", length = 255)
+    private String remarks;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

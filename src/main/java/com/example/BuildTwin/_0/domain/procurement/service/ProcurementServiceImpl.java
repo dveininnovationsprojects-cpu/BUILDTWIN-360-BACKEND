@@ -3,6 +3,7 @@ package com.example.BuildTwin._0.domain.procurement.service;
 import com.example.BuildTwin._0.domain.procurement.model.*;
 import com.example.BuildTwin._0.domain.procurement.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -41,7 +43,10 @@ public class ProcurementServiceImpl implements ProcurementService {
         } else {
             request.setStatus(request.getStatus().toUpperCase());
         }
-        return materialRequestRepository.save(request);
+        MaterialRequest saved = materialRequestRepository.save(request);
+        log.info("Raised Material Request ID: {} | Project: {}, Material: {}, Qty: {}, Date: {}, Justification: '{}'",
+                saved.getId(), saved.getProjectId(), saved.getMaterialId(), saved.getRequiredQty(), saved.getRequiredDate(), saved.getJustification());
+        return saved;
     }
 
     @Override
@@ -65,7 +70,13 @@ public class ProcurementServiceImpl implements ProcurementService {
             request.setRemarks(approvalDto.getRemarks());
         }
 
-        return materialRequestRepository.save(request);
+        MaterialRequest saved = materialRequestRepository.save(request);
+        if ("REJECTED".equals(newStatus)) {
+            log.warn("Material Request ID: {} REJECTED by {} - Reason: '{}'", requestId, approvalDto.getApprovedBy(), approvalDto.getRejectionReason());
+        } else {
+            log.info("Material Request ID: {} status updated to {} by {} - Remarks: '{}'", requestId, newStatus, approvalDto.getApprovedBy(), approvalDto.getRemarks());
+        }
+        return saved;
     }
 
     @Override
@@ -90,7 +101,12 @@ public class ProcurementServiceImpl implements ProcurementService {
     @Override
     public void deleteMaterialRequest(Long id) {
         MaterialRequest request = getMaterialRequestById(id);
-        materialRequestRepository.delete(request);
+        if ("ORDERED".equalsIgnoreCase(request.getStatus())) {
+            throw new BadRequestException("Cannot cancel material request in 'ORDERED' status.");
+        }
+        request.setStatus("CANCELLED");
+        materialRequestRepository.save(request);
+        log.info("Cancelled Material Request ID: {}", id);
     }
 
     @Override
@@ -106,8 +122,12 @@ public class ProcurementServiceImpl implements ProcurementService {
         if (request.getWbsActivityId() != null) existing.setWbsActivityId(request.getWbsActivityId());
         if (request.getZone() != null) existing.setZone(request.getZone());
         if (request.getContractorId() != null) existing.setContractorId(request.getContractorId());
+        if (request.getJustification() != null) existing.setJustification(request.getJustification());
         if (request.getRemarks() != null) existing.setRemarks(request.getRemarks());
-        return materialRequestRepository.save(existing);
+        MaterialRequest saved = materialRequestRepository.save(existing);
+        log.info("Updated pending Material Request ID: {} | Qty: {}, Required Date: {}, Justification: '{}'",
+                id, saved.getRequiredQty(), saved.getRequiredDate(), saved.getJustification());
+        return saved;
     }
 
     @Override
@@ -157,20 +177,27 @@ public class ProcurementServiceImpl implements ProcurementService {
                     .build());
         }
 
+        log.debug("Calculated projected shortage for Project ID: {} across active MRs - Result size: {}", projectId, result.size());
         return result;
     }
 
     @Override
     public PurchaseOrder createPurchaseOrder(PurchaseOrder po) {
         if (po.getStatus() == null || po.getStatus().isBlank()) {
-            po.setStatus("PENDING_APPROVAL");
+            po.setStatus("DRAFT");
         } else {
             po.setStatus(po.getStatus().toUpperCase());
         }
         if (po.getPoNumber() == null || po.getPoNumber().isBlank()) {
             po.setPoNumber("PO-" + System.currentTimeMillis());
         }
-        return purchaseOrderRepository.save(po);
+        if (po.getAmount() == null && po.getOrderQty() != null && po.getUnitRate() != null) {
+            po.setAmount(po.getOrderQty().multiply(po.getUnitRate()));
+        }
+        PurchaseOrder saved = purchaseOrderRepository.save(po);
+        log.info("Generated Purchase Order {} (ID: {}) | Supplier: {}, Project: {}, Qty: {}, Total Amount: {}, Status: {}",
+                saved.getPoNumber(), saved.getId(), saved.getSupplierId(), saved.getProjectId(), saved.getOrderQty(), saved.getAmount(), saved.getStatus());
+        return saved;
     }
 
     @Override
@@ -187,7 +214,10 @@ public class ProcurementServiceImpl implements ProcurementService {
         if (request.getUnitRate() != null) existing.setUnitRate(request.getUnitRate());
         if (request.getPoNumber() != null) existing.setPoNumber(request.getPoNumber());
         if (request.getRemarks() != null) existing.setRemarks(request.getRemarks());
-        return purchaseOrderRepository.save(existing);
+        PurchaseOrder saved = purchaseOrderRepository.save(existing);
+        log.info("Updated Purchase Order ID: {} ({}) | Qty: {}, Amount: {}, Delivery Date: {}",
+                id, saved.getPoNumber(), saved.getOrderQty(), saved.getAmount(), saved.getDeliveryDate());
+        return saved;
     }
 
     @Override
@@ -207,14 +237,46 @@ public class ProcurementServiceImpl implements ProcurementService {
         if (approvalDto.getRemarks() != null) {
             existing.setRemarks(approvalDto.getRemarks());
         }
-        return purchaseOrderRepository.save(existing);
+        PurchaseOrder saved = purchaseOrderRepository.save(existing);
+        log.info("Purchase Order ID: {} Financial Approval Status updated to {} by {} | Remarks: '{}'",
+                id, newStatus, approvalDto.getApprovedBy(), approvalDto.getRemarks());
+        return saved;
+    }
+
+    @Override
+    public PurchaseOrder updatePurchaseOrderStatus(Long id, com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto statusDto) {
+        PurchaseOrder existing = getPurchaseOrderById(id);
+        String newStatus = statusDto.getStatus().toUpperCase();
+        List<String> allowedStatuses = List.of(
+                "DRAFT", "ISSUED", "PARTIALLY_FULFILLED", "PARTIALLY_DELIVERED",
+                "FULFILLED", "CANCELLED", "APPROVED", "PENDING_APPROVAL", "REJECTED"
+        );
+        if (!allowedStatuses.contains(newStatus)) {
+            throw new BadRequestException("Invalid PO status: " + statusDto.getStatus() + ". Must be one of: " + allowedStatuses);
+        }
+        if ("CANCELLED".equals(existing.getStatus().toUpperCase()) && !"CANCELLED".equals(newStatus)) {
+            throw new BadRequestException("Cannot change status of a CANCELLED purchase order.");
+        }
+        existing.setStatus(newStatus);
+        if (statusDto.getRemarks() != null) {
+            existing.setRemarks(statusDto.getRemarks());
+        }
+        if (statusDto.getUpdatedBy() != null) {
+            existing.setApprovedBy(statusDto.getUpdatedBy());
+        }
+        PurchaseOrder saved = purchaseOrderRepository.save(existing);
+        log.info("Purchase Order ID: {} Status updated to {} by {} | Remarks: '{}'",
+                id, newStatus, statusDto.getUpdatedBy(), statusDto.getRemarks());
+        return saved;
     }
 
     @Override
     @Transactional(readOnly = true)
     public com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto getPoFulfillmentStatus(Long id) {
         PurchaseOrder po = getPurchaseOrderById(id);
-        List<Grn> grns = grnRepository.findByPoId(id);
+        List<Grn> grns = grnRepository.findByPoId(id).stream()
+                .filter(g -> !"VOID".equalsIgnoreCase(g.getStatus()))
+                .toList();
 
         BigDecimal totalReceived = BigDecimal.ZERO;
         BigDecimal totalAccepted = BigDecimal.ZERO;
@@ -268,7 +330,12 @@ public class ProcurementServiceImpl implements ProcurementService {
     @Override
     public void deletePurchaseOrder(Long id) {
         PurchaseOrder po = getPurchaseOrderById(id);
-        purchaseOrderRepository.delete(po);
+        if ("FULFILLED".equalsIgnoreCase(po.getStatus())) {
+            throw new BadRequestException("Cannot cancel a FULFILLED purchase order.");
+        }
+        po.setStatus("CANCELLED");
+        purchaseOrderRepository.save(po);
+        log.warn("Cancelled Purchase Order ID: {} ({})", id, po.getPoNumber());
     }
 
     @Override
@@ -291,7 +358,23 @@ public class ProcurementServiceImpl implements ProcurementService {
             grn.setReceivedQty(accepted.add(rejected));
         }
 
+        if (grn.getGrnNumber() == null || grn.getGrnNumber().isBlank()) {
+            grn.setGrnNumber("GRN-" + System.currentTimeMillis());
+        }
+
+        if (grn.getDamageReason() != null && grn.getRejectionReason() == null) {
+            grn.setRejectionReason(grn.getDamageReason());
+        } else if (grn.getRejectionReason() != null && grn.getDamageReason() == null) {
+            grn.setDamageReason(grn.getRejectionReason());
+        }
+
+        if (grn.getStatus() == null || grn.getStatus().isBlank()) {
+            grn.setStatus("COMPLETED");
+        }
+
         Grn savedGrn = grnRepository.save(grn);
+        log.info("Recorded Goods Receipt Note {} (ID: {}) | PO: {}, Material: {} | DC: {}, Vehicle: {}, Gate: {} | Received: {}, Accepted: {}, Rejected: {} | Damage: '{}'",
+                savedGrn.getGrnNumber(), savedGrn.getId(), grn.getPoId(), grn.getMaterialId(), grn.getDcNumber(), grn.getVehicleNumber(), grn.getGateEntryNumber(), grn.getReceivedQty(), accepted, rejected, grn.getDamageReason());
 
         // Transactionally update inventory stock & record immutable ledger receipt for accepted quantity
         if (accepted.compareTo(BigDecimal.ZERO) > 0) {
@@ -302,16 +385,19 @@ public class ProcurementServiceImpl implements ProcurementService {
                     .transactionType(StockTransactionType.RECEIPT)
                     .quantity(accepted)
                     .referenceId("GRN-" + savedGrn.getId())
-                    .remarks("GRN Entry: Received " + grn.getReceivedQty() + ", Accepted " + accepted + ", Rejected " + rejected)
+                    .remarks("GRN Entry: Received " + grn.getReceivedQty() + ", Accepted " + accepted + ", Rejected " + rejected + (grn.getDcNumber() != null ? " (DC: " + grn.getDcNumber() + ")" : ""))
                     .build();
 
             stockLedgerService.recordTransaction(stockTxn);
+            log.info("Triggered automatic Stock Ledger RECEIPT transaction for Material ID: {} with Accepted Qty: {}", grn.getMaterialId(), accepted);
         }
 
         // Auto-update PO status based on delivery progress
         if (savedGrn.getPoId() != null) {
             purchaseOrderRepository.findById(savedGrn.getPoId()).ifPresent(po -> {
-                List<Grn> poGrns = grnRepository.findByPoId(po.getId());
+                List<Grn> poGrns = grnRepository.findByPoId(po.getId()).stream()
+                        .filter(g -> !"VOID".equalsIgnoreCase(g.getStatus()))
+                        .toList();
                 BigDecimal cumAccepted = poGrns.stream()
                         .map(g -> g.getAcceptedQty() != null ? g.getAcceptedQty() : BigDecimal.ZERO)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -319,9 +405,10 @@ public class ProcurementServiceImpl implements ProcurementService {
                     if (cumAccepted.compareTo(po.getOrderQty()) >= 0) {
                         po.setStatus("FULFILLED");
                     } else if (cumAccepted.compareTo(BigDecimal.ZERO) > 0) {
-                        po.setStatus("PARTIALLY_DELIVERED");
+                        po.setStatus("PARTIALLY_FULFILLED");
                     }
                     purchaseOrderRepository.save(po);
+                    log.info("Purchase Order ID: {} ({}) status auto-updated to {} following GRN receipt", po.getId(), po.getPoNumber(), po.getStatus());
                 }
             });
         }
@@ -343,8 +430,53 @@ public class ProcurementServiceImpl implements ProcurementService {
     }
 
     @Override
+    @Transactional
     public void deleteGrn(Long id) {
         Grn grn = getGrnById(id);
-        grnRepository.delete(grn);
+        if ("VOID".equalsIgnoreCase(grn.getStatus())) {
+            throw new BadRequestException("GRN #" + id + " is already voided.");
+        }
+
+        // Reverse stock ledger if accepted quantity was inwarded
+        BigDecimal accepted = grn.getAcceptedQty() != null ? grn.getAcceptedQty() : BigDecimal.ZERO;
+        if (accepted.compareTo(BigDecimal.ZERO) > 0) {
+            StockTransactionDto reverseTxn = StockTransactionDto.builder()
+                    .projectId(grn.getProjectId() != null ? grn.getProjectId() : 1L)
+                    .siteId(grn.getSiteId())
+                    .materialId(grn.getMaterialId())
+                    .transactionType(StockTransactionType.ISSUE)
+                    .quantity(accepted)
+                    .referenceId("VOID-GRN-" + grn.getId())
+                    .remarks("Void GRN inward entry #" + grn.getId() + " - Stock reversed by " + accepted)
+                    .build();
+            stockLedgerService.recordTransaction(reverseTxn);
+        }
+
+        grn.setStatus("VOID");
+        grnRepository.save(grn);
+        log.warn("Voided GRN ID: {} - Reversed Stock Ledger by {} and recalculated PO status", id, accepted);
+
+        // Recalculate PO status
+        if (grn.getPoId() != null) {
+            purchaseOrderRepository.findById(grn.getPoId()).ifPresent(po -> {
+                List<Grn> activeGrns = grnRepository.findByPoId(po.getId()).stream()
+                        .filter(g -> !"VOID".equalsIgnoreCase(g.getStatus()))
+                        .toList();
+                BigDecimal cumAccepted = activeGrns.stream()
+                        .map(g -> g.getAcceptedQty() != null ? g.getAcceptedQty() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                if (po.getOrderQty() != null && po.getOrderQty().compareTo(BigDecimal.ZERO) > 0) {
+                    if (cumAccepted.compareTo(po.getOrderQty()) >= 0) {
+                        po.setStatus("FULFILLED");
+                    } else if (cumAccepted.compareTo(BigDecimal.ZERO) > 0) {
+                        po.setStatus("PARTIALLY_FULFILLED");
+                    } else {
+                        po.setStatus("ISSUED");
+                    }
+                    purchaseOrderRepository.save(po);
+                    log.info("Purchase Order ID: {} ({}) status recalculated to {} after voiding GRN", po.getId(), po.getPoNumber(), po.getStatus());
+                }
+            });
+        }
     }
 }

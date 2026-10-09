@@ -17,9 +17,17 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
     Optional<Budget> findByProjectIdAndCostCode(Long projectId, String costCode);
 
+    List<Budget> findByProjectIdAndCostHead(Long projectId, com.example.BuildTwin._0.domain.cost.enums.CostHead costHead);
+
     @Query("SELECT COALESCE(SUM(b.baselineAmount), 0) FROM Budget b WHERE b.projectId = :projectId")
     BigDecimal getTotalBaselineBudgetByProjectId(@Param("projectId") Long projectId);
 
     @Query("SELECT COALESCE(SUM(CASE WHEN b.revisedAmount > 0 THEN b.revisedAmount ELSE b.baselineAmount END), 0) FROM Budget b WHERE b.projectId = :projectId")
     BigDecimal getTotalApprovedBudgetByProjectId(@Param("projectId") Long projectId);
+
+    @Query("SELECT COALESCE(SUM(b.baselineAmount), 0) FROM Budget b WHERE b.projectId = :projectId AND b.costHead = :costHead")
+    BigDecimal getTotalBaselineByProjectIdAndCostHead(@Param("projectId") Long projectId, @Param("costHead") com.example.BuildTwin._0.domain.cost.enums.CostHead costHead);
+
+    @Query("SELECT COALESCE(SUM(CASE WHEN b.revisedAmount > 0 THEN b.revisedAmount ELSE b.baselineAmount END), 0) FROM Budget b WHERE b.projectId = :projectId AND b.costHead = :costHead")
+    BigDecimal getTotalApprovedByProjectIdAndCostHead(@Param("projectId") Long projectId, @Param("costHead") com.example.BuildTwin._0.domain.cost.enums.CostHead costHead);
 }

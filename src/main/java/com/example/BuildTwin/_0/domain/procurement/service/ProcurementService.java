@@ -16,6 +16,7 @@ public interface ProcurementService {
     PurchaseOrder createPurchaseOrder(PurchaseOrder po);
     PurchaseOrder updatePurchaseOrder(Long id, PurchaseOrder po);
     PurchaseOrder updatePurchaseOrderApproval(Long id, com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderApprovalDto approvalDto);
+    PurchaseOrder updatePurchaseOrderStatus(Long id, com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto statusDto);
     PurchaseOrder getPurchaseOrderById(Long id);
     List<PurchaseOrder> getPurchaseOrdersByProject(Long projectId);
     com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto getPoFulfillmentStatus(Long id);

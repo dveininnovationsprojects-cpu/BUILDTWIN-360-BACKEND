@@ -293,4 +293,155 @@ class ProcurementControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(101));
     }
+
+    @Test
+    @WithMockUser(roles = "SITE_ENGINEER")
+    @DisplayName("GET /api/v1/procurement/requests/1 - Get Material Request By ID Success")
+    void getMaterialRequestById_Success() throws Exception {
+        MaterialRequest req = MaterialRequest.builder()
+                .id(1L)
+                .projectId(1L)
+                .materialId(10L)
+                .requiredQty(new BigDecimal("250.00"))
+                .status("PENDING")
+                .build();
+
+        when(procurementService.getMaterialRequestById(1L)).thenReturn(req);
+
+        mockMvc.perform(get("/api/v1/procurement/requests/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "PROJECT_MANAGER")
+    @DisplayName("GET /api/v1/procurement/requests/project/1 - Get Material Requests By Project Success")
+    void getRequestsByProject_Success() throws Exception {
+        MaterialRequest req = MaterialRequest.builder()
+                .id(1L)
+                .projectId(1L)
+                .materialId(10L)
+                .requiredQty(new BigDecimal("250.00"))
+                .status("PENDING")
+                .build();
+
+        when(procurementService.getMaterialRequestsByProject(1L)).thenReturn(List.of(req));
+
+        mockMvc.perform(get("/api/v1/procurement/requests/project/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "PROJECT_MANAGER")
+    @DisplayName("DELETE /api/v1/procurement/requests/1 - Cancel Material Request Success")
+    void deleteMaterialRequest_Success() throws Exception {
+        mockMvc.perform(delete("/api/v1/procurement/requests/1").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Material request cancelled successfully"));
+    }
+
+    @Test
+    @WithMockUser(roles = "PROJECT_MANAGER")
+    @DisplayName("PUT /api/v1/procurement/purchase-orders/50/status - Update PO Status Success")
+    void updatePurchaseOrderStatus_Success() throws Exception {
+        com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto statusDto =
+                com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto.builder()
+                        .status("ISSUED")
+                        .remarks("PO dispatched to supplier")
+                        .updatedBy("PM_Murugan")
+                        .build();
+
+        PurchaseOrder updatedPo = PurchaseOrder.builder()
+                .id(50L)
+                .poNumber("PO-2026-001")
+                .supplierId(3L)
+                .status("ISSUED")
+                .remarks("PO dispatched to supplier")
+                .build();
+
+        when(procurementService.updatePurchaseOrderStatus(eq(50L), any(com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto.class)))
+                .thenReturn(updatedPo);
+
+        mockMvc.perform(put("/api/v1/procurement/purchase-orders/50/status")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(statusDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("ISSUED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "PROJECT_MANAGER")
+    @DisplayName("DELETE /api/v1/procurement/purchase-orders/50 - Cancel Purchase Order Success")
+    void deletePurchaseOrder_Success() throws Exception {
+        mockMvc.perform(delete("/api/v1/procurement/purchase-orders/50").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Purchase order cancelled successfully"));
+    }
+
+    @Test
+    @WithMockUser(roles = "SITE_ENGINEER")
+    @DisplayName("GET /api/v1/procurement/grn/101 - Get GRN By ID Success")
+    void getGrnById_Success() throws Exception {
+        Grn grn = Grn.builder()
+                .id(101L)
+                .poId(50L)
+                .materialId(10L)
+                .dcNumber("DC-9876")
+                .vehicleNumber("TN-09-AB-1234")
+                .gateEntryNumber("GATE-2026-05")
+                .receivedQty(new BigDecimal("500.00"))
+                .acceptedQty(new BigDecimal("480.00"))
+                .rejectedQty(new BigDecimal("20.00"))
+                .damageReason("Torn bags in transit")
+                .status("COMPLETED")
+                .build();
+
+        when(procurementService.getGrnById(101L)).thenReturn(grn);
+
+        mockMvc.perform(get("/api/v1/procurement/grn/101"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(101))
+                .andExpect(jsonPath("$.data.dcNumber").value("DC-9876"))
+                .andExpect(jsonPath("$.data.vehicleNumber").value("TN-09-AB-1234"))
+                .andExpect(jsonPath("$.data.gateEntryNumber").value("GATE-2026-05"));
+    }
+
+    @Test
+    @WithMockUser(roles = "SITE_ENGINEER")
+    @DisplayName("GET /api/v1/procurement/grn/po/50 - Track GRN History Against PO Success")
+    void getGrnsByPo_Success() throws Exception {
+        Grn grn = Grn.builder()
+                .id(101L)
+                .poId(50L)
+                .materialId(10L)
+                .receivedQty(new BigDecimal("500.00"))
+                .acceptedQty(new BigDecimal("480.00"))
+                .status("COMPLETED")
+                .build();
+
+        when(procurementService.getGrnsByPo(50L)).thenReturn(List.of(grn));
+
+        mockMvc.perform(get("/api/v1/procurement/grn/po/50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(101));
+    }
+
+    @Test
+    @WithMockUser(roles = "PROJECT_MANAGER")
+    @DisplayName("DELETE /api/v1/procurement/grn/101 - Void GRN Entry Success")
+    void deleteGrn_Success() throws Exception {
+        mockMvc.perform(delete("/api/v1/procurement/grn/101").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("GRN entry voided successfully"));
+    }
 }

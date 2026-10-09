@@ -36,6 +36,18 @@ class CostServiceTest {
     @Mock
     private StockLedgerRepository stockLedgerRepository;
 
+    @Mock
+    private com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository purchaseOrderRepository;
+
+    @Mock
+    private com.example.BuildTwin._0.domain.projects.repository.ProjectRepository projectRepository;
+
+    @Mock
+    private com.example.BuildTwin._0.domain.labour.repository.LabourDailyRepository labourDailyRepository;
+
+    @Mock
+    private com.example.BuildTwin._0.domain.procurement.repository.GrnRepository grnRepository;
+
     @InjectMocks
     private CostServiceImpl costService;
 

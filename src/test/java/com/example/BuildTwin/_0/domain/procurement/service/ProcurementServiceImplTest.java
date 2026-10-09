@@ -275,4 +275,103 @@ class ProcurementServiceImplTest {
         assertEquals(new BigDecimal("210.00"), fulfillment.getRemainingQty());
         assertEquals("58.00%", fulfillment.getFulfillmentPercentage());
     }
+
+    @Test
+    @DisplayName("Should cancel material request and set status to CANCELLED")
+    void testCancelMaterialRequest_Success() {
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+        when(materialRequestRepository.save(any(MaterialRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        procurementService.deleteMaterialRequest(10L);
+
+        assertEquals("CANCELLED", sampleRequest.getStatus());
+        verify(materialRequestRepository).save(sampleRequest);
+    }
+
+    @Test
+    @DisplayName("Should throw BadRequestException when cancelling an ORDERED material request")
+    void testCancelMaterialRequest_ThrowsWhenOrdered() {
+        sampleRequest.setStatus("ORDERED");
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+
+        assertThrows(BadRequestException.class, () -> procurementService.deleteMaterialRequest(10L));
+        verify(materialRequestRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should update PO lifecycle status successfully (DRAFT -> ISSUED)")
+    void testUpdatePurchaseOrderStatus_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .status("DRAFT")
+                .build();
+
+        com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto statusDto = com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto.builder()
+                .status("ISSUED")
+                .remarks("Formal PO dispatched to vendor")
+                .updatedBy("Procurement_Officer")
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(purchaseOrderRepository.save(any(com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder updated = procurementService.updatePurchaseOrderStatus(50L, statusDto);
+
+        assertEquals("ISSUED", updated.getStatus());
+        assertEquals("Formal PO dispatched to vendor", updated.getRemarks());
+        assertEquals("Procurement_Officer", updated.getApprovedBy());
+    }
+
+    @Test
+    @DisplayName("Should cancel Purchase Order and set status to CANCELLED")
+    void testCancelPurchaseOrder_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .status("ISSUED")
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(purchaseOrderRepository.save(any(com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        procurementService.deletePurchaseOrder(50L);
+
+        assertEquals("CANCELLED", po.getStatus());
+        verify(purchaseOrderRepository).save(po);
+    }
+
+    @Test
+    @DisplayName("Should void GRN, reverse stock in StockLedger, and update status to VOID")
+    void testVoidGrn_Success() {
+        Grn grn = Grn.builder()
+                .id(101L)
+                .poId(50L)
+                .projectId(100L)
+                .siteId(2L)
+                .materialId(1L)
+                .receivedQty(new BigDecimal("100.00"))
+                .acceptedQty(new BigDecimal("90.00"))
+                .rejectedQty(new BigDecimal("10.00"))
+                .status("COMPLETED")
+                .build();
+
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .orderQty(new BigDecimal("100.00"))
+                .status("PARTIALLY_FULFILLED")
+                .build();
+
+        when(grnRepository.findById(101L)).thenReturn(Optional.of(grn));
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(grnRepository.findByPoId(50L)).thenReturn(List.of(grn)); // After setting to VOID, filter excludes it
+
+        procurementService.deleteGrn(101L);
+
+        assertEquals("VOID", grn.getStatus());
+        verify(stockLedgerService).recordTransaction(argThat(dto ->
+                dto.getTransactionType() == com.example.BuildTwin._0.domain.materials.enums.StockTransactionType.ISSUE
+                        && dto.getQuantity().compareTo(new BigDecimal("90.00")) == 0
+        ));
+        verify(grnRepository).save(grn);
+        verify(purchaseOrderRepository).save(po);
+    }
 }

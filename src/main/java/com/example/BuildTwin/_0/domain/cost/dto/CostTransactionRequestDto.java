@@ -39,4 +39,8 @@ public class CostTransactionRequestDto {
     private LocalDate transactionDate;
 
     private String referenceNumber;
+
+    private String vendorOrPayee;
+
+    private String remarks;
 }

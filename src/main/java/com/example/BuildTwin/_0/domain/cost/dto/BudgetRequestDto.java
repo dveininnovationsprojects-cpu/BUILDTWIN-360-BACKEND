@@ -26,9 +26,15 @@ public class BudgetRequestDto {
 
     private CostHead costHead;
 
+    private String description;
+
     @NotNull(message = "Baseline amount is required")
     @Min(value = 0, message = "Baseline amount must be non-negative")
     private BigDecimal baselineAmount;
 
     private BigDecimal revisedAmount;
+
+    private String revisionReason;
+
+    private String approvedBy;
 }

@@ -25,7 +25,7 @@ public class SupplierController {
     private final SupplierService supplierService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Create Supplier Profile (FR-060)", description = "Registers an approved vendor with supplier code, material categories, contact phone, GSTIN, and status.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Supplier>> createSupplier(@Valid @RequestBody SupplierCreateDto request) {
         Supplier supplier = supplierService.createSupplier(request);
@@ -66,7 +66,7 @@ public class SupplierController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Update Supplier Profile", description = "Updates supplier contact, GSTIN, address, and status.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Supplier>> updateSupplier(@PathVariable Long id, @Valid @RequestBody SupplierCreateDto request) {
         Supplier updated = supplierService.updateSupplier(id, request);
@@ -74,7 +74,7 @@ public class SupplierController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Delete Supplier Profile", description = "Deletes a supplier profile by ID.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Void>> deleteSupplier(@PathVariable Long id) {
         supplierService.deleteSupplier(id);

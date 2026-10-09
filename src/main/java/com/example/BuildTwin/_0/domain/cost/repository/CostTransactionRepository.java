@@ -17,9 +17,14 @@ public interface CostTransactionRepository extends JpaRepository<CostTransaction
 
     List<CostTransaction> findByProjectIdAndCostCode(Long projectId, String costCode);
 
+    List<CostTransaction> findByProjectIdAndCostHead(Long projectId, com.example.BuildTwin._0.domain.cost.enums.CostHead costHead);
+
     @Query("SELECT COALESCE(SUM(ct.amount), 0) FROM CostTransaction ct WHERE ct.projectId = :projectId AND ct.sourceType = :sourceType")
     BigDecimal getTotalCostByProjectIdAndSourceType(@Param("projectId") Long projectId, @Param("sourceType") CostSourceType sourceType);
 
     @Query("SELECT COALESCE(SUM(ct.amount), 0) FROM CostTransaction ct WHERE ct.projectId = :projectId")
     BigDecimal getTotalActualCostByProjectId(@Param("projectId") Long projectId);
+
+    @Query("SELECT COALESCE(SUM(ct.amount), 0) FROM CostTransaction ct WHERE ct.projectId = :projectId AND ct.costHead = :costHead")
+    BigDecimal getTotalActualCostByProjectIdAndCostHead(@Param("projectId") Long projectId, @Param("costHead") com.example.BuildTwin._0.domain.cost.enums.CostHead costHead);
 }

@@ -130,6 +130,62 @@ class SupplierControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/suppliers/{id} - Get Supplier By ID Success")
+    void testGetSupplierById() throws Exception {
+        Supplier s = Supplier.builder()
+                .id(1L)
+                .supplierCode("SUP-101")
+                .name("UltraTech Cements")
+                .panNumber("ABCDE1234F")
+                .bankAccountNumber("50200012345678")
+                .bankName("HDFC Bank")
+                .categorySpecialization("CEMENT, RMC")
+                .status("ACTIVE")
+                .build();
+
+        when(supplierService.getSupplierById(1L)).thenReturn(s);
+
+        mockMvc.perform(get("/api/v1/suppliers/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.panNumber").value("ABCDE1234F"))
+                .andExpect(jsonPath("$.data.categorySpecialization").value("CEMENT, RMC"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/suppliers/{id} - Update Supplier Profile Success")
+    void testUpdateSupplier() throws Exception {
+        SupplierCreateDto dto = new SupplierCreateDto();
+        dto.setSupplierCode("SUP-101");
+        dto.setName("UltraTech Cements Ltd");
+        dto.setContactPerson("Ravi Kumar");
+        dto.setPhone("9876543210");
+        dto.setPanNumber("ABCDE1234F");
+        dto.setCategorySpecialization("CEMENT, RMC, AGGREGATES");
+        dto.setStatus("ACTIVE");
+
+        Supplier updated = Supplier.builder()
+                .id(1L)
+                .supplierCode("SUP-101")
+                .name("UltraTech Cements Ltd")
+                .panNumber("ABCDE1234F")
+                .categorySpecialization("CEMENT, RMC, AGGREGATES")
+                .status("ACTIVE")
+                .build();
+
+        when(supplierService.updateSupplier(eq(1L), any(SupplierCreateDto.class))).thenReturn(updated);
+
+        mockMvc.perform(put("/api/v1/suppliers/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("UltraTech Cements Ltd"))
+                .andExpect(jsonPath("$.data.categorySpecialization").value("CEMENT, RMC, AGGREGATES"));
+    }
+
+    @Test
     @DisplayName("DELETE /api/v1/suppliers/{id} - Delete Supplier Success")
     void testDeleteSupplier() throws Exception {
         doNothing().when(supplierService).deleteSupplier(1L);
