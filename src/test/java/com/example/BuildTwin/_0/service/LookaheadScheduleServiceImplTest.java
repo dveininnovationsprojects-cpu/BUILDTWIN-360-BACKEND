@@ -1,9 +1,6 @@
 package com.example.BuildTwin._0.service;
 
-import com.example.BuildTwin._0.dto.lookahead.FourteenDayLookaheadResponse;
-import com.example.BuildTwin._0.dto.lookahead.FourteenDayMetricsResponse;
-import com.example.BuildTwin._0.dto.lookahead.LookaheadConstraintSummaryResponse;
-import com.example.BuildTwin._0.dto.lookahead.LookaheadScheduleResponse;
+import com.example.BuildTwin._0.dto.lookahead.*;
 import com.example.BuildTwin._0.model.*;
 import com.example.BuildTwin._0.repository.ActivityDependencyRepository;
 import com.example.BuildTwin._0.repository.LookaheadCommitmentRepository;
@@ -26,6 +23,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +75,7 @@ class LookaheadScheduleServiceImplTest {
                 .plannedQuantity(100.0)
                 .completedQuantity(40.0)
                 .uom("CUM")
+                .assignedContractor("L&T Construction (Civil Div)")
                 .build();
 
         // Activity starting in Week 2 (Days 8 to 14)
@@ -92,6 +91,7 @@ class LookaheadScheduleServiceImplTest {
                 .plannedQuantity(60.0)
                 .completedQuantity(0.0)
                 .uom("SQM")
+                .assignedContractor("L&T Construction (Civil Div)")
                 .build();
 
         // Activity spanning across both Week 1 and Week 2
@@ -107,6 +107,7 @@ class LookaheadScheduleServiceImplTest {
                 .plannedQuantity(200.0)
                 .completedQuantity(10.0)
                 .uom("MTR")
+                .assignedContractor("Voltas MEP Solutions")
                 .build();
     }
 
@@ -211,5 +212,106 @@ class LookaheadScheduleServiceImplTest {
         assertEquals(startDate, constraints.getWindowStartDate());
         assertEquals(startDate.plusDays(13), constraints.getWindowEndDate());
         assertEquals(0, constraints.getTotalBlockedActivities());
+    }
+
+    @Test
+    @DisplayName("Should identify overdue activities (Overdue Finish & Overdue Start)")
+    void testGetOverdueActivities() {
+        LocalDate asOfDate = LocalDate.of(2026, 10, 15);
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject));
+
+        // actWeek1 planned end was 2026-10-05, asOfDate is 2026-10-15 -> Overdue finish by 10 days
+        // actWeek2 planned start was 2026-10-09, planned end was 2026-10-13 -> Overdue finish by 2 days
+        when(wbsActivityRepository.findByProjectIdOrderBySequenceOrderAsc(1L))
+                .thenReturn(List.of(actWeek1, actWeek2));
+        when(lookaheadCommitmentRepository.findByProjectIdOrderByWeekStartDateDesc(1L))
+                .thenReturn(Collections.emptyList());
+
+        // Setup successor dependency: actWeek1 blocks actWeek2
+        ActivityDependency dep = ActivityDependency.builder()
+                .id(1L)
+                .project(testProject)
+                .predecessor(actWeek1)
+                .successor(actWeek2)
+                .dependencyType(DependencyType.FS)
+                .build();
+        when(activityDependencyRepository.findByPredecessorId(101L)).thenReturn(List.of(dep));
+        when(activityDependencyRepository.findByPredecessorId(102L)).thenReturn(Collections.emptyList());
+        when(activityDependencyRepository.findBySuccessorId(any(Long.class))).thenReturn(Collections.emptyList());
+
+        List<OverdueActivityItemResponse> overdues = lookaheadScheduleService.getOverdueActivities(
+                1L, asOfDate, null, null, null, null, null, null, null, null
+        );
+
+        assertNotNull(overdues);
+        assertEquals(2, overdues.size());
+
+        // actWeek1 should be identified as overdue finish
+        OverdueActivityItemResponse item1 = overdues.stream()
+                .filter(i -> i.getActivityId().equals(101L))
+                .findFirst().orElse(null);
+        assertNotNull(item1);
+        assertEquals(OverdueType.OVERDUE_FINISH, item1.getOverdueType());
+        assertEquals(10L, item1.getDaysOverdue());
+        assertEquals(OverdueAgingBucket.DAYS_8_TO_14, item1.getAgingBucket());
+        assertEquals(1, item1.getImpactedSuccessorCount());
+        assertTrue(item1.getImpactedSuccessors().get(0).contains("ACT-CIV-002"));
+    }
+
+    @Test
+    @DisplayName("Should calculate overdue activities executive summary and KPIs")
+    void testGetOverdueActivitySummary() {
+        LocalDate asOfDate = LocalDate.of(2026, 10, 15);
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject));
+        when(wbsActivityRepository.findByProjectIdOrderBySequenceOrderAsc(1L))
+                .thenReturn(List.of(actWeek1, actWeek2));
+        when(wbsActivityRepository.countByProjectId(1L)).thenReturn(2L);
+        when(lookaheadCommitmentRepository.findByProjectIdOrderByWeekStartDateDesc(1L))
+                .thenReturn(Collections.emptyList());
+        when(activityDependencyRepository.findByPredecessorId(any(Long.class))).thenReturn(Collections.emptyList());
+        when(activityDependencyRepository.findBySuccessorId(any(Long.class))).thenReturn(Collections.emptyList());
+
+        OverdueActivitySummaryResponse summary = lookaheadScheduleService.getOverdueActivitySummary(1L, asOfDate);
+
+        assertNotNull(summary);
+        assertEquals(1L, summary.getProjectId());
+        assertEquals(2, summary.getTotalProjectActivities());
+        assertEquals(2, summary.getTotalOverdueActivities());
+        assertEquals(100.0, summary.getOverdueRatePercentage());
+        assertEquals(2, summary.getOverdueFinishCount());
+        assertNotNull(summary.getAgingBreakdown());
+        assertNotNull(summary.getSeverityBreakdown());
+        assertNotNull(summary.getTopCriticalBottlenecks());
+        assertFalse(summary.getPlannerRecommendations().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should successfully record overdue activity mitigation plan")
+    void testRecordOverdueMitigation() {
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject));
+        when(wbsActivityRepository.findById(101L)).thenReturn(Optional.of(actWeek1));
+        when(lookaheadCommitmentRepository.findByActivityIdOrderByWeekStartDateDesc(101L)).thenReturn(Collections.emptyList());
+
+        OverdueMitigationRequest request = OverdueMitigationRequest.builder()
+                .delayReasonCategory("MATERIAL_SHORTAGE")
+                .delayReasonDetails("Supplier delay in delivering Fe550D rebar")
+                .recoveryPlanAction("Procure 10 MT from local distributor and authorize weekend overtime shift")
+                .revisedExpectedCompletionDate(LocalDate.of(2026, 10, 20))
+                .additionalLaborAllocated(4)
+                .notes("Reviewed in site coordination meeting")
+                .build();
+
+        OverdueMitigationResponse response = lookaheadScheduleService.recordOverdueMitigation(1L, 101L, request, "admin");
+
+        assertNotNull(response);
+        assertEquals(101L, response.getActivityId());
+        assertEquals("ACT-CIV-001", response.getActivityCode());
+        assertEquals("MATERIAL_SHORTAGE", response.getDelayReasonCategory());
+        assertEquals("admin", response.getRecordedBy());
+        assertNotNull(response.getRecordedAt());
+
+        verify(lookaheadCommitmentRepository).save(any(LookaheadCommitment.class));
+        verify(wbsActivityRepository).save(any(WbsActivity.class));
+        verify(auditService).logAction(eq("admin"), eq("OVERDUE_ACTIVITY_MITIGATION"), eq("WBS_ACTIVITY"), eq("101"), any(), any());
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -527,6 +528,478 @@ public class LookaheadScheduleServiceImpl implements LookaheadScheduleService {
                 .constrainedActivities(constrainedItems)
                 .build();
     }
+
+    // =========================================================================
+    // OVERDUE ACTIVITY IDENTIFICATION & MITIGATION IMPLEMENTATION
+    // =========================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OverdueActivityItemResponse> getOverdueActivities(
+            Long projectId,
+            LocalDate asOfDate,
+            String severity,
+            String agingBucket,
+            String type,
+            String discipline,
+            Long workPackageId,
+            Long siteId,
+            Long buildingId,
+            String contractor) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+
+        LocalDate refDate = asOfDate != null ? asOfDate : LocalDate.now();
+
+        List<WbsActivity> allActivities = wbsActivityRepository.findByProjectIdOrderBySequenceOrderAsc(projectId);
+        List<LookaheadCommitment> commitments = lookaheadCommitmentRepository.findByProjectIdOrderByWeekStartDateDesc(projectId);
+        Map<Long, LookaheadCommitment> commitmentByActivityId = new HashMap<>();
+        for (LookaheadCommitment c : commitments) {
+            if (c.getActivity() != null && !commitmentByActivityId.containsKey(c.getActivity().getId())) {
+                commitmentByActivityId.put(c.getActivity().getId(), c);
+            }
+        }
+
+        List<OverdueActivityItemResponse> overdueItems = new ArrayList<>();
+
+        for (WbsActivity act : allActivities) {
+            // Optional filters
+            if (workPackageId != null && (act.getWorkPackage() == null || !workPackageId.equals(act.getWorkPackage().getId()))) {
+                continue;
+            }
+            if (siteId != null && (act.getSite() == null || !siteId.equals(act.getSite().getId()))) {
+                continue;
+            }
+            if (buildingId != null && (act.getBuilding() == null || !buildingId.equals(act.getBuilding().getId()))) {
+                continue;
+            }
+            if (discipline != null && !discipline.isBlank() && (act.getDiscipline() == null || !act.getDiscipline().equalsIgnoreCase(discipline.trim()))) {
+                continue;
+            }
+            if (contractor != null && !contractor.isBlank() && (act.getAssignedContractor() == null || !act.getAssignedContractor().equalsIgnoreCase(contractor.trim()))) {
+                continue;
+            }
+
+            LocalDate pStart = act.getPlannedStartDate();
+            LocalDate pEnd = act.getPlannedEndDate();
+            if (pStart == null && pEnd == null) {
+                continue;
+            }
+
+            boolean isCompleted = "COMPLETED".equalsIgnoreCase(act.getStatus())
+                    || (act.getProgressPercentage() != null && act.getProgressPercentage() >= 100.0);
+
+            if (isCompleted) {
+                continue; // Completed activities are not currently overdue
+            }
+
+            double actualProgress = act.getProgressPercentage() != null ? act.getProgressPercentage() : 0.0;
+            double expectedProgress = 0.0;
+            double progressSlippage = 0.0;
+            long plannedDuration = (pStart != null && pEnd != null) ? Math.max(1, ChronoUnit.DAYS.between(pStart, pEnd)) : 0;
+
+            OverdueType overdueType = null;
+            long daysOverdue = 0;
+
+            // Scenario 1: OVERDUE_FINISH (Target end date has passed and activity is incomplete)
+            if (pEnd != null && pEnd.isBefore(refDate)) {
+                overdueType = OverdueType.OVERDUE_FINISH;
+                daysOverdue = ChronoUnit.DAYS.between(pEnd, refDate);
+                expectedProgress = 100.0;
+                progressSlippage = Math.max(0.0, 100.0 - actualProgress);
+            }
+            // Scenario 2: OVERDUE_START (Planned start date has passed, but work has not started)
+            else if (pStart != null && pStart.isBefore(refDate)
+                    && (act.getActualStartDate() == null || "PLANNED".equalsIgnoreCase(act.getStatus()) || "NOT_STARTED".equalsIgnoreCase(act.getStatus()) || actualProgress <= 0.0)) {
+                overdueType = OverdueType.OVERDUE_START;
+                daysOverdue = ChronoUnit.DAYS.between(pStart, refDate);
+                if (plannedDuration > 0) {
+                    long elapsed = ChronoUnit.DAYS.between(pStart, refDate);
+                    expectedProgress = Math.min(100.0, ((double) elapsed / plannedDuration) * 100.0);
+                    progressSlippage = Math.max(0.0, expectedProgress - actualProgress);
+                }
+            }
+            // Scenario 3: BEHIND_SCHEDULE (Active within date window, but progress significantly lags schedule)
+            else if (pStart != null && pEnd != null && !pStart.isAfter(refDate) && !pEnd.isBefore(refDate)) {
+                long elapsed = ChronoUnit.DAYS.between(pStart, refDate);
+                expectedProgress = plannedDuration > 0 ? Math.min(100.0, ((double) elapsed / plannedDuration) * 100.0) : 0.0;
+                progressSlippage = expectedProgress - actualProgress;
+                if (progressSlippage >= 20.0) {
+                    overdueType = OverdueType.BEHIND_SCHEDULE;
+                    daysOverdue = Math.max(1, Math.round((progressSlippage / 100.0) * plannedDuration));
+                }
+            }
+
+            if (overdueType == null) {
+                continue; // Not overdue
+            }
+
+            // Aging Bucket
+            OverdueAgingBucket bucket;
+            if (daysOverdue <= 7) {
+                bucket = OverdueAgingBucket.DAYS_1_TO_7;
+            } else if (daysOverdue <= 14) {
+                bucket = OverdueAgingBucket.DAYS_8_TO_14;
+            } else if (daysOverdue <= 30) {
+                bucket = OverdueAgingBucket.DAYS_15_TO_30;
+            } else {
+                bucket = OverdueAgingBucket.OVER_30_DAYS;
+            }
+
+            // Downstream Successor Dependencies
+            List<ActivityDependency> succDeps = activityDependencyRepository.findByPredecessorId(act.getId());
+            List<String> impactedSuccessors = new ArrayList<>();
+            for (ActivityDependency dep : succDeps) {
+                WbsActivity succ = dep.getSuccessor();
+                if (succ != null && !"COMPLETED".equalsIgnoreCase(succ.getStatus())) {
+                    impactedSuccessors.add(succ.getCode() + " - " + succ.getName() + " [" + succ.getStatus() + "]");
+                }
+            }
+            int impactedSuccessorCount = impactedSuccessors.size();
+
+            // Severity Calculation
+            OverdueSeverity sev;
+            if (daysOverdue > 30 || impactedSuccessorCount >= 2 || (act.getLevel() != null && act.getLevel() == 1 && daysOverdue > 14)) {
+                sev = OverdueSeverity.CRITICAL;
+            } else if (daysOverdue >= 15 || impactedSuccessorCount >= 1) {
+                sev = OverdueSeverity.HIGH;
+            } else if (daysOverdue >= 8) {
+                sev = OverdueSeverity.MEDIUM;
+            } else {
+                sev = OverdueSeverity.LOW;
+            }
+
+            // Quantities
+            double plannedQty = act.getPlannedQuantity() != null ? act.getPlannedQuantity() : 0.0;
+            double completedQty = act.getCompletedQuantity() != null ? act.getCompletedQuantity() : 0.0;
+            double remainingQty = Math.max(0.0, plannedQty - completedQty);
+
+            // Lookahead Commitment & Constraint Blockers
+            LookaheadCommitment commitment = commitmentByActivityId.get(act.getId());
+            boolean hasCommitment = commitment != null;
+            String commitmentStatus = commitment != null ? commitment.getStatus().name() : "NOT_COMMITTED";
+            List<String> blockers = new ArrayList<>();
+            String latestBlocker = null;
+
+            if (commitment != null) {
+                if (Boolean.FALSE.equals(commitment.getMaterialsReady())) blockers.add("Materials Staging Deficit");
+                if (Boolean.FALSE.equals(commitment.getDrawingsReady())) blockers.add("GFC Drawing Approval Pending");
+                if (Boolean.FALSE.equals(commitment.getEquipmentReady())) blockers.add("Equipment / Machinery Breakdown");
+                if (Boolean.FALSE.equals(commitment.getManpowerReady())) blockers.add("Subcontractor Gang Shortage");
+                if (Boolean.FALSE.equals(commitment.getSafetyPermitApproved())) blockers.add("Safety PTW Clearance Missing");
+                if (Boolean.FALSE.equals(commitment.getAccessClear())) blockers.add("Site Work Area Obstructed");
+                if (commitment.getBlockerReason() != null && !commitment.getBlockerReason().isBlank()) {
+                    blockers.add(commitment.getBlockerReason());
+                    latestBlocker = commitment.getBlockerReason();
+                } else if (commitment.getVarianceReason() != null && !commitment.getVarianceReason().isBlank()) {
+                    latestBlocker = commitment.getVarianceReason();
+                }
+            }
+
+            // Check predecessor readiness
+            List<ActivityDependency> predDeps = activityDependencyRepository.findBySuccessorId(act.getId());
+            for (ActivityDependency dep : predDeps) {
+                WbsActivity pred = dep.getPredecessor();
+                if (pred != null && !"COMPLETED".equalsIgnoreCase(pred.getStatus())) {
+                    blockers.add("Blocked by Predecessor: " + pred.getCode() + " (" + pred.getStatus() + ")");
+                }
+            }
+
+            // Recovery Action Suggestion
+            String recoveryAction;
+            if (sev == OverdueSeverity.CRITICAL) {
+                recoveryAction = "CRITICAL ACTION: Expedite immediately. " +
+                        (impactedSuccessorCount > 0 ? "Blocks " + impactedSuccessorCount + " downstream tasks (" + String.join(", ", impactedSuccessors) + "). " : "") +
+                        "Mobilize double shift, additional gang, or fast-track rebar/concrete works.";
+            } else if (overdueType == OverdueType.OVERDUE_START) {
+                recoveryAction = "Kickoff delay: Issue immediate work commencement notice to " +
+                        (act.getAssignedContractor() != null ? act.getAssignedContractor() : "contractor") + " and verify drawing & material readiness.";
+            } else if (!blockers.isEmpty()) {
+                recoveryAction = "Resolve pending constraints (" + String.join("; ", blockers) + ") to allow unimpeded progress.";
+            } else {
+                recoveryAction = "Review daily production rate with " +
+                        (act.getAssignedContractor() != null ? act.getAssignedContractor() : "site team") + " to recover " + daysOverdue + " days delay.";
+            }
+
+            // Type filter
+            if (type != null && !type.isBlank() && !overdueType.name().equalsIgnoreCase(type.trim())) {
+                continue;
+            }
+            // Severity filter
+            if (severity != null && !severity.isBlank() && !sev.name().equalsIgnoreCase(severity.trim())) {
+                continue;
+            }
+            // Aging filter
+            if (agingBucket != null && !agingBucket.isBlank() && !bucket.name().equalsIgnoreCase(agingBucket.trim())) {
+                continue;
+            }
+
+            OverdueActivityItemResponse item = OverdueActivityItemResponse.builder()
+                    .activityId(act.getId())
+                    .code(act.getCode())
+                    .name(act.getName())
+                    .discipline(act.getDiscipline())
+                    .level(act.getLevel())
+                    .wbsPath(act.getWbsPath())
+                    .workPackageId(act.getWorkPackage() != null ? act.getWorkPackage().getId() : null)
+                    .workPackageCode(act.getWorkPackage() != null ? act.getWorkPackage().getCode() : null)
+                    .workPackageName(act.getWorkPackage() != null ? act.getWorkPackage().getName() : null)
+                    .siteId(act.getSite() != null ? act.getSite().getId() : null)
+                    .siteName(act.getSite() != null ? act.getSite().getName() : null)
+                    .buildingId(act.getBuilding() != null ? act.getBuilding().getId() : null)
+                    .buildingName(act.getBuilding() != null ? act.getBuilding().getName() : null)
+                    .floorName(act.getFloor() != null ? act.getFloor().getFloorName() : null)
+                    .zoneName(act.getZone() != null ? act.getZone().getName() : null)
+                    .status(act.getStatus())
+                    .plannedStartDate(pStart)
+                    .plannedEndDate(pEnd)
+                    .actualStartDate(act.getActualStartDate())
+                    .actualEndDate(act.getActualEndDate())
+                    .plannedDurationDays((int) plannedDuration)
+                    .overdueType(overdueType)
+                    .daysOverdue(daysOverdue)
+                    .agingBucket(bucket)
+                    .severity(sev)
+                    .plannedQuantity(plannedQty)
+                    .completedQuantity(completedQty)
+                    .remainingQuantity(remainingQty)
+                    .uom(act.getUom())
+                    .progressPercentage(Math.round(actualProgress * 10.0) / 10.0)
+                    .expectedProgressPercentage(Math.round(expectedProgress * 10.0) / 10.0)
+                    .progressSlippagePercentage(Math.round(progressSlippage * 10.0) / 10.0)
+                    .assignedContractor(act.getAssignedContractor())
+                    .inchargeUserId(act.getInchargeUserId())
+                    .impactedSuccessorCount(impactedSuccessorCount)
+                    .impactedSuccessors(impactedSuccessors)
+                    .hasCommitment(hasCommitment)
+                    .commitmentStatus(commitmentStatus)
+                    .constraintBlockers(blockers)
+                    .latestBlockerReason(latestBlocker)
+                    .recommendedRecoveryAction(recoveryAction)
+                    .build();
+
+            overdueItems.add(item);
+        }
+
+        // Sort by severity (CRITICAL > HIGH > MEDIUM > LOW), then by daysOverdue descending
+        overdueItems.sort((a, b) -> {
+            int sevComp = Integer.compare(getSeverityRank(b.getSeverity()), getSeverityRank(a.getSeverity()));
+            if (sevComp != 0) return sevComp;
+            return Long.compare(b.getDaysOverdue() != null ? b.getDaysOverdue() : 0, a.getDaysOverdue() != null ? a.getDaysOverdue() : 0);
+        });
+
+        return overdueItems;
+    }
+
+    private int getSeverityRank(OverdueSeverity sev) {
+        if (sev == null) return 0;
+        return switch (sev) {
+            case CRITICAL -> 4;
+            case HIGH -> 3;
+            case MEDIUM -> 2;
+            case LOW -> 1;
+        };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OverdueActivitySummaryResponse getOverdueActivitySummary(Long projectId, LocalDate asOfDate) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+
+        LocalDate refDate = asOfDate != null ? asOfDate : LocalDate.now();
+
+        List<OverdueActivityItemResponse> overdueList = getOverdueActivities(
+                projectId, refDate, null, null, null, null, null, null, null, null
+        );
+
+        long totalActivities = wbsActivityRepository.countByProjectId(projectId);
+
+        int overdueFinishCount = 0;
+        int overdueStartCount = 0;
+        int behindScheduleCount = 0;
+        long totalDelayDays = 0;
+        long maxDelayDays = 0;
+        int totalImpactedSuccessors = 0;
+
+        Map<String, Integer> agingMap = new LinkedHashMap<>();
+        agingMap.put("DAYS_1_TO_7", 0);
+        agingMap.put("DAYS_8_TO_14", 0);
+        agingMap.put("DAYS_15_TO_30", 0);
+        agingMap.put("OVER_30_DAYS", 0);
+
+        Map<String, Integer> severityMap = new LinkedHashMap<>();
+        severityMap.put("CRITICAL", 0);
+        severityMap.put("HIGH", 0);
+        severityMap.put("MEDIUM", 0);
+        severityMap.put("LOW", 0);
+
+        Map<String, Integer> disciplineMap = new HashMap<>();
+        Map<String, Integer> contractorMap = new HashMap<>();
+        Map<String, Double> remainingQtyMap = new HashMap<>();
+
+        for (OverdueActivityItemResponse item : overdueList) {
+            if (item.getOverdueType() == OverdueType.OVERDUE_FINISH) overdueFinishCount++;
+            else if (item.getOverdueType() == OverdueType.OVERDUE_START) overdueStartCount++;
+            else if (item.getOverdueType() == OverdueType.BEHIND_SCHEDULE) behindScheduleCount++;
+
+            long delay = item.getDaysOverdue() != null ? item.getDaysOverdue() : 0;
+            totalDelayDays += delay;
+            if (delay > maxDelayDays) maxDelayDays = delay;
+
+            totalImpactedSuccessors += (item.getImpactedSuccessorCount() != null ? item.getImpactedSuccessorCount() : 0);
+
+            if (item.getAgingBucket() != null) {
+                agingMap.put(item.getAgingBucket().name(), agingMap.getOrDefault(item.getAgingBucket().name(), 0) + 1);
+            }
+            if (item.getSeverity() != null) {
+                severityMap.put(item.getSeverity().name(), severityMap.getOrDefault(item.getSeverity().name(), 0) + 1);
+            }
+            if (item.getDiscipline() != null) {
+                disciplineMap.put(item.getDiscipline(), disciplineMap.getOrDefault(item.getDiscipline(), 0) + 1);
+            }
+            String contractor = item.getAssignedContractor() != null ? item.getAssignedContractor() : "Unassigned";
+            contractorMap.put(contractor, contractorMap.getOrDefault(contractor, 0) + 1);
+
+            if (item.getUom() != null && item.getRemainingQuantity() != null && item.getRemainingQuantity() > 0) {
+                remainingQtyMap.put(item.getUom(), Math.round((remainingQtyMap.getOrDefault(item.getUom(), 0.0) + item.getRemainingQuantity()) * 10.0) / 10.0);
+            }
+        }
+
+        int overdueCount = overdueList.size();
+        double avgDelay = overdueCount > 0 ? (double) totalDelayDays / overdueCount : 0.0;
+        avgDelay = Math.round(avgDelay * 10.0) / 10.0;
+
+        double overdueRate = totalActivities > 0 ? ((double) overdueCount / totalActivities) * 100.0 : 0.0;
+        overdueRate = Math.round(overdueRate * 10.0) / 10.0;
+
+        List<OverdueActivityItemResponse> topBottlenecks = overdueList.stream()
+                .limit(5)
+                .collect(Collectors.toList());
+
+        List<String> recommendations = new ArrayList<>();
+        if (overdueCount == 0) {
+            recommendations.add("All activities on schedule as of " + refDate + ". Maintain current weekly velocity.");
+        } else {
+            if (severityMap.getOrDefault("CRITICAL", 0) > 0) {
+                recommendations.add("Urgent: " + severityMap.get("CRITICAL") + " CRITICAL activities identified. Prioritize resources and crash critical path predecessors.");
+            }
+            if (overdueStartCount > 0) {
+                recommendations.add(overdueStartCount + " activities missed their scheduled kickoff dates. Verify site access, staging, and subcontractor mobilization.");
+            }
+            if (totalImpactedSuccessors > 0) {
+                recommendations.add(totalImpactedSuccessors + " downstream tasks are blocked by pending delays. Focus on bottleneck activities to prevent cascading project slippage.");
+            }
+            if (!remainingQtyMap.isEmpty()) {
+                recommendations.add("Cumulative pending physical workload across delayed activities: " + remainingQtyMap + ".");
+            }
+        }
+
+        return OverdueActivitySummaryResponse.builder()
+                .projectId(project.getId())
+                .projectCode(project.getCode())
+                .projectName(project.getName())
+                .asOfDate(refDate)
+                .totalProjectActivities((int) totalActivities)
+                .totalOverdueActivities(overdueCount)
+                .overdueRatePercentage(overdueRate)
+                .overdueFinishCount(overdueFinishCount)
+                .overdueStartCount(overdueStartCount)
+                .behindScheduleCount(behindScheduleCount)
+                .averageDelayDays(avgDelay)
+                .maxDelayDays(maxDelayDays)
+                .totalImpactedSuccessors(totalImpactedSuccessors)
+                .agingBreakdown(agingMap)
+                .severityBreakdown(severityMap)
+                .disciplineBreakdown(disciplineMap)
+                .contractorBreakdown(contractorMap)
+                .remainingWorkloadByUom(remainingQtyMap)
+                .topCriticalBottlenecks(topBottlenecks)
+                .plannerRecommendations(recommendations)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public OverdueMitigationResponse recordOverdueMitigation(
+            Long projectId,
+            Long activityId,
+            OverdueMitigationRequest request,
+            String performedBy) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+
+        WbsActivity activity = wbsActivityRepository.findById(activityId)
+                .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", activityId));
+
+        if (!activity.getProject().getId().equals(projectId)) {
+            throw new BadRequestException("Activity " + activity.getCode() + " does not belong to Project ID " + projectId);
+        }
+
+        // Attach mitigation info to LookaheadCommitment
+        LocalDate today = LocalDate.now();
+        List<LookaheadCommitment> existing = lookaheadCommitmentRepository.findByActivityIdOrderByWeekStartDateDesc(activityId);
+        LookaheadCommitment commitment;
+        if (!existing.isEmpty()) {
+            commitment = existing.get(0);
+        } else {
+            commitment = new LookaheadCommitment();
+            commitment.setProject(project);
+            commitment.setActivity(activity);
+            commitment.setWeekStartDate(today);
+            commitment.setWeekEndDate(today.plusDays(6));
+            commitment.setStatus(CommitmentStatus.COMMITTED);
+            commitment.setTargetQuantity(activity.getPlannedQuantity() != null ? activity.getPlannedQuantity() : 0.0);
+            commitment.setUom(activity.getUom());
+            commitment.setCommittedBy(performedBy);
+        }
+
+        commitment.setVarianceReason(request.getDelayReasonCategory() + ": " + (request.getDelayReasonDetails() != null ? request.getDelayReasonDetails() : ""));
+        commitment.setNotes("MITIGATION PLAN: " + request.getRecoveryPlanAction() +
+                (request.getNotes() != null ? " | Notes: " + request.getNotes() : ""));
+
+        if (request.getAdditionalLaborAllocated() != null && request.getAdditionalLaborAllocated() > 0) {
+            int currentCrew = commitment.getCrewSize() != null ? commitment.getCrewSize() : 0;
+            commitment.setCrewSize(currentCrew + request.getAdditionalLaborAllocated());
+        }
+
+        lookaheadCommitmentRepository.save(commitment);
+
+        // Update activity status to DELAYED if currently PLANNED or IN_PROGRESS
+        if (!"COMPLETED".equalsIgnoreCase(activity.getStatus())) {
+            activity.setStatus("DELAYED");
+            wbsActivityRepository.save(activity);
+        }
+
+        auditService.logAction(
+                performedBy,
+                "OVERDUE_ACTIVITY_MITIGATION",
+                "WBS_ACTIVITY",
+                String.valueOf(activity.getId()),
+                "Logged root-cause delay reason [" + request.getDelayReasonCategory() + "] and catch-up action: " + request.getRecoveryPlanAction(),
+                null
+        );
+
+        return OverdueMitigationResponse.builder()
+                .activityId(activity.getId())
+                .activityCode(activity.getCode())
+                .activityName(activity.getName())
+                .delayReasonCategory(request.getDelayReasonCategory())
+                .delayReasonDetails(request.getDelayReasonDetails())
+                .recoveryPlanAction(request.getRecoveryPlanAction())
+                .revisedExpectedCompletionDate(request.getRevisedExpectedCompletionDate())
+                .additionalLaborAllocated(request.getAdditionalLaborAllocated())
+                .recordedBy(performedBy)
+                .recordedAt(LocalDateTime.now())
+                .message("Overdue activity mitigation and recovery catch-up plan logged successfully.")
+                .build();
+    }
+
+    // =========================================================================
+    // COMMITMENT CRUD
+    // =========================================================================
 
     @Override
     @Transactional

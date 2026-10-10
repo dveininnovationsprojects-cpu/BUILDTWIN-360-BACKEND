@@ -25,12 +25,79 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @Tag(
-        name = "Look-Ahead Schedule & Weekly Work Planning (7-Day & 14-Day Lookahead)",
-        description = "Endpoints for managing 7-Day & 14-Day Look-Ahead rolling schedules, dual-week execution plans, daily workload matrices, field constraint checklists, and weekly task commitments."
+        name = "Look-Ahead Schedule & Weekly Work Planning (7-Day, 14-Day Lookahead & Overdue Identification)",
+        description = "Endpoints for managing 7-Day & 14-Day Look-Ahead rolling schedules, dual-week execution plans, daily workload matrices, field constraint checklists, weekly task commitments, and overdue activity root-cause tracking."
 )
 public class LookaheadScheduleController {
 
     private final LookaheadScheduleService lookaheadScheduleService;
+
+    // =========================================================================
+    // OVERDUE ACTIVITY IDENTIFICATION & MITIGATION ENDPOINTS
+    // =========================================================================
+
+    @GetMapping("/api/v1/projects/{projectId}/lookahead/overdue")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Identify Overdue Construction Activities",
+            description = "Scans all project activities and identifies overdue tasks (missed finish date, unstarted past planned start, or behind-schedule progress slippage). Calculates delay days, classifies into aging buckets (1-7d, 8-14d, 15-30d, 30d+), determines risk severity (CRITICAL, HIGH, MEDIUM, LOW), and analyzes impacted downstream successor tasks."
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Overdue activities retrieved and analyzed successfully"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Project not found")
+    })
+    public ResponseEntity<ApiResponse<List<OverdueActivityItemResponse>>> getOverdueActivities(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate,
+            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) String agingBucket,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String discipline,
+            @RequestParam(required = false) Long workPackageId,
+            @RequestParam(required = false) Long siteId,
+            @RequestParam(required = false) Long buildingId,
+            @RequestParam(required = false) String contractor) {
+
+        List<OverdueActivityItemResponse> list = lookaheadScheduleService.getOverdueActivities(
+                projectId, asOfDate, severity, agingBucket, type, discipline, workPackageId, siteId, buildingId, contractor
+        );
+        return ResponseEntity.ok(ApiResponse.success(list, "Overdue activities retrieved successfully"));
+    }
+
+    @GetMapping("/api/v1/projects/{projectId}/lookahead/overdue/summary")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Overdue Activities Executive Summary & KPI Metrics",
+            description = "Provides high-level executive dashboard metrics on project delay exposure: total overdue count, overdue percentage rate, average/max delay days, aging bracket distribution, severity breakdown, contractor delay analysis, and critical chain bottlenecks."
+    )
+    public ResponseEntity<ApiResponse<OverdueActivitySummaryResponse>> getOverdueActivitySummary(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate) {
+
+        OverdueActivitySummaryResponse summary = lookaheadScheduleService.getOverdueActivitySummary(projectId, asOfDate);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Overdue activity executive summary retrieved successfully"));
+    }
+
+    @PostMapping("/api/v1/projects/{projectId}/lookahead/overdue/{activityId}/mitigation")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('SITE_ENGINEER') or hasRole('SITE_SUPERVISOR') or hasRole('DIRECTOR')")
+    @Operation(
+            summary = "Record Delay Root Cause & Catch-Up Mitigation Plan",
+            description = "Logs delay root-cause reason (e.g. MATERIAL_SHORTAGE, LABOR_ABSENCE, DESIGN_CHANGE, WEATHER), recovery action plan, revised target completion date, and additional labor/equipment allocation."
+    )
+    public ResponseEntity<ApiResponse<OverdueMitigationResponse>> recordOverdueMitigation(
+            @PathVariable Long projectId,
+            @PathVariable Long activityId,
+            @Valid @RequestBody OverdueMitigationRequest request,
+            @Parameter(hidden = true) Authentication authentication) {
+
+        OverdueMitigationResponse response = lookaheadScheduleService.recordOverdueMitigation(
+                projectId, activityId, request, authentication.getName()
+        );
+        return ResponseEntity.ok(ApiResponse.success(response, "Overdue activity mitigation and catch-up recovery plan recorded successfully"));
+    }
 
     // =========================================================================
     // 14-DAY LOOK-AHEAD (TWO-WEEK / SPRINT) ENDPOINTS

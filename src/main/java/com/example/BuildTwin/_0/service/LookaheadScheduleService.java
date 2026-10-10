@@ -61,6 +61,47 @@ public interface LookaheadScheduleService {
      */
     LookaheadConstraintSummaryResponse getLookaheadConstraints(Long projectId, LocalDate startDate, Integer days);
 
+    // =========================================================================
+    // OVERDUE ACTIVITY IDENTIFICATION & MITIGATION
+    // =========================================================================
+
+    /**
+     * Identifies, analyzes, and returns all overdue construction activities for a project.
+     * Supports filtering by severity, aging bucket, overdue type (start vs finish), discipline, and contractor.
+     */
+    List<OverdueActivityItemResponse> getOverdueActivities(
+            Long projectId,
+            LocalDate asOfDate,
+            String severity,
+            String agingBucket,
+            String type,
+            String discipline,
+            Long workPackageId,
+            Long siteId,
+            Long buildingId,
+            String contractor
+    );
+
+    /**
+     * Generates an executive summary and KPI dashboard for overdue activities across the project,
+     * including aging brackets, severity breakdown, contractor breakdown, and critical bottlenecks.
+     */
+    OverdueActivitySummaryResponse getOverdueActivitySummary(Long projectId, LocalDate asOfDate);
+
+    /**
+     * Logs root-cause delay reasons, catch-up recovery actions, and updated targets for an overdue activity.
+     */
+    OverdueMitigationResponse recordOverdueMitigation(
+            Long projectId,
+            Long activityId,
+            OverdueMitigationRequest request,
+            String performedBy
+    );
+
+    // =========================================================================
+    // WEEKLY COMMITMENTS
+    // =========================================================================
+
     /**
      * Commits an activity into the weekly work plan / lookahead schedule with a target quantity and readiness checklist.
      */
