@@ -9,4 +9,10 @@ import java.util.List;
 @Repository
 public interface ProjectRiskRepository extends JpaRepository<ProjectRisk, Long> {
     List<ProjectRisk> findByProjectId(Long projectId);
+    List<ProjectRisk> findByProjectIdAndStatus(Long projectId, String status);
+    List<ProjectRisk> findByProjectIdAndSeverity(Long projectId, String severity);
+
+    long countByProjectId(Long projectId);
+    long countByProjectIdAndStatus(Long projectId, String status);
+    long countByProjectIdAndSeverity(Long projectId, String severity);
 }

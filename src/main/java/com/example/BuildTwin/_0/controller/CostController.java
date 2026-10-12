@@ -69,6 +69,16 @@ public class CostController {
         return ResponseEntity.ok(ApiResponse.success(budgets, "Project budgets fetched successfully"));
     }
 
+    @GetMapping("/budgets/project/{projectId}/activity/{activityId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get WBS Activity Budget Breakdown", description = "Retrieves budget breakdown allocated directly to a specific WBS activity (e.g. Slab Casting Material ₹5L, Labour ₹2L).", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<Budget>>> getBudgetsByProjectAndActivity(
+            @PathVariable Long projectId,
+            @PathVariable Long activityId) {
+        List<Budget> budgets = costService.getBudgetsByProjectAndActivity(projectId, activityId);
+        return ResponseEntity.ok(ApiResponse.success(budgets, "WBS activity budget breakdown fetched successfully"));
+    }
+
     @DeleteMapping("/budgets/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
     @Operation(summary = "Delete Budget Head", description = "Deletes budget record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -151,6 +161,14 @@ public class CostController {
     public ResponseEntity<ApiResponse<BudgetOverrunReportDto>> getBudgetOverruns(@PathVariable Long projectId) {
         BudgetOverrunReportDto overruns = costService.getBudgetOverruns(projectId);
         return ResponseEntity.ok(ApiResponse.success(overruns, "Budget overrun report fetched successfully"));
+    }
+
+    @PostMapping("/overruns/check")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
+    @Operation(summary = "Trigger Daily Budget Overrun Check Job (FR-072)", description = "Executes the daily automated scan checking Allocated Budget - (Actual Cost + Committed Cost) across active projects.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<String>> triggerDailyBudgetOverrunCheck() {
+        costService.runDailyBudgetOverrunCheck();
+        return ResponseEntity.ok(ApiResponse.success("Daily automated budget overrun check executed successfully", "Budget overrun check completed"));
     }
 
     // ==========================================

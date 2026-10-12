@@ -1,0 +1,1041 @@
+{
+  "info": {
+    "_postman_id": "b360-epic4-quality-issues-collection-2026",
+    "name": "BuildTwin 360 - Epic 4 & Site Control API Collection",
+    "description": "Complete Postman API test suite for BuildTwin 360: Cost & Budget Control (Epic 4), Quality/NCR/Snag Management, Issue & Blocker Management, Risk Register, and EVM Analytics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_id",
+      "value": "10",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login as Admin (Auto-saves JWT Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.accessToken);",
+                  "    console.log('JWT Token saved successfully: ' + jsonData.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Step 1: Project Cost Structure Setup (CBS & WBS)",
+      "item": [
+        {
+          "name": "Set Baseline Budget (Material - ₹5 Lakhs)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"activityId\": 10,\n  \"costCode\": \"SLAB_CONCRETE_MAT\",\n  \"costHead\": \"MATERIAL\",\n  \"baselineAmount\": 500000.00,\n  \"description\": \"Tower A Slab Casting - RMC M30 Cement Concrete\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets"]
+            }
+          }
+        },
+        {
+          "name": "Set Baseline Budget (Labour - ₹2 Lakhs)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"activityId\": 10,\n  \"costCode\": \"SLAB_BARBENDING_LAB\",\n  \"costHead\": \"LABOUR\",\n  \"baselineAmount\": 200000.00,\n  \"description\": \"Tower A Slab Casting - Steel Fixing & Bar Bending Labour\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets"]
+            }
+          }
+        },
+        {
+          "name": "Get WBS Activity Budget Breakdown (activityId=10)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets/project/1/activity/10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets", "project", "1", "activity", "10"]
+            }
+          }
+        },
+        {
+          "name": "Authorize Budget Revision",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"revisedAmount\": 580000.00,\n  \"revisionReason\": \"Addition of chemical waterproofing admixture for podium slab\",\n  \"approvedBy\": \"Director_Ashok\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets/1/revision",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets", "1", "revision"]
+            }
+          }
+        },
+        {
+          "name": "Get Project Budgets",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Budget By ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Budget Allocation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"activityId\": 10,\n  \"costCode\": \"SLAB_CONCRETE_MAT\",\n  \"costHead\": \"MATERIAL\",\n  \"baselineAmount\": 550000.00,\n  \"description\": \"Updated allocation for slab casting\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Budget Head",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/budgets/999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "budgets", "999"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Step 2: Procurement Commitments & Costing",
+      "item": [
+        {
+          "name": "Get Committed PO Liability Report (Issued POs)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/commitments/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "commitments", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Procurement Expenditure Trail (Committed vs Incurred)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/procurement/summary/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "procurement", "summary", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Step 3: Material & Labour Actual Cost Tracking",
+      "item": [
+        {
+          "name": "Get Material Actual Cost Summary (Stock Consumption)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/actual/material/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "actual", "material", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Labour Actual Cost Summary (Attendance & OT)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/actual/labour/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "actual", "labour", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Sync Ground Consumption to Cost Ledger",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/actual/sync?projectId=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "actual", "sync"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Itemized Cost Tracking Report",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/tracking/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "tracking", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Record Cost Transaction (Direct Expense)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"activityId\": 10,\n  \"costCode\": \"SLAB_CONCRETE_MAT\",\n  \"costHead\": \"MATERIAL\",\n  \"sourceType\": \"MATERIAL_PURCHASE\",\n  \"amount\": 75000.00,\n  \"transactionDate\": \"2026-10-12\",\n  \"referenceNumber\": \"INV-2026-0045\",\n  \"vendorOrPayee\": \"UltraTech ReadyMix Ltd\",\n  \"remarks\": \"Direct tanker batch concrete delivery\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/transactions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "transactions"]
+            }
+          }
+        },
+        {
+          "name": "Get Cost Transaction By ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "transactions", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Cost Transactions By Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/transactions/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "transactions", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Cost Transaction",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/transactions/999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "transactions", "999"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Step 4: Budget vs Actual Variance & Overrun Alerts",
+      "item": [
+        {
+          "name": "Get Budget vs Actual Variance Matrix",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/variance/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "variance", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Budget Overruns (80% & 90% Threshold Warnings)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/overruns/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "overruns", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Trigger Daily Automated Overrun Scan Job",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/overruns/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "overruns", "check"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Step 5: EVM Analytics & Forecast",
+      "item": [
+        {
+          "name": "Get Live EVM KPIs (PV, EV, AC, CPI, SPI)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/evm/project/1?plannedProgress=50&actualProgress=55",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "evm", "project", "1"],
+              "query": [
+                {
+                  "key": "plannedProgress",
+                  "value": "50"
+                },
+                {
+                  "key": "actualProgress",
+                  "value": "55"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get EVM Forecast (EAC, ETC, VAC)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/costs/evm/forecast/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "costs", "evm", "forecast", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Quality, NCR & Snag Management",
+      "item": [
+        {
+          "name": "Create Snag Issue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"title\": \"Surface honeycombing on Column C4\",\n  \"issueType\": \"SNAG\",\n  \"category\": \"CONCRETE\",\n  \"severity\": \"MEDIUM\",\n  \"location\": \"Tower A, 3rd Floor\",\n  \"responsibleParty\": \"Civil Subcontractor L&T\",\n  \"dueDate\": \"2026-10-25\",\n  \"description\": \"Improper vibrator compaction noticed during shuttering de-staging.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/quality/issues",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quality", "issues"]
+            }
+          }
+        },
+        {
+          "name": "Create Non-Conformance Report (NCR)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"title\": \"Cube compressive strength failed at 28 days (22 MPa vs 30 MPa specified)\",\n  \"issueType\": \"NCR\",\n  \"category\": \"CONCRETE\",\n  \"severity\": \"CRITICAL\",\n  \"location\": \"Tower A, Slab Grid 4-B\",\n  \"responsibleParty\": \"RMC ReadyMix Concrete Supplier\",\n  \"dueDate\": \"2026-10-20\",\n  \"description\": \"Non-conformance observed during lab batch tests. Core test investigation required.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/quality/issues",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quality", "issues"]
+            }
+          }
+        },
+        {
+          "name": "Attach Quality Evidence Photo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qualityIssueId\": 1,\n  \"objectUrl\": \"https://s3.ap-south-1.amazonaws.com/buildtwin360/quality/defect_c4.jpg\",\n  \"stage\": \"DEFECT_CAPTURE\",\n  \"caption\": \"Defect capture photo during shuttering strip\",\n  \"uploadedBy\": \"Site Engineer Murugan\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/quality/evidence",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quality", "evidence"]
+            }
+          }
+        },
+        {
+          "name": "Get Evidence Photos for Issue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/quality/issues/1/evidence",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quality", "issues", "1", "evidence"]
+            }
+          }
+        },
+        {
+          "name": "Submit Rectification Resolution",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolutionNotes\": \"Unsound concrete chipped off, bonding agent applied and structural micro-concrete packed.\",\n  \"resolvedBy\": \"Er. Rajesh\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/quality/issues/1/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quality", "issues", "1", "resolve"]
+            }
+          }
+        },
+        {
+          "name": "Verify Rectification & Close Issue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verifiedBy\": \"QA Lead Ramesh\",\n  \"approved\": true,\n  \"remarks\": \"Rebound hammer test confirms 32 MPa strength. Rectification approved and closed.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/quality/issues/1/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quality", "issues", "1", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Get Project Quality & NCR KPI Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/quality/summary/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quality", "summary", "project", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Issue, Blocker & Risk Register",
+      "item": [
+        {
+          "name": "Record Site Blocker (Days Delayed)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"title\": \"Tower Crane Main Motor Inverter Burnt\",\n  \"issueType\": \"BLOCKER\",\n  \"severity\": \"CRITICAL\",\n  \"owner\": \"Plant & Machinery Lead Selvam\",\n  \"impactArea\": \"SCHEDULE\",\n  \"daysDelayed\": 3,\n  \"causeCode\": \"EQUIPMENT_BREAKDOWN\",\n  \"dueDate\": \"2026-10-18\",\n  \"description\": \"Crane is stationary. Precast girder lifting stalled on Tower A.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/issues",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "issues"]
+            }
+          }
+        },
+        {
+          "name": "Get Active Site Blockers",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/issues/blockers/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "issues", "blockers", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Resolve Site Blocker with Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolutionNotes\": \"Replacement Schneider VFD unit installed from standby stock and tested. Girder lifting resumed.\",\n  \"resolvedBy\": \"Er. Selvam\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/issues/1/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "issues", "1", "resolve"]
+            }
+          }
+        },
+        {
+          "name": "Get Issue & Blocker KPI Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/issues/summary/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "issues", "summary", "project", "1"]
+            }
+          }
+        },
+        {
+          "name": "Register Project Risk (Auto Score Calc)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"riskTitle\": \"North-East Monsoon Water Inundation in Deep Basement Excavation\",\n  \"probability\": \"HIGH\",\n  \"impact\": \"HIGH\",\n  \"category\": \"ENVIRONMENTAL\",\n  \"owner\": \"Safety Officer Peter\",\n  \"mitigation\": \"Deploy 4 submersible dewatering pumps and connect to standby 125 kVA generator\",\n  \"contingencyPlan\": \"Perimeter clay bunding to prevent surface water runoff from highway\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/issues/risks",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "issues", "risks"]
+            }
+          }
+        },
+        {
+          "name": "Update Risk Mitigation Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"MITIGATED\",\n  \"mitigation\": \"All 4 pumps installed with automated float switches. Tested during heavy showers.\",\n  \"resolutionNotes\": \"Water level maintained at safe excavation limit with zero downtime.\",\n  \"resolvedBy\": \"Safety Lead Peter\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/issues/risks/1/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "issues", "risks", "1", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Project Risk Register KPI Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/issues/risks/summary/project/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "issues", "risks", "summary", "project", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

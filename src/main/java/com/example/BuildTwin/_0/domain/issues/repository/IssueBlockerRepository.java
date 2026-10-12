@@ -9,4 +9,12 @@ import java.util.List;
 @Repository
 public interface IssueBlockerRepository extends JpaRepository<IssueBlocker, Long> {
     List<IssueBlocker> findByProjectId(Long projectId);
+    List<IssueBlocker> findByProjectIdAndIssueType(Long projectId, String issueType);
+    List<IssueBlocker> findByProjectIdAndStatus(Long projectId, String status);
+    List<IssueBlocker> findByProjectIdAndSeverity(Long projectId, String severity);
+
+    long countByProjectId(Long projectId);
+    long countByProjectIdAndStatus(Long projectId, String status);
+    long countByProjectIdAndIssueType(Long projectId, String issueType);
+    long countByProjectIdAndSeverity(Long projectId, String severity);
 }

@@ -319,4 +319,57 @@ class Epic4CostServiceTest {
         assertNotNull(forecast.getEstimateAtCompletion());
         assertNotNull(forecast.getForecastSummary());
     }
+
+    @Test
+    @DisplayName("Step 1: Should retrieve WBS activity level budget breakdown")
+    void testGetBudgetsByProjectAndActivity() {
+        Long projectId = 101L;
+        Long activityId = 55L;
+        Budget b1 = Budget.builder().projectId(projectId).activityId(activityId).costCode("SLAB_MAT").costHead(CostHead.MATERIAL).baselineAmount(new BigDecimal("500000.00")).build();
+        Budget b2 = Budget.builder().projectId(projectId).activityId(activityId).costCode("SLAB_LAB").costHead(CostHead.LABOUR).baselineAmount(new BigDecimal("200000.00")).build();
+
+        when(budgetRepository.findByProjectIdAndActivityId(projectId, activityId)).thenReturn(List.of(b1, b2));
+
+        List<Budget> result = costService.getBudgetsByProjectAndActivity(projectId, activityId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("SLAB_MAT", result.get(0).getCostCode());
+        assertEquals("SLAB_LAB", result.get(1).getCostCode());
+    }
+
+    @Test
+    @DisplayName("Step 4: Should trigger WARNING_80_PERCENT alert when budget utilization crosses 80%")
+    void testBudgetOverrun80PercentWarning() {
+        Long projectId = 101L;
+        Budget b = Budget.builder().costCode("CIV_RCC").baselineAmount(new BigDecimal("100000.00")).build();
+        CostTransaction tx = CostTransaction.builder().costCode("CIV_RCC").amount(new BigDecimal("85000.00")).build(); // 85%
+
+        when(budgetRepository.findByProjectId(projectId)).thenReturn(List.of(b));
+        when(costTransactionRepository.findByProjectId(projectId)).thenReturn(List.of(tx));
+
+        BudgetOverrunReportDto report = costService.getBudgetOverruns(projectId);
+
+        assertNotNull(report);
+        assertEquals(1, report.getOverrunCount());
+        assertEquals("WARNING_80_PERCENT", report.getOverruns().get(0).getAlertSeverity());
+        assertTrue(report.getOverruns().get(0).getAlertMessage().contains("80% threshold"));
+    }
+
+    @Test
+    @DisplayName("Step 4: Should execute daily background budget scan across projects")
+    void testRunDailyBudgetOverrunCheck() {
+        com.example.BuildTwin._0.domain.projects.model.Project proj = new com.example.BuildTwin._0.domain.projects.model.Project();
+        proj.setId(101L);
+        proj.setName("Metro Line 4");
+
+        Budget b = Budget.builder().costCode("STEEL_01").baselineAmount(new BigDecimal("100000.00")).build();
+        CostTransaction tx = CostTransaction.builder().costCode("STEEL_01").amount(new BigDecimal("95000.00")).build();
+
+        when(projectRepository.findAll()).thenReturn(List.of(proj));
+        when(budgetRepository.findByProjectId(101L)).thenReturn(List.of(b));
+        when(costTransactionRepository.findByProjectId(101L)).thenReturn(List.of(tx));
+
+        assertDoesNotThrow(() -> costService.runDailyBudgetOverrunCheck());
+    }
 }

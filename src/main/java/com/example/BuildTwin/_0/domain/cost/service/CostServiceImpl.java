@@ -142,6 +142,12 @@ public class CostServiceImpl implements CostService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Budget> getBudgetsByProjectAndActivity(Long projectId, Long activityId) {
+        return budgetRepository.findByProjectIdAndActivityId(projectId, activityId);
+    }
+
+    @Override
     public void deleteBudget(Long id) {
         Budget budget = getBudgetById(id);
         budgetRepository.delete(budget);
@@ -706,6 +712,19 @@ public class CostServiceImpl implements CostService {
                             .alertSeverity("WARNING_90_PERCENT")
                             .alertMessage("WARNING: Budget utilization reached " + pct.setScale(2, RoundingMode.HALF_UP) + "% (>= 90% threshold)")
                             .build());
+                } else if (ratio.compareTo(new BigDecimal("0.80")) >= 0) {
+                    overrunItems.add(BudgetOverrunReportDto.BudgetOverrunItemDto.builder()
+                            .costCode(b.getCostCode())
+                            .activityId(b.getActivityId())
+                            .costHead(b.getCostHead() != null ? b.getCostHead().name() : "N/A")
+                            .description(b.getDescription())
+                            .allocatedBudget(allocated)
+                            .actualExpense(actual)
+                            .overrunAmount(BigDecimal.ZERO)
+                            .utilizationPercentage(pct.setScale(2, RoundingMode.HALF_UP) + "%")
+                            .alertSeverity("WARNING_80_PERCENT")
+                            .alertMessage("WARNING: Budget utilization reached " + pct.setScale(2, RoundingMode.HALF_UP) + "% (>= 80% threshold)")
+                            .build());
                 }
             }
         }
@@ -939,5 +958,27 @@ public class CostServiceImpl implements CostService {
                 .varianceAtCompletion(evm.getVarianceAtCompletion())
                 .forecastSummary(summary)
                 .build();
+    }
+
+    @Override
+    @org.springframework.scheduling.annotation.Scheduled(cron = "${app.cost.overrun-check.cron:0 0 1 * * ?}")
+    public void runDailyBudgetOverrunCheck() {
+        log.info("Running daily background automated budget variance & overrun scan: Allocated Budget - (Actual Cost + Committed Cost)");
+        List<com.example.BuildTwin._0.domain.projects.model.Project> projects = projectRepository.findAll();
+        for (var project : projects) {
+            try {
+                BudgetOverrunReportDto report = getBudgetOverruns(project.getId());
+                if (report.getOverrunCount() > 0) {
+                    log.warn("[BUDGET OVERRUN ALERT] Project ID: {} ({}) has {} WBS activities crossing 80%/90% or exceeding budget! Overrun Amount: INR {}",
+                            project.getId(), project.getName(), report.getOverrunCount(), report.getTotalOverrunAmount());
+                    for (var item : report.getOverruns()) {
+                        log.warn(" --> WBS Alert: CostCode: {}, Head: {}, Utilization: {}, Severity: {}, Message: {}",
+                                item.getCostCode(), item.getCostHead(), item.getUtilizationPercentage(), item.getAlertSeverity(), item.getAlertMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to run budget overrun check for project {}: {}", project.getId(), e.getMessage());
+            }
+        }
     }
 }

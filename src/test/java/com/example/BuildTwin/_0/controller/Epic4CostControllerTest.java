@@ -351,4 +351,36 @@ class Epic4CostControllerTest {
                 .andExpect(jsonPath("$.data.budgetAtCompletion").value(1000000.00))
                 .andExpect(jsonPath("$.data.estimateAtCompletion").value(1050000.00));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/budgets/project/{projectId}/activity/{activityId} - WBS Activity Budget Breakdown")
+    void testGetBudgetsByProjectAndActivity() throws Exception {
+        Budget b = Budget.builder()
+                .id(1L)
+                .projectId(100L)
+                .activityId(50L)
+                .costCode("SLAB_CONCRETE")
+                .costHead(CostHead.MATERIAL)
+                .baselineAmount(new BigDecimal("500000.00"))
+                .build();
+
+        when(costService.getBudgetsByProjectAndActivity(100L, 50L)).thenReturn(List.of(b));
+
+        mockMvc.perform(get("/api/v1/costs/budgets/project/100/activity/50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].costCode").value("SLAB_CONCRETE"))
+                .andExpect(jsonPath("$.data[0].baselineAmount").value(500000.00));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/costs/overruns/check - Trigger Daily Budget Overrun Check Job")
+    void testTriggerDailyBudgetOverrunCheck() throws Exception {
+        doNothing().when(costService).runDailyBudgetOverrunCheck();
+
+        mockMvc.perform(post("/api/v1/costs/overruns/check"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value("Daily automated budget overrun check executed successfully"));
+    }
 }

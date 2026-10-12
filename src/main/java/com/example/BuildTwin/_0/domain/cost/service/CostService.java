@@ -20,6 +20,8 @@ public interface CostService {
 
     List<Budget> getBudgetsByProject(Long projectId);
 
+    List<Budget> getBudgetsByProjectAndActivity(Long projectId, Long activityId);
+
     void deleteBudget(Long id);
 
     CostTransaction recordCostTransaction(CostTransactionRequestDto dto);
@@ -51,4 +53,6 @@ public interface CostService {
     com.example.BuildTwin._0.domain.cost.dto.BudgetOverrunReportDto getBudgetOverruns(Long projectId);
 
     com.example.BuildTwin._0.domain.cost.dto.EvmForecastDto getEvmForecast(Long projectId);
+
+    void runDailyBudgetOverrunCheck();
 }

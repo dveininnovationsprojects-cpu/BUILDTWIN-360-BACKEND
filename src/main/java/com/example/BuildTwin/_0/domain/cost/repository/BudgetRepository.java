@@ -15,6 +15,8 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
     List<Budget> findByProjectId(Long projectId);
 
+    List<Budget> findByProjectIdAndActivityId(Long projectId, Long activityId);
+
     Optional<Budget> findByProjectIdAndCostCode(Long projectId, String costCode);
 
     List<Budget> findByProjectIdAndCostHead(Long projectId, com.example.BuildTwin._0.domain.cost.enums.CostHead costHead);
