@@ -444,4 +444,73 @@ class ProcurementControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("GRN entry voided successfully"));
     }
+
+    @Test
+    @WithMockUser(roles = "SITE_ENGINEER")
+    @DisplayName("GET /api/v1/procurement/grn/project/1 - Get GRNs by Project Success")
+    void getGrnsByProject_Success() throws Exception {
+        Grn grn = Grn.builder().id(101L).projectId(1L).poId(50L).status("COMPLETED").build();
+        when(procurementService.getGrnsByProject(1L)).thenReturn(List.of(grn));
+
+        mockMvc.perform(get("/api/v1/procurement/grn/project/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(101));
+    }
+
+    @Test
+    @WithMockUser(roles = "SITE_ENGINEER")
+    @DisplayName("PUT /api/v1/procurement/grn/101 - Update GRN Details Success")
+    void updateGrn_Success() throws Exception {
+        Grn grnUpdate = Grn.builder().vehicleNumber("TN-09-XX-9999").damageReason("Updated vehicle number").build();
+        Grn saved = Grn.builder().id(101L).vehicleNumber("TN-09-XX-9999").status("COMPLETED").build();
+        when(procurementService.updateGrn(eq(101L), any(Grn.class))).thenReturn(saved);
+
+        mockMvc.perform(put("/api/v1/procurement/grn/101")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(grnUpdate)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.vehicleNumber").value("TN-09-XX-9999"));
+    }
+
+    @Test
+    @WithMockUser(roles = "PROJECT_MANAGER")
+    @DisplayName("GET /api/v1/procurement/requests - Get All Requests Success")
+    void getAllRequests_Success() throws Exception {
+        MaterialRequest mr = MaterialRequest.builder().id(1L).projectId(100L).status("PENDING").build();
+        when(procurementService.getAllMaterialRequests()).thenReturn(List.of(mr));
+
+        mockMvc.perform(get("/api/v1/procurement/requests"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "PROCUREMENT_STORE")
+    @DisplayName("GET /api/v1/procurement/purchase-orders - Get All POs Success")
+    void getAllPurchaseOrders_Success() throws Exception {
+        PurchaseOrder po = PurchaseOrder.builder().id(50L).poNumber("PO-001").status("ISSUED").build();
+        when(procurementService.getAllPurchaseOrders()).thenReturn(List.of(po));
+
+        mockMvc.perform(get("/api/v1/procurement/purchase-orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(50));
+    }
+
+    @Test
+    @WithMockUser(roles = "SITE_ENGINEER")
+    @DisplayName("GET /api/v1/procurement/grn - Get All GRNs Success")
+    void getAllGrns_Success() throws Exception {
+        Grn grn = Grn.builder().id(101L).status("COMPLETED").build();
+        when(procurementService.getAllGrns()).thenReturn(List.of(grn));
+
+        mockMvc.perform(get("/api/v1/procurement/grn"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(101));
+    }
 }

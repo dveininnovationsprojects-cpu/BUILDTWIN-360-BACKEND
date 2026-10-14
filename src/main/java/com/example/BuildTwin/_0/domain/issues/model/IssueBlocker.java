@@ -78,6 +78,12 @@ public class IssueBlocker {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    @Column(name = "evidence_url", length = 500)
+    private String evidenceUrl;
+
+    @Column(name = "resolution_evidence_url", length = 500)
+    private String resolutionEvidenceUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

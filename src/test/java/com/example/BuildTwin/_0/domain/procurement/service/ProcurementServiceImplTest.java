@@ -374,4 +374,70 @@ class ProcurementServiceImplTest {
         verify(grnRepository).save(grn);
         verify(purchaseOrderRepository).save(po);
     }
+
+    @Test
+    @DisplayName("Should update GRN details successfully")
+    void testUpdateGrn_Success() {
+        Grn existing = Grn.builder()
+                .id(101L)
+                .poId(50L)
+                .dcNumber("DC-001")
+                .vehicleNumber("TN-01-AA-1234")
+                .status("COMPLETED")
+                .build();
+
+        Grn updateRequest = Grn.builder()
+                .dcNumber("DC-001-UPDATED")
+                .vehicleNumber("TN-01-BB-5678")
+                .gateEntryNumber("GATE-99")
+                .damageReason("Updated note")
+                .build();
+
+        when(grnRepository.findById(101L)).thenReturn(Optional.of(existing));
+        when(grnRepository.save(any(Grn.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Grn result = procurementService.updateGrn(101L, updateRequest);
+
+        assertNotNull(result);
+        assertEquals("DC-001-UPDATED", result.getDcNumber());
+        assertEquals("TN-01-BB-5678", result.getVehicleNumber());
+        assertEquals("GATE-99", result.getGateEntryNumber());
+        assertEquals("Updated note", result.getDamageReason());
+        verify(grnRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Should retrieve GRNs by project ID")
+    void testGetGrnsByProject() {
+        Grn grn = Grn.builder().id(101L).projectId(100L).status("COMPLETED").build();
+        when(grnRepository.findByProjectId(100L)).thenReturn(List.of(grn));
+
+        List<Grn> result = procurementService.getGrnsByProject(100L);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(101L, result.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("Should retrieve all material requests, POs, and GRNs")
+    void testGetAllMethods() {
+        when(materialRequestRepository.findAll()).thenReturn(List.of(sampleRequest));
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder().id(50L).build();
+        when(purchaseOrderRepository.findAll()).thenReturn(List.of(po));
+        Grn grn = Grn.builder().id(101L).build();
+        when(grnRepository.findAll()).thenReturn(List.of(grn));
+
+        List<MaterialRequest> mrs = procurementService.getAllMaterialRequests();
+        assertNotNull(mrs);
+        assertEquals(1, mrs.size());
+
+        List<com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder> pos = procurementService.getAllPurchaseOrders();
+        assertNotNull(pos);
+        assertEquals(1, pos.size());
+
+        List<Grn> grns = procurementService.getAllGrns();
+        assertNotNull(grns);
+        assertEquals(1, grns.size());
+    }
 }

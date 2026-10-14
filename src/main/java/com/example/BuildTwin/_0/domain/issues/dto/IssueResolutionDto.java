@@ -20,4 +20,7 @@ public class IssueResolutionDto {
 
     @Schema(description = "Name or ID of engineer/party resolving the blocker", example = "Site Engineer Murugan")
     private String resolvedBy;
+
+    @Schema(description = "Proof evidence photo URL demonstrating blocker resolution", example = "https://storage.buildtwin.com/issues/dewatering_complete.jpg")
+    private String resolutionEvidenceUrl;
 }

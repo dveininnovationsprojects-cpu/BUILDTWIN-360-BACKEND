@@ -4,6 +4,13 @@ import com.example.BuildTwin._0.domain.cost.dto.EvmMetricsDto;
 import com.example.BuildTwin._0.domain.cost.repository.BudgetRepository;
 import com.example.BuildTwin._0.domain.cost.repository.CostTransactionRepository;
 import com.example.BuildTwin._0.domain.materials.repository.StockLedgerRepository;
+import com.example.BuildTwin._0.domain.cost.repository.CostActualLedgerRepository;
+import com.example.BuildTwin._0.domain.cost.repository.ProjectBudgetRepository;
+import com.example.BuildTwin._0.domain.cost.repository.ProjectEVMRecordRepository;
+import com.example.BuildTwin._0.domain.labour.repository.LabourDailyRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.GrnRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository;
+import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,16 +36,25 @@ class EvmAnalyticsTest {
     private StockLedgerRepository stockLedgerRepository;
 
     @Mock
-    private com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository purchaseOrderRepository;
+    private PurchaseOrderRepository purchaseOrderRepository;
 
     @Mock
-    private com.example.BuildTwin._0.domain.projects.repository.ProjectRepository projectRepository;
+    private ProjectRepository projectRepository;
 
     @Mock
-    private com.example.BuildTwin._0.domain.labour.repository.LabourDailyRepository labourDailyRepository;
+    private LabourDailyRepository labourDailyRepository;
 
     @Mock
-    private com.example.BuildTwin._0.domain.procurement.repository.GrnRepository grnRepository;
+    private GrnRepository grnRepository;
+
+    @Mock
+    private ProjectBudgetRepository projectBudgetRepository;
+
+    @Mock
+    private CostActualLedgerRepository costActualLedgerRepository;
+
+    @Mock
+    private ProjectEVMRecordRepository projectEVMRecordRepository;
 
     @InjectMocks
     private CostServiceImpl costService;

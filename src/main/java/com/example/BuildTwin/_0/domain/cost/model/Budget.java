@@ -33,9 +33,16 @@ public class Budget {
     @Column(name = "activity_id")
     private Long activityId;
 
+    @Column(name = "wbs_activity_id")
+    private Long wbsActivityId;
+
     @NotBlank(message = "Cost code is required")
     @Column(name = "cost_code", nullable = false, length = 50)
     private String costCode;
+
+    @Builder.Default
+    @Column(name = "currency", length = 10)
+    private String currency = "INR";
 
     @Enumerated(EnumType.STRING)
     @Column(name = "cost_head", length = 30)
@@ -70,4 +77,18 @@ public class Budget {
     @org.hibernate.annotations.UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public Long getWbsActivityId() {
+        return wbsActivityId != null ? wbsActivityId : activityId;
+    }
+
+    public BigDecimal getAllocatedAmount() {
+        return baselineAmount;
+    }
+
+    public BigDecimal getTotalWorkingBudget() {
+        BigDecimal base = baselineAmount != null ? baselineAmount : BigDecimal.ZERO;
+        BigDecimal rev = revisedAmount != null ? revisedAmount : BigDecimal.ZERO;
+        return base.add(rev);
+    }
 }

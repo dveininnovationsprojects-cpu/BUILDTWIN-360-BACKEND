@@ -43,6 +43,20 @@ public class QualityController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Quality issue updated successfully"));
     }
 
+    @GetMapping("/issues")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get All Quality Issues", description = "Retrieves all quality snags and NCRs across projects or filtered by optional projectId, status, severity, and issueType.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<QualityIssue>>> getAllQualityIssues(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) String issueType) {
+        List<QualityIssue> issues = projectId != null
+                ? qualityService.getQualityIssuesByProject(projectId, status, severity, issueType)
+                : qualityService.getAllQualityIssues(status, severity, issueType);
+        return ResponseEntity.ok(ApiResponse.success(issues, "Quality issues fetched successfully"));
+    }
+
     @GetMapping("/issues/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Quality Issue Details", description = "Retrieves quality defect details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -117,5 +131,13 @@ public class QualityController {
     public ResponseEntity<ApiResponse<QualitySummaryDto>> getQualitySummary(@PathVariable Long projectId) {
         QualitySummaryDto summary = qualityService.getQualitySummary(projectId);
         return ResponseEntity.ok(ApiResponse.success(summary, "Quality KPI summary fetched successfully"));
+    }
+
+    @GetMapping("/issues/overdue/project/{projectId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Overdue Quality Issues", description = "Retrieves all unclosed quality snags and NCRs that have passed their due date.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<QualityIssue>>> getOverdueIssuesByProject(@PathVariable Long projectId) {
+        List<QualityIssue> overdueIssues = qualityService.getOverdueIssuesByProject(projectId);
+        return ResponseEntity.ok(ApiResponse.success(overdueIssues, "Overdue quality issues fetched successfully"));
     }
 }

@@ -2,7 +2,10 @@ package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.domain.cost.dto.*;
 import com.example.BuildTwin._0.domain.cost.model.Budget;
+import com.example.BuildTwin._0.domain.cost.model.CostActualLedger;
 import com.example.BuildTwin._0.domain.cost.model.CostTransaction;
+import com.example.BuildTwin._0.domain.cost.model.ProjectBudget;
+import com.example.BuildTwin._0.domain.cost.model.ProjectEVMRecord;
 import com.example.BuildTwin._0.domain.cost.service.CostService;
 import com.example.BuildTwin._0.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -51,6 +57,16 @@ public class CostController {
     public ResponseEntity<ApiResponse<Budget>> authorizeBudgetRevision(@PathVariable Long id, @Valid @RequestBody BudgetRevisionDto revisionDto) {
         Budget revised = costService.authorizeBudgetRevision(id, revisionDto);
         return ResponseEntity.ok(ApiResponse.success(revised, "Budget revision authorized successfully"));
+    }
+
+    @GetMapping("/budgets")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get All Budgets", description = "Retrieves all baseline and revised budgets across projects or filtered by optional projectId query parameter.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<Budget>>> getAllBudgets(@RequestParam(required = false) Long projectId) {
+        List<Budget> budgets = projectId != null
+                ? costService.getBudgetsByProject(projectId)
+                : costService.getAllBudgets();
+        return ResponseEntity.ok(ApiResponse.success(budgets, "Budgets fetched successfully"));
     }
 
     @GetMapping("/budgets/{id}")
@@ -107,7 +123,7 @@ public class CostController {
         return ResponseEntity.ok(ApiResponse.success(summary, "Labour actual cost breakdown fetched successfully"));
     }
 
-    @PostMapping("/actual/sync")
+    @PostMapping({"/actual/sync", "/actuals/sync"})
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE')")
     @Operation(summary = "Sync Stock & Labour Consumption to Cost Ledger", description = "Synchronizes ground material consumptions and daily labour records into the central cost transactions ledger.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<CostSyncResultDto>> syncActualCosts(@RequestParam(required = false, defaultValue = "1") Long projectId) {
@@ -115,7 +131,64 @@ public class CostController {
         return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
     }
 
-    @GetMapping("/tracking/project/{projectId}")
+    @PostMapping({"/actual/sync/{projectId}", "/actuals/sync/{projectId}"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Sync Stock & Labour Consumption to Cost Ledger By Project Path", description = "Synchronizes ground material consumptions and daily labour records into the central cost transactions ledger.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostSyncResultDto>> syncActualCostsByPath(@PathVariable Long projectId) {
+        CostSyncResultDto result = costService.syncActualCosts(projectId);
+        return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
+    }
+
+    @PostMapping({"/actual/sync-material", "/actuals/sync-material"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Sync Material Stock Consumption to Cost Ledger (FR-072)", description = "Pulls Stock Ledger consumption entries and writes them into Cost Actual Ledger.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostSyncResultDto>> syncMaterialCost(@RequestParam(required = false, defaultValue = "1") Long projectId) {
+        CostSyncResultDto result = costService.syncMaterialCost(projectId);
+        return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
+    }
+
+    @PostMapping({"/actual/sync-material/{projectId}", "/actuals/sync-material/{projectId}"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Sync Material Stock Consumption to Cost Ledger By Project Path", description = "Pulls Stock Ledger consumption entries and writes them into Cost Actual Ledger.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostSyncResultDto>> syncMaterialCostByPath(@PathVariable Long projectId) {
+        CostSyncResultDto result = costService.syncMaterialCost(projectId);
+        return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
+    }
+
+    @PostMapping({"/actual/sync-labour", "/actuals/sync-labour"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Sync Contractor Labour Timesheet to Cost Ledger (FR-072)", description = "Syncs daily muster attendance and overtime hours into Cost Actual Ledger.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostSyncResultDto>> syncLabourCost(@RequestParam(required = false, defaultValue = "1") Long projectId) {
+        CostSyncResultDto result = costService.syncLabourCost(projectId);
+        return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
+    }
+
+    @PostMapping({"/actual/sync-labour/{projectId}", "/actuals/sync-labour/{projectId}"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Sync Contractor Labour Timesheet to Cost Ledger By Project Path", description = "Syncs daily muster attendance and overtime hours into Cost Actual Ledger.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostSyncResultDto>> syncLabourCostByPath(@PathVariable Long projectId) {
+        CostSyncResultDto result = costService.syncLabourCost(projectId);
+        return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
+    }
+
+    @PostMapping({"/actual/sync-equipment", "/actuals/sync-equipment", "/ledger/sync/equipment"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE', 'SITE_ENGINEER')")
+    @Operation(summary = "Sync Equipment Fleet Usage to Cost Ledger", description = "Syncs daily equipment usage hours into Cost Actual Ledger with costCode=EQUIPMENT.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostSyncResultDto>> syncEquipmentCost(@RequestParam(required = false, defaultValue = "1") Long projectId) {
+        CostSyncResultDto result = costService.syncEquipmentCost(projectId);
+        return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
+    }
+
+    @PostMapping({"/actual/sync-equipment/{projectId}", "/actuals/sync-equipment/{projectId}", "/ledger/sync/equipment/{projectId}"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'PROCUREMENT_STORE', 'SITE_ENGINEER')")
+    @Operation(summary = "Sync Equipment Fleet Usage to Cost Ledger By Path", description = "Syncs daily equipment usage hours into Cost Actual Ledger with costCode=EQUIPMENT.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostSyncResultDto>> syncEquipmentCostByPath(@PathVariable Long projectId) {
+        CostSyncResultDto result = costService.syncEquipmentCost(projectId);
+        return ResponseEntity.ok(ApiResponse.success(result, result.getMessage()));
+    }
+
+
+    @GetMapping({"/tracking/project/{projectId}", "/actuals/project/{projectId}/breakdown"})
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Material & Labour Cost Tracking Report", description = "Itemized breakdown across Material, Labour, Equipment, Subcontractor, and Overhead cost heads with utilization metrics.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProjectCostTrackingReportDto>> getProjectCostTracking(@PathVariable Long projectId) {
@@ -127,7 +200,7 @@ public class CostController {
     // Day 3: Procurement Commitments & Costing
     // ==========================================
 
-    @GetMapping("/commitments/project/{projectId}")
+    @GetMapping({"/commitments/project/{projectId}", "/procurement/commitments/project/{projectId}"})
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Committed PO Liability Report", description = "Tracks open Purchase Order liabilities (ISSUED status) where financial commitment is locked but cash is not yet disbursed.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProcurementCommitmentDto>> getProcurementCommitments(@PathVariable Long projectId) {
@@ -135,9 +208,9 @@ public class CostController {
         return ResponseEntity.ok(ApiResponse.success(commitments, "Procurement commitments fetched successfully"));
     }
 
-    @GetMapping("/procurement/summary/{projectId}")
+    @GetMapping({"/procurement/summary/{projectId}", "/procurement/liability-gap/project/{projectId}"})
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
-    @Operation(summary = "Procurement Total Expenditure Trail", description = "Committed Cost (issued POs) vs Incurred Cost (GRN accepted receipts) and outstanding liability.", security = @SecurityRequirement(name = "BearerAuth"))
+    @Operation(summary = "Procurement Total Expenditure Trail & Gap", description = "Committed Cost (issued POs) vs Incurred Cost (GRN accepted receipts) and outstanding liability.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProcurementExpenditureTrailDto>> getProcurementExpenditureTrail(@PathVariable Long projectId) {
         ProcurementExpenditureTrailDto trail = costService.getProcurementExpenditureTrail(projectId);
         return ResponseEntity.ok(ApiResponse.success(trail, "Procurement expenditure trail fetched successfully"));
@@ -147,7 +220,7 @@ public class CostController {
     // Day 4: Baseline Budget vs Actual Expense
     // ==========================================
 
-    @GetMapping("/variance/project/{projectId}")
+    @GetMapping({"/variance/project/{projectId}", "/variance/{projectId}"})
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Budget vs Actual Variance Matrix", description = "Cost Variance (CV = Allocated Budget - Actual Expense) with 90% threshold alert tracking.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<BudgetVarianceReportDto>> getBudgetVarianceReport(@PathVariable Long projectId) {
@@ -155,7 +228,7 @@ public class CostController {
         return ResponseEntity.ok(ApiResponse.success(varianceReport, "Budget variance report fetched successfully"));
     }
 
-    @GetMapping("/overruns/project/{projectId}")
+    @GetMapping({"/overruns/project/{projectId}", "/alerts/project/{projectId}", "/overruns/{projectId}"})
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Budget Limit Exceeded Activities List", description = "Retrieves WBS activities and Cost Codes that have exceeded or crossed 90% of allocated budget with severity tags.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<BudgetOverrunReportDto>> getBudgetOverruns(@PathVariable Long projectId) {
@@ -175,18 +248,42 @@ public class CostController {
     // Day 5: EVM Backend Support + Forecast
     // ==========================================
 
-    @GetMapping("/evm/project/{projectId}")
+    @PostMapping({"/evm/calculate/project/{projectId}", "/evm/snapshot/{projectId}"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
+    @Operation(summary = "Generate On-Demand EVM Snapshot (FR-073)", description = "Generates and persists a historical EVM snapshot record in project_evm_records table.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<ProjectEVMRecord>> calculateEvmSnapshot(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) Double plannedProgress,
+            @RequestParam(required = false) Double actualProgress) {
+        ProjectEVMRecord snapshot = costService.calculateAndSaveEvmSnapshot(projectId, plannedProgress, actualProgress);
+        return ResponseEntity.ok(ApiResponse.success(snapshot, "EVM snapshot generated and recorded successfully"));
+    }
+
+    @GetMapping({"/evm/project/{projectId}", "/evm/dashboard/project/{projectId}", "/evm/{projectId}"})
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
-    @Operation(summary = "Live EVM KPIs (PV, EV, AC, CPI, SPI) (FR-073)", description = "Calculates Planned Value (PV), Earned Value (EV), Actual Cost (AC), CPI, and SPI with dynamic schedule parameters.", security = @SecurityRequirement(name = "BearerAuth"))
+    @Operation(summary = "Live EVM KPIs & Dashboard (FR-073)", description = "Calculates Planned Value (PV), Earned Value (EV), Actual Cost (AC), CPI, and SPI with dynamic schedule parameters.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<EvmMetricsDto>> getEvmMetrics(
             @PathVariable Long projectId,
             @RequestParam(required = false) Double plannedProgress,
             @RequestParam(required = false) Double actualProgress) {
         EvmMetricsDto metrics = costService.calculateEvmMetricsWithProgress(projectId, plannedProgress, actualProgress);
-        return ResponseEntity.ok(ApiResponse.success(metrics, "EVM analytics computed successfully"));
+        return ResponseEntity.ok(ApiResponse.success(metrics, "EVM KPIs calculated successfully"));
     }
 
-    @GetMapping("/evm/forecast/{projectId}")
+    @GetMapping({"/evm/trends/project/{projectId}", "/evm/trends/{projectId}"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Historical Week-over-Week EVM Trends (FR-073)", description = "Retrieves chronological historical EVM performance records from project_evm_records table with optional startDate and endDate filters.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<ProjectEVMRecord>>> getEvmTrends(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        List<ProjectEVMRecord> trends = (startDate != null && endDate != null)
+                ? costService.getEvmTrends(projectId, startDate, endDate)
+                : costService.getEvmTrends(projectId);
+        return ResponseEntity.ok(ApiResponse.success(trends, "Historical EVM trends fetched successfully"));
+    }
+
+    @GetMapping({"/evm/forecast/{projectId}", "/evm/{projectId}/forecast"})
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Estimate At Completion (EAC) Auto Calculation", description = "Calculates project EAC (BAC / CPI), ETC, VAC, and provides predictive budget forecasts.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<EvmForecastDto>> getEvmForecast(@PathVariable Long projectId) {
@@ -206,6 +303,16 @@ public class CostController {
         return new ResponseEntity<>(ApiResponse.created(transaction, "Cost transaction recorded successfully"), HttpStatus.CREATED);
     }
 
+    @GetMapping("/transactions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get All Cost Transactions", description = "Retrieves all cost transactions across projects or filtered by optional projectId query parameter.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<CostTransaction>>> getAllCostTransactions(@RequestParam(required = false) Long projectId) {
+        List<CostTransaction> transactions = projectId != null
+                ? costService.getCostTransactionsByProject(projectId)
+                : costService.getAllCostTransactions();
+        return ResponseEntity.ok(ApiResponse.success(transactions, "Cost transactions fetched successfully"));
+    }
+
     @GetMapping("/transactions/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Get Cost Transaction By ID", description = "Retrieves specific cost transaction details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
@@ -222,11 +329,59 @@ public class CostController {
         return ResponseEntity.ok(ApiResponse.success(transactions, "Cost transactions fetched successfully"));
     }
 
+    @PutMapping("/transactions/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
+    @Operation(summary = "Update Cost Transaction (FR-072)", description = "Updates cost transaction details (amount, reference, payee, or remarks).", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<CostTransaction>> updateCostTransaction(@PathVariable Long id, @Valid @RequestBody CostTransactionRequestDto request) {
+        CostTransaction updated = costService.updateCostTransaction(id, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Cost transaction updated successfully"));
+    }
+
     @DeleteMapping("/transactions/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
     @Operation(summary = "Delete Cost Transaction", description = "Deletes a cost transaction record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<Void>> deleteCostTransaction(@PathVariable Long id) {
         costService.deleteCostTransaction(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Cost transaction deleted successfully"));
+    }
+
+    @GetMapping("/actuals/ledger/project/{projectId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Raw Cost Actual Ledger Entries (FR-072)", description = "Retrieves itemized entries synced into Cost Actual Ledger for a project.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<CostActualLedger>>> getCostActualLedgersByProject(@PathVariable Long projectId) {
+        List<CostActualLedger> ledgers = costService.getCostActualLedgersByProject(projectId);
+        return ResponseEntity.ok(ApiResponse.success(ledgers, "Cost actual ledger entries fetched successfully"));
+    }
+
+    @DeleteMapping("/actuals/ledger/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
+    @Operation(summary = "Delete Cost Actual Ledger Entry", description = "Deletes an itemized cost actual ledger entry by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteCostActualLedger(@PathVariable Long id) {
+        costService.deleteCostActualLedger(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Cost actual ledger entry deleted successfully"));
+    }
+
+    @GetMapping("/evm/records/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get EVM Historical Record By ID", description = "Retrieves specific EVM historical performance record details by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<ProjectEVMRecord>> getEvmRecordById(@PathVariable Long id) {
+        ProjectEVMRecord record = costService.getEvmRecordById(id);
+        return ResponseEntity.ok(ApiResponse.success(record, "EVM record fetched successfully"));
+    }
+
+    @DeleteMapping("/evm/records/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR')")
+    @Operation(summary = "Delete EVM Historical Record", description = "Deletes an EVM historical snapshot record by ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> deleteEvmRecord(@PathVariable Long id) {
+        costService.deleteEvmRecord(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "EVM historical record deleted successfully"));
+    }
+
+    @GetMapping("/project-budgets/project/{projectId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Mirrored Project Budgets By Project", description = "Retrieves mirrored ProjectBudget entities by project ID.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<ProjectBudget>>> getProjectBudgetsByProject(@PathVariable Long projectId) {
+        List<ProjectBudget> pbs = costService.getProjectBudgetsByProject(projectId);
+        return ResponseEntity.ok(ApiResponse.success(pbs, "Project budgets fetched successfully"));
     }
 }

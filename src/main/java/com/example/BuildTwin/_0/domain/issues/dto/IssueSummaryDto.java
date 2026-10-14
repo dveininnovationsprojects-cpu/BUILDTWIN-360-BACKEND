@@ -39,4 +39,7 @@ public class IssueSummaryDto {
 
     @Schema(description = "Cumulative delay days across active blockers", example = "14")
     private int totalDaysDelayed;
+
+    @Schema(description = "Overdue active blockers count", example = "2")
+    private long overdueCount;
 }

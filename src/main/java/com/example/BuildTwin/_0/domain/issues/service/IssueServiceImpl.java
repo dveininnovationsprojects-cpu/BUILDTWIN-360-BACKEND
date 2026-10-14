@@ -5,8 +5,10 @@ import com.example.BuildTwin._0.domain.issues.dto.IssueSummaryDto;
 import com.example.BuildTwin._0.domain.issues.dto.RiskStatusUpdateDto;
 import com.example.BuildTwin._0.domain.issues.dto.RiskSummaryDto;
 import com.example.BuildTwin._0.domain.issues.model.IssueBlocker;
+import com.example.BuildTwin._0.domain.issues.model.IssueEvidence;
 import com.example.BuildTwin._0.domain.issues.model.ProjectRisk;
 import com.example.BuildTwin._0.domain.issues.repository.IssueBlockerRepository;
+import com.example.BuildTwin._0.domain.issues.repository.IssueEvidenceRepository;
 import com.example.BuildTwin._0.domain.issues.repository.ProjectRiskRepository;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +29,7 @@ public class IssueServiceImpl implements IssueService {
 
     private final IssueBlockerRepository issueBlockerRepository;
     private final ProjectRiskRepository projectRiskRepository;
+    private final IssueEvidenceRepository issueEvidenceRepository;
 
     // ==========================================
     // Issue & Blocker Management
@@ -79,6 +83,8 @@ public class IssueServiceImpl implements IssueService {
         if (updated.getCauseCode() != null) existing.setCauseCode(updated.getCauseCode());
         if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
         if (updated.getResolutionNotes() != null) existing.setResolutionNotes(updated.getResolutionNotes());
+        if (updated.getEvidenceUrl() != null) existing.setEvidenceUrl(updated.getEvidenceUrl());
+        if (updated.getResolutionEvidenceUrl() != null) existing.setResolutionEvidenceUrl(updated.getResolutionEvidenceUrl());
         return issueBlockerRepository.save(existing);
     }
 
@@ -87,6 +93,32 @@ public class IssueServiceImpl implements IssueService {
     public IssueBlocker getIssueById(Long id) {
         return issueBlockerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Issue / Blocker not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IssueBlocker> getAllIssues() {
+        return issueBlockerRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IssueBlocker> getAllIssues(String issueType, String status, String severity) {
+        List<IssueBlocker> list = issueBlockerRepository.findAll();
+        return list.stream()
+                .filter(i -> issueType == null || issueType.isBlank() || (i.getIssueType() != null && i.getIssueType().equalsIgnoreCase(issueType)))
+                .filter(i -> status == null || status.isBlank() || i.getStatus().equalsIgnoreCase(status))
+                .filter(i -> severity == null || severity.isBlank() || (i.getSeverity() != null && i.getSeverity().equalsIgnoreCase(severity)))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IssueBlocker> getAllBlockers() {
+        List<IssueBlocker> list = issueBlockerRepository.findAll();
+        return list.stream()
+                .filter(i -> "BLOCKER".equalsIgnoreCase(i.getIssueType()) || "CRITICAL".equalsIgnoreCase(i.getSeverity()))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -129,6 +161,17 @@ public class IssueServiceImpl implements IssueService {
         issue.setStatus("RESOLVED");
         issue.setResolutionNotes(resolutionDto.getResolutionNotes());
         issue.setResolvedBy(resolutionDto.getResolvedBy());
+        if (resolutionDto.getResolutionEvidenceUrl() != null && !resolutionDto.getResolutionEvidenceUrl().isBlank()) {
+            issue.setResolutionEvidenceUrl(resolutionDto.getResolutionEvidenceUrl());
+            IssueEvidence evidence = IssueEvidence.builder()
+                    .issueId(id)
+                    .objectUrl(resolutionDto.getResolutionEvidenceUrl())
+                    .stage("RESOLUTION_PROOF")
+                    .caption("Resolution proof submitted by " + resolutionDto.getResolvedBy())
+                    .uploadedBy(resolutionDto.getResolvedBy())
+                    .build();
+            issueEvidenceRepository.save(evidence);
+        }
         issue.setResolvedAt(LocalDateTime.now());
         log.info("Resolved Issue / Blocker ID: {} by {} | Notes: {}", id, resolutionDto.getResolvedBy(), resolutionDto.getResolutionNotes());
         return issueBlockerRepository.save(issue);
@@ -184,6 +227,10 @@ public class IssueServiceImpl implements IssueService {
                 .filter(i -> !"RESOLVED".equalsIgnoreCase(i.getStatus()) && !"CLOSED".equalsIgnoreCase(i.getStatus()))
                 .mapToInt(i -> i.getDaysDelayed() != null ? i.getDaysDelayed() : 0)
                 .sum();
+        long overdue = issues.stream()
+                .filter(i -> !"RESOLVED".equalsIgnoreCase(i.getStatus()) && !"CLOSED".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getDueDate() != null && i.getDueDate().isBefore(LocalDate.now()))
+                .count();
 
         return IssueSummaryDto.builder()
                 .projectId(projectId)
@@ -195,7 +242,17 @@ public class IssueServiceImpl implements IssueService {
                 .criticalCount(critical)
                 .highCount(high)
                 .totalDaysDelayed(totalDaysDelayed)
+                .overdueCount(overdue)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IssueBlocker> getOverdueBlockersByProject(Long projectId) {
+        return issueBlockerRepository.findByProjectId(projectId).stream()
+                .filter(i -> !"RESOLVED".equalsIgnoreCase(i.getStatus()) && !"CLOSED".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getDueDate() != null && i.getDueDate().isBefore(LocalDate.now()))
+                .collect(Collectors.toList());
     }
 
     // ==========================================
@@ -257,6 +314,22 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ProjectRisk> getAllRisks() {
+        return projectRiskRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectRisk> getAllRisks(String status, String severity) {
+        List<ProjectRisk> list = projectRiskRepository.findAll();
+        return list.stream()
+                .filter(r -> status == null || status.isBlank() || r.getStatus().equalsIgnoreCase(status))
+                .filter(r -> severity == null || severity.isBlank() || (r.getSeverity() != null && r.getSeverity().equalsIgnoreCase(severity)))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ProjectRisk> getRisksByProject(Long projectId) {
         return projectRiskRepository.findByProjectId(projectId);
     }
@@ -269,6 +342,18 @@ public class IssueServiceImpl implements IssueService {
                 .filter(r -> status == null || status.isBlank() || r.getStatus().equalsIgnoreCase(status))
                 .filter(r -> severity == null || severity.isBlank() || (r.getSeverity() != null && r.getSeverity().equalsIgnoreCase(severity)))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public IssueEvidence addEvidence(IssueEvidence evidence) {
+        log.info("Attaching proof evidence for issue ID: {} at stage: {}", evidence.getIssueId(), evidence.getStage());
+        return issueEvidenceRepository.save(evidence);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IssueEvidence> getEvidenceByIssueId(Long issueId) {
+        return issueEvidenceRepository.findByIssueId(issueId);
     }
 
     @Override

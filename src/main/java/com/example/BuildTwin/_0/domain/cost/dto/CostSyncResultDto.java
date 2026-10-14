@@ -22,6 +22,10 @@ public class CostSyncResultDto {
     @Schema(description = "Count of labour allocation entries synced", example = "8")
     private int labourTransactionsSynced;
 
+    @Builder.Default
+    @Schema(description = "Count of equipment usage entries synced", example = "5")
+    private int equipmentTransactionsSynced = 0;
+
     @Schema(description = "Total cost value synchronized into cost ledger", example = "580000.00")
     private BigDecimal totalSyncedAmount;
 

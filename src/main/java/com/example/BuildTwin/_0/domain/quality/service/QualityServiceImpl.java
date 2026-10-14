@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,6 +59,8 @@ public class QualityServiceImpl implements QualityService {
         if (updated.getRectificationPlan() != null) existing.setRectificationPlan(updated.getRectificationPlan());
         if (updated.getIssueType() != null) existing.setIssueType(updated.getIssueType());
         if (updated.getNcrNumber() != null) existing.setNcrNumber(updated.getNcrNumber());
+        if (updated.getDefectPhotoUrl() != null) existing.setDefectPhotoUrl(updated.getDefectPhotoUrl());
+        if (updated.getRectificationPhotoUrl() != null) existing.setRectificationPhotoUrl(updated.getRectificationPhotoUrl());
         return qualityIssueRepository.save(existing);
     }
 
@@ -66,6 +69,23 @@ public class QualityServiceImpl implements QualityService {
     public QualityIssue getQualityIssueById(Long id) {
         return qualityIssueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quality issue not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<QualityIssue> getAllQualityIssues() {
+        return qualityIssueRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<QualityIssue> getAllQualityIssues(String status, String severity, String issueType) {
+        List<QualityIssue> list = qualityIssueRepository.findAll();
+        return list.stream()
+                .filter(i -> status == null || status.isBlank() || i.getStatus().equalsIgnoreCase(status))
+                .filter(i -> severity == null || severity.isBlank() || i.getSeverity().equalsIgnoreCase(severity))
+                .filter(i -> issueType == null || issueType.isBlank() || (i.getIssueType() != null && i.getIssueType().equalsIgnoreCase(issueType)))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -98,6 +118,18 @@ public class QualityServiceImpl implements QualityService {
         QualityIssue issue = getQualityIssueById(id);
         issue.setResolutionNotes(resolutionDto.getResolutionNotes());
         issue.setResolvedBy(resolutionDto.getResolvedBy());
+        if (resolutionDto.getRectificationPhotoUrl() != null && !resolutionDto.getRectificationPhotoUrl().isBlank()) {
+            issue.setRectificationPhotoUrl(resolutionDto.getRectificationPhotoUrl());
+            // Also automatically attach as QualityEvidence
+            QualityEvidence evidence = QualityEvidence.builder()
+                    .qualityIssueId(id)
+                    .objectUrl(resolutionDto.getRectificationPhotoUrl())
+                    .stage("RECTIFICATION_PROOF")
+                    .caption("Rectification proof photo submitted by " + resolutionDto.getResolvedBy())
+                    .uploadedBy(resolutionDto.getResolvedBy())
+                    .build();
+            qualityEvidenceRepository.save(evidence);
+        }
         issue.setResolvedAt(LocalDateTime.now());
         issue.setStatus("RECTIFICATION_SUBMITTED");
         log.info("Submitted Rectification Resolution for Quality Issue ID: {} by {}", id, resolutionDto.getResolvedBy());
@@ -169,6 +201,10 @@ public class QualityServiceImpl implements QualityService {
                 .filter(i -> !"CLOSED".equalsIgnoreCase(i.getStatus()))
                 .filter(i -> "HIGH".equalsIgnoreCase(i.getSeverity()))
                 .count();
+        long overdue = issues.stream()
+                .filter(i -> !"CLOSED".equalsIgnoreCase(i.getStatus()) && !"VERIFIED".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getDueDate() != null && i.getDueDate().isBefore(LocalDate.now()))
+                .count();
 
         return QualitySummaryDto.builder()
                 .projectId(projectId)
@@ -179,6 +215,16 @@ public class QualityServiceImpl implements QualityService {
                 .closedCount(closed)
                 .criticalCount(critical)
                 .highCount(high)
+                .overdueCount(overdue)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<QualityIssue> getOverdueIssuesByProject(Long projectId) {
+        return qualityIssueRepository.findByProjectId(projectId).stream()
+                .filter(i -> !"CLOSED".equalsIgnoreCase(i.getStatus()) && !"VERIFIED".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getDueDate() != null && i.getDueDate().isBefore(LocalDate.now()))
+                .collect(Collectors.toList());
     }
 }

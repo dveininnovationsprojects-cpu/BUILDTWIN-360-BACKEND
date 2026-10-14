@@ -5,6 +5,7 @@ import com.example.BuildTwin._0.domain.issues.dto.IssueSummaryDto;
 import com.example.BuildTwin._0.domain.issues.dto.RiskStatusUpdateDto;
 import com.example.BuildTwin._0.domain.issues.dto.RiskSummaryDto;
 import com.example.BuildTwin._0.domain.issues.model.IssueBlocker;
+import com.example.BuildTwin._0.domain.issues.model.IssueEvidence;
 import com.example.BuildTwin._0.domain.issues.model.ProjectRisk;
 import com.example.BuildTwin._0.domain.issues.service.IssueService;
 import com.example.BuildTwin._0.dto.ApiResponse;
@@ -46,6 +47,46 @@ public class IssueController {
     public ResponseEntity<ApiResponse<IssueBlocker>> updateIssue(@PathVariable Long id, @Valid @RequestBody IssueBlocker issue) {
         IssueBlocker updated = issueService.updateIssue(id, issue);
         return ResponseEntity.ok(ApiResponse.success(updated, "Site issue updated successfully"));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get All Issues & Blockers", description = "Retrieves all site blockers and issues across projects or filtered by optional projectId, issueType, status, and severity.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<IssueBlocker>>> getAllIssues(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) String issueType,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String severity) {
+        List<IssueBlocker> issues = projectId != null
+                ? issueService.getIssuesByProject(projectId, issueType, status, severity)
+                : issueService.getAllIssues(issueType, status, severity);
+        return ResponseEntity.ok(ApiResponse.success(issues, "Issues fetched successfully"));
+    }
+
+    @GetMapping("/blockers")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get All Active Site Blockers", description = "Retrieves all critical obstacles and site blockers across projects or for a specific project.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<IssueBlocker>>> getAllBlockers(@RequestParam(required = false) Long projectId) {
+        List<IssueBlocker> blockers = projectId != null
+                ? issueService.getBlockersByProject(projectId)
+                : issueService.getAllBlockers();
+        return ResponseEntity.ok(ApiResponse.success(blockers, "Active site blockers fetched successfully"));
+    }
+
+    @PostMapping("/evidence")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'QUALITY_ENGINEER')")
+    @Operation(summary = "Attach Issue Proof Evidence Photo", description = "Attaches blocker proof or resolution evidence photo.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<IssueEvidence>> addEvidence(@Valid @RequestBody IssueEvidence evidence) {
+        IssueEvidence saved = issueService.addEvidence(evidence);
+        return new ResponseEntity<>(ApiResponse.created(saved, "Issue evidence attached successfully"), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{id}/evidence")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Evidence Photos for Issue / Blocker", description = "Retrieves all proof evidence photos attached to an issue or blocker.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<IssueEvidence>>> getEvidenceByIssueId(@PathVariable Long id) {
+        List<IssueEvidence> evidenceList = issueService.getEvidenceByIssueId(id);
+        return ResponseEntity.ok(ApiResponse.success(evidenceList, "Issue evidence photos fetched successfully"));
     }
 
     @GetMapping("/{id}")
@@ -112,6 +153,14 @@ public class IssueController {
         return ResponseEntity.ok(ApiResponse.success(summary, "Issue & blocker KPI summary fetched successfully"));
     }
 
+    @GetMapping("/overdue/project/{projectId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Overdue Site Blockers & Issues", description = "Retrieves active site blockers and issues that have passed their due date.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<IssueBlocker>>> getOverdueBlockersByProject(@PathVariable Long projectId) {
+        List<IssueBlocker> overdue = issueService.getOverdueBlockersByProject(projectId);
+        return ResponseEntity.ok(ApiResponse.success(overdue, "Overdue site blockers fetched successfully"));
+    }
+
     // ==========================================
     // Project Risk Register
     // ==========================================
@@ -138,6 +187,19 @@ public class IssueController {
     public ResponseEntity<ApiResponse<ProjectRisk>> updateRiskStatus(@PathVariable Long id, @Valid @RequestBody RiskStatusUpdateDto statusDto) {
         ProjectRisk updated = issueService.updateRiskStatus(id, statusDto);
         return ResponseEntity.ok(ApiResponse.success(updated, "Risk status updated successfully"));
+    }
+
+    @GetMapping("/risks")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get All Project Risks", description = "Retrieves complete risk registers across projects or filtered by optional projectId, status, and severity.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<ProjectRisk>>> getAllRisks(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String severity) {
+        List<ProjectRisk> risks = projectId != null
+                ? issueService.getRisksByProject(projectId, status, severity)
+                : issueService.getAllRisks(status, severity);
+        return ResponseEntity.ok(ApiResponse.success(risks, "Project risks fetched successfully"));
     }
 
     @GetMapping("/risks/{id}")

@@ -36,4 +36,7 @@ public class QualitySummaryDto {
 
     @Schema(description = "High severity defect count", example = "5")
     private long highCount;
+
+    @Schema(description = "Overdue unresolved snags and NCRs count", example = "3")
+    private long overdueCount;
 }

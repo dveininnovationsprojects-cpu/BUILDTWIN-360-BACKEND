@@ -417,6 +417,23 @@ public class ProcurementServiceImpl implements ProcurementService {
     }
 
     @Override
+    public Grn updateGrn(Long id, Grn updated) {
+        Grn existing = getGrnById(id);
+        if (updated.getDcNumber() != null) existing.setDcNumber(updated.getDcNumber());
+        if (updated.getVehicleNumber() != null) existing.setVehicleNumber(updated.getVehicleNumber());
+        if (updated.getGateEntryNumber() != null) existing.setGateEntryNumber(updated.getGateEntryNumber());
+        if (updated.getDamageReason() != null) existing.setDamageReason(updated.getDamageReason());
+        if (updated.getRejectionReason() != null) existing.setRejectionReason(updated.getRejectionReason());
+        if (updated.getReceivedBy() != null) existing.setReceivedBy(updated.getReceivedBy());
+        if (updated.getDeliveryEvidenceUrl() != null) existing.setDeliveryEvidenceUrl(updated.getDeliveryEvidenceUrl());
+        if (updated.getStatus() != null) existing.setStatus(updated.getStatus());
+
+        Grn saved = grnRepository.save(existing);
+        log.info("Updated GRN ID: {} metadata (DC: {}, Vehicle: {}, ReceivedBy: {})", id, saved.getDcNumber(), saved.getVehicleNumber(), saved.getReceivedBy());
+        return saved;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Grn getGrnById(Long id) {
         return grnRepository.findById(id)
@@ -427,6 +444,12 @@ public class ProcurementServiceImpl implements ProcurementService {
     @Transactional(readOnly = true)
     public List<Grn> getGrnsByPo(Long poId) {
         return grnRepository.findByPoId(poId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Grn> getGrnsByProject(Long projectId) {
+        return grnRepository.findByProjectId(projectId);
     }
 
     @Override
@@ -478,5 +501,23 @@ public class ProcurementServiceImpl implements ProcurementService {
                 }
             });
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MaterialRequest> getAllMaterialRequests() {
+        return materialRequestRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PurchaseOrder> getAllPurchaseOrders() {
+        return purchaseOrderRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Grn> getAllGrns() {
+        return grnRepository.findAll();
     }
 }

@@ -5,6 +5,7 @@ import com.example.BuildTwin._0.domain.issues.dto.IssueSummaryDto;
 import com.example.BuildTwin._0.domain.issues.dto.RiskStatusUpdateDto;
 import com.example.BuildTwin._0.domain.issues.dto.RiskSummaryDto;
 import com.example.BuildTwin._0.domain.issues.model.IssueBlocker;
+import com.example.BuildTwin._0.domain.issues.model.IssueEvidence;
 import com.example.BuildTwin._0.domain.issues.model.ProjectRisk;
 import com.example.BuildTwin._0.domain.issues.service.IssueService;
 import com.example.BuildTwin._0.security.JwtAuthenticationFilter;
@@ -276,5 +277,111 @@ class IssueControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalRisks").value(8))
                 .andExpect(jsonPath("$.data.mitigatedRisks").value(3));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/issues - Get All Issues Globally")
+    void testGetAllIssues() throws Exception {
+        IssueBlocker issue = IssueBlocker.builder()
+                .id(1L)
+                .projectId(100L)
+                .title("Subcontractor labour strike")
+                .issueType("BLOCKER")
+                .severity("HIGH")
+                .status("OPEN")
+                .build();
+
+        when(issueService.getAllIssues(any(), any(), any())).thenReturn(List.of(issue));
+
+        mockMvc.perform(get("/api/v1/issues"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].title").value("Subcontractor labour strike"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/issues/blockers - Get All Active Blockers Globally")
+    void testGetAllBlockers() throws Exception {
+        IssueBlocker blocker = IssueBlocker.builder()
+                .id(2L)
+                .projectId(100L)
+                .title("Tower crane mechanical issue")
+                .issueType("BLOCKER")
+                .severity("CRITICAL")
+                .status("OPEN")
+                .build();
+
+        when(issueService.getAllBlockers()).thenReturn(List.of(blocker));
+
+        mockMvc.perform(get("/api/v1/issues/blockers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].issueType").value("BLOCKER"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/issues/evidence - Attach Issue Proof Evidence")
+    void testAddEvidence() throws Exception {
+        IssueEvidence evidence = IssueEvidence.builder()
+                .id(10L)
+                .issueId(1L)
+                .objectUrl("https://storage.buildtwin.com/issues/proof_01.jpg")
+                .stage("BLOCKER_PROOF")
+                .caption("Waterlogged excavation pit")
+                .uploadedBy("Site Engineer")
+                .build();
+
+        when(issueService.addEvidence(any(IssueEvidence.class))).thenReturn(evidence);
+
+        mockMvc.perform(post("/api/v1/issues/evidence")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(evidence)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value(201))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(10L))
+                .andExpect(jsonPath("$.data.stage").value("BLOCKER_PROOF"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/issues/{id}/evidence - Get Proof Evidence By Issue ID")
+    void testGetEvidenceByIssueId() throws Exception {
+        IssueEvidence evidence = IssueEvidence.builder()
+                .id(10L)
+                .issueId(1L)
+                .objectUrl("https://storage.buildtwin.com/issues/proof_01.jpg")
+                .stage("BLOCKER_PROOF")
+                .build();
+
+        when(issueService.getEvidenceByIssueId(1L)).thenReturn(List.of(evidence));
+
+        mockMvc.perform(get("/api/v1/issues/1/evidence"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].objectUrl").value("https://storage.buildtwin.com/issues/proof_01.jpg"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/issues/risks - Get All Project Risks Globally")
+    void testGetAllRisks() throws Exception {
+        ProjectRisk risk = ProjectRisk.builder()
+                .id(5L)
+                .projectId(100L)
+                .riskTitle("Severe monsoon flooding")
+                .severity("CRITICAL")
+                .riskScore(9)
+                .status("IDENTIFIED")
+                .build();
+
+        when(issueService.getAllRisks(any(), any())).thenReturn(List.of(risk));
+
+        mockMvc.perform(get("/api/v1/issues/risks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].riskTitle").value("Severe monsoon flooding"));
     }
 }

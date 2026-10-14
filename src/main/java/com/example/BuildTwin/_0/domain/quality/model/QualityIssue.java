@@ -84,6 +84,12 @@ public class QualityIssue {
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
+    @Column(name = "defect_photo_url", length = 500)
+    private String defectPhotoUrl;
+
+    @Column(name = "rectification_photo_url", length = 500)
+    private String rectificationPhotoUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

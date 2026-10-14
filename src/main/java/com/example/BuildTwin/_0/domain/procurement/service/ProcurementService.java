@@ -22,7 +22,12 @@ public interface ProcurementService {
     com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto getPoFulfillmentStatus(Long id);
     void deletePurchaseOrder(Long id);
     Grn createGrn(Grn grn);
+    Grn updateGrn(Long id, Grn grn);
     Grn getGrnById(Long id);
     List<Grn> getGrnsByPo(Long poId);
+    List<Grn> getGrnsByProject(Long projectId);
+    List<MaterialRequest> getAllMaterialRequests();
+    List<PurchaseOrder> getAllPurchaseOrders();
+    List<Grn> getAllGrns();
     void deleteGrn(Long id);
 }

@@ -12,6 +12,8 @@ public interface QualityService {
     QualityIssue createQualityIssue(QualityIssue issue);
     QualityIssue updateQualityIssue(Long id, QualityIssue updatedIssue);
     QualityIssue getQualityIssueById(Long id);
+    List<QualityIssue> getAllQualityIssues();
+    List<QualityIssue> getAllQualityIssues(String status, String severity, String issueType);
     List<QualityIssue> getQualityIssuesByProject(Long projectId);
     List<QualityIssue> getQualityIssuesByProject(Long projectId, String status, String severity, String issueType);
     QualityIssue updateStatus(Long id, String status);
@@ -21,4 +23,5 @@ public interface QualityService {
     QualityEvidence addEvidence(QualityEvidence evidence);
     List<QualityEvidence> getEvidenceByQualityIssueId(Long qualityIssueId);
     QualitySummaryDto getQualitySummary(Long projectId);
+    List<QualityIssue> getOverdueIssuesByProject(Long projectId);
 }

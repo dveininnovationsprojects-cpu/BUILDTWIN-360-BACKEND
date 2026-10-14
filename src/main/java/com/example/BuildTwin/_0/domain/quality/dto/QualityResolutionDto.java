@@ -20,4 +20,7 @@ public class QualityResolutionDto {
 
     @Schema(description = "Name or ID of engineer/contractor submitting resolution", example = "Site Engineer Murugan")
     private String resolvedBy;
+
+    @Schema(description = "Optional photo URL proving completion of rectification work", example = "https://storage.buildtwin.com/quality/rectified_slab_01.jpg")
+    private String rectificationPhotoUrl;
 }

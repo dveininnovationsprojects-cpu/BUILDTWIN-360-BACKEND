@@ -4,10 +4,16 @@ import com.example.BuildTwin._0.domain.cost.dto.*;
 import com.example.BuildTwin._0.domain.cost.enums.CostHead;
 import com.example.BuildTwin._0.domain.cost.enums.CostSourceType;
 import com.example.BuildTwin._0.domain.cost.model.Budget;
+import com.example.BuildTwin._0.domain.cost.model.CostActualLedger;
 import com.example.BuildTwin._0.domain.cost.model.CostTransaction;
+import com.example.BuildTwin._0.domain.cost.model.ProjectBudget;
+import com.example.BuildTwin._0.domain.cost.model.ProjectEVMRecord;
 import com.example.BuildTwin._0.domain.cost.repository.BudgetRepository;
 import com.example.BuildTwin._0.domain.cost.repository.CostTransactionRepository;
+import com.example.BuildTwin._0.domain.materials.enums.StockTransactionType;
+import com.example.BuildTwin._0.domain.materials.model.StockLedger;
 import com.example.BuildTwin._0.domain.materials.repository.StockLedgerRepository;
+import com.example.BuildTwin._0.domain.labour.model.LabourDaily;
 import com.example.BuildTwin._0.domain.procurement.model.Grn;
 import com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder;
 import com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository;
@@ -53,8 +59,21 @@ class Epic4CostServiceTest {
     @Mock
     private com.example.BuildTwin._0.domain.procurement.repository.GrnRepository grnRepository;
 
+    @Mock
+    private com.example.BuildTwin._0.domain.cost.repository.ProjectBudgetRepository projectBudgetRepository;
+
+    @Mock
+    private com.example.BuildTwin._0.domain.cost.repository.CostActualLedgerRepository costActualLedgerRepository;
+
+    @Mock
+    private com.example.BuildTwin._0.domain.cost.repository.ProjectEVMRecordRepository projectEVMRecordRepository;
+
+    @Mock
+    private com.example.BuildTwin._0.domain.equipment.repository.EquipmentUsageRepository equipmentUsageRepository;
+
     @InjectMocks
     private CostServiceImpl costService;
+
 
     @Test
     @DisplayName("Module 1: Should set and update CBS Baseline Budget & Authorized Revision")
@@ -372,4 +391,243 @@ class Epic4CostServiceTest {
 
         assertDoesNotThrow(() -> costService.runDailyBudgetOverrunCheck());
     }
+
+    @Test
+    @DisplayName("FR-072: Should sync material stock consumption into Cost Actual Ledger")
+    void testSyncMaterialCost() {
+        Long projectId = 101L;
+        StockLedger entry = StockLedger.builder()
+                .id(501L)
+                .projectId(projectId)
+                .transactionType(StockTransactionType.CONSUMPTION)
+                .quantity(new BigDecimal("100.00"))
+                .unitPrice(new BigDecimal("350.00"))
+                .timestamp(java.time.LocalDateTime.now())
+                .build();
+
+        when(stockLedgerRepository.findByProjectId(projectId))
+                .thenReturn(List.of(entry));
+        when(costActualLedgerRepository.existsBySourceTypeAndSourceReferenceId("STOCK_CONSUMPTION", 501L))
+                .thenReturn(false);
+
+        CostSyncResultDto result = costService.syncMaterialCost(projectId);
+
+        assertNotNull(result);
+        assertEquals(1, result.getMaterialTransactionsSynced());
+        assertEquals(new BigDecimal("35000.00"), result.getTotalSyncedAmount());
+        verify(costActualLedgerRepository).save(any(CostActualLedger.class));
+        verify(costTransactionRepository).save(any(CostTransaction.class));
+    }
+
+    @Test
+    @DisplayName("FR-072: Should sync contractor labour timesheet attendance into Cost Actual Ledger")
+    void testSyncLabourCost() {
+        Long projectId = 101L;
+        LabourDaily rec = LabourDaily.builder()
+                .id(701L)
+                .projectId(projectId)
+                .headcount(5)
+                .standardHours(new BigDecimal("8.00"))
+                .overtimeHours(new BigDecimal("2.00"))
+                .tradeCategory(com.example.BuildTwin._0.domain.labour.enums.TradeCategory.MASON)
+                .recordDate(LocalDate.now())
+                .build();
+
+        when(labourDailyRepository.findByProjectId(projectId)).thenReturn(List.of(rec));
+        when(costActualLedgerRepository.existsBySourceTypeAndSourceReferenceId("LABOUR_TIMESHEET", 701L))
+                .thenReturn(false);
+
+        CostSyncResultDto result = costService.syncLabourCost(projectId);
+
+        assertNotNull(result);
+        assertEquals(1, result.getLabourTransactionsSynced());
+        assertTrue(result.getTotalSyncedAmount().compareTo(BigDecimal.ZERO) > 0);
+        verify(costActualLedgerRepository).save(any(CostActualLedger.class));
+        verify(costTransactionRepository).save(any(CostTransaction.class));
+    }
+
+    @Test
+    @DisplayName("FR-073: Should calculate and persist on-demand EVM snapshot")
+    void testCalculateAndSaveEvmSnapshot() {
+        Long projectId = 101L;
+        when(budgetRepository.getTotalApprovedBudgetByProjectId(projectId)).thenReturn(new BigDecimal("1000000.00"));
+        when(budgetRepository.getTotalBaselineBudgetByProjectId(projectId)).thenReturn(new BigDecimal("1000000.00"));
+        when(costTransactionRepository.getTotalActualCostByProjectId(projectId)).thenReturn(new BigDecimal("450000.00"));
+        when(stockLedgerRepository.getTotalMaterialConsumptionCostByProjectId(projectId)).thenReturn(BigDecimal.ZERO);
+        when(projectEVMRecordRepository.findByProjectIdAndEvaluationDate(eq(projectId), any(LocalDate.class)))
+                .thenReturn(Optional.empty());
+        when(projectEVMRecordRepository.save(any(ProjectEVMRecord.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ProjectEVMRecord record = costService.calculateAndSaveEvmSnapshot(projectId, 50.0, 55.0);
+
+        assertNotNull(record);
+        assertEquals(projectId, record.getProjectId());
+        assertNotNull(record.getPlannedValue());
+        assertNotNull(record.getEarnedValue());
+        assertNotNull(record.getActualCost());
+        assertNotNull(record.getCpi());
+        assertNotNull(record.getSpi());
+        verify(projectEVMRecordRepository).save(any(ProjectEVMRecord.class));
+    }
+
+    @Test
+    @DisplayName("FR-073: Should retrieve historical EVM trends")
+    void testGetEvmTrends() {
+        Long projectId = 101L;
+        ProjectEVMRecord rec = ProjectEVMRecord.builder()
+                .id(1L)
+                .projectId(projectId)
+                .evaluationDate(LocalDate.now())
+                .cpi(new BigDecimal("1.10"))
+                .spi(new BigDecimal("1.05"))
+                .build();
+
+        when(projectEVMRecordRepository.findByProjectIdOrderByEvaluationDateAsc(projectId)).thenReturn(List.of(rec));
+
+        List<ProjectEVMRecord> trends = costService.getEvmTrends(projectId);
+
+        assertNotNull(trends);
+        assertEquals(1, trends.size());
+        assertEquals(new BigDecimal("1.10"), trends.get(0).getCpi());
+    }
+
+    @Test
+    @DisplayName("FR-072: Should delegate actual spend breakdown and procurement liability gap")
+    void testDelegates() {
+        Long projectId = 101L;
+        when(budgetRepository.findByProjectId(projectId)).thenReturn(List.of());
+        when(costTransactionRepository.findByProjectId(projectId)).thenReturn(List.of());
+        when(purchaseOrderRepository.findByProjectId(projectId)).thenReturn(List.of());
+
+        ProjectCostTrackingReportDto report = costService.getActualSpendBreakdown(projectId);
+        assertNotNull(report);
+
+        ProcurementExpenditureTrailDto trail = costService.getProcurementLiabilityGap(projectId);
+        assertNotNull(trail);
+    }
+
+    @Test
+    @DisplayName("CRUD: Should update Cost Transaction successfully")
+    void testUpdateCostTransaction() {
+        CostTransaction existing = CostTransaction.builder()
+                .id(1L)
+                .projectId(101L)
+                .amount(new BigDecimal("5000.00"))
+                .costHead(CostHead.MATERIAL)
+                .remarks("Old description")
+                .build();
+
+        CostTransactionRequestDto updateDto = CostTransactionRequestDto.builder()
+                .projectId(101L)
+                .costCode("CIV_RCC_02")
+                .costHead(CostHead.LABOUR)
+                .amount(new BigDecimal("7500.00"))
+                .remarks("Updated description")
+                .vendorOrPayee("New Vendor")
+                .referenceNumber("REF-999")
+                .build();
+
+        when(costTransactionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(costTransactionRepository.save(any(CostTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CostTransaction result = costService.updateCostTransaction(1L, updateDto);
+
+        assertNotNull(result);
+        assertEquals("CIV_RCC_02", result.getCostCode());
+        assertEquals(CostHead.LABOUR, result.getCostHead());
+        assertEquals(new BigDecimal("7500.00"), result.getAmount());
+        assertEquals("Updated description", result.getRemarks());
+        assertEquals("New Vendor", result.getVendorOrPayee());
+        assertEquals("REF-999", result.getReferenceNumber());
+        verify(costTransactionRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("CRUD: Should retrieve and delete Cost Actual Ledgers by project")
+    void testCostActualLedgerOperations() {
+        Long projectId = 101L;
+        CostActualLedger ledger = CostActualLedger.builder()
+                .id(10L)
+                .projectId(projectId)
+                .sourceType("MATERIAL")
+                .totalCost(new BigDecimal("15000.00"))
+                .build();
+
+        when(costActualLedgerRepository.findByProjectId(projectId)).thenReturn(List.of(ledger));
+        when(costActualLedgerRepository.findById(10L)).thenReturn(Optional.of(ledger));
+
+        List<CostActualLedger> list = costService.getCostActualLedgersByProject(projectId);
+        assertNotNull(list);
+        assertEquals(1, list.size());
+        assertEquals(10L, list.get(0).getId());
+
+        costService.deleteCostActualLedger(10L);
+        verify(costActualLedgerRepository).delete(ledger);
+    }
+
+    @Test
+    @DisplayName("CRUD: Should retrieve and delete Project EVM Records")
+    void testProjectEvmRecordOperations() {
+        Long id = 5L;
+        ProjectEVMRecord record = ProjectEVMRecord.builder()
+                .id(id)
+                .projectId(101L)
+                .cpi(new BigDecimal("1.05"))
+                .spi(new BigDecimal("0.98"))
+                .build();
+
+        when(projectEVMRecordRepository.findById(id)).thenReturn(Optional.of(record));
+
+        ProjectEVMRecord found = costService.getEvmRecordById(id);
+        assertNotNull(found);
+        assertEquals(id, found.getId());
+
+        costService.deleteEvmRecord(id);
+        verify(projectEVMRecordRepository).delete(record);
+    }
+
+    @Test
+    @DisplayName("CRUD: Should retrieve Project Budgets by project")
+    void testGetProjectBudgetsByProject() {
+        Long projectId = 101L;
+        ProjectBudget pb = ProjectBudget.builder()
+                .id(1L)
+                .projectId(projectId)
+                .allocatedAmount(new BigDecimal("500000.00"))
+                .build();
+
+        when(projectBudgetRepository.findByProjectId(projectId)).thenReturn(List.of(pb));
+
+        List<ProjectBudget> budgets = costService.getProjectBudgetsByProject(projectId);
+        assertNotNull(budgets);
+        assertEquals(1, budgets.size());
+        assertEquals(projectId, budgets.get(0).getProjectId());
+    }
+
+    @Test
+    @DisplayName("Module 3: Should sync equipment fleet usage hours into Cost Actual Ledger")
+    void testSyncEquipmentCost() {
+        Long projectId = 101L;
+        com.example.BuildTwin._0.domain.equipment.model.EquipmentUsage usage = com.example.BuildTwin._0.domain.equipment.model.EquipmentUsage.builder()
+                .id(1L)
+                .projectId(projectId)
+                .equipmentId(10L)
+                .activityId(50L)
+                .usageDate(java.time.LocalDate.now())
+                .hoursUsed(new BigDecimal("10.00"))
+                .build();
+
+        when(equipmentUsageRepository.findByProjectId(projectId)).thenReturn(List.of(usage));
+        when(costActualLedgerRepository.existsBySourceTypeAndSourceReferenceId("EQUIPMENT_USAGE", 1L)).thenReturn(false);
+
+        var result = costService.syncEquipmentCost(projectId);
+
+        assertNotNull(result);
+        assertEquals(projectId, result.getProjectId());
+        assertEquals(1, result.getEquipmentTransactionsSynced());
+        assertEquals(new BigDecimal("12000.00"), result.getTotalSyncedAmount());
+        verify(costActualLedgerRepository, times(1)).save(any());
+        verify(costTransactionRepository, times(1)).save(any());
+    }
 }
+

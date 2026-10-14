@@ -4,7 +4,10 @@ import com.example.BuildTwin._0.domain.cost.dto.*;
 import com.example.BuildTwin._0.domain.cost.enums.CostHead;
 import com.example.BuildTwin._0.domain.cost.enums.CostSourceType;
 import com.example.BuildTwin._0.domain.cost.model.Budget;
+import com.example.BuildTwin._0.domain.cost.model.CostActualLedger;
 import com.example.BuildTwin._0.domain.cost.model.CostTransaction;
+import com.example.BuildTwin._0.domain.cost.model.ProjectBudget;
+import com.example.BuildTwin._0.domain.cost.model.ProjectEVMRecord;
 import com.example.BuildTwin._0.domain.cost.service.CostService;
 import com.example.BuildTwin._0.security.JwtAuthenticationFilter;
 import com.example.BuildTwin._0.security.JwtTokenProvider;
@@ -383,4 +386,256 @@ class Epic4CostControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").value("Daily automated budget overrun check executed successfully"));
     }
+
+    @Test
+    @DisplayName("POST /api/v1/costs/actuals/sync-material - Sync Material Stock Consumption")
+    void testSyncMaterialCost() throws Exception {
+        CostSyncResultDto result = CostSyncResultDto.builder()
+                .projectId(100L)
+                .materialTransactionsSynced(4)
+                .labourTransactionsSynced(0)
+                .totalSyncedAmount(new BigDecimal("120000.00"))
+                .message("Material consumption successfully synchronized into Cost Actual Ledger")
+                .build();
+
+        when(costService.syncMaterialCost(100L)).thenReturn(result);
+
+        mockMvc.perform(post("/api/v1/costs/actuals/sync-material?projectId=100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.materialTransactionsSynced").value(4));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/costs/actuals/sync-labour - Sync Contractor Labour Timesheet")
+    void testSyncLabourCost() throws Exception {
+        CostSyncResultDto result = CostSyncResultDto.builder()
+                .projectId(100L)
+                .materialTransactionsSynced(0)
+                .labourTransactionsSynced(6)
+                .totalSyncedAmount(new BigDecimal("95000.00"))
+                .message("Contractor labour timesheet attendance successfully synchronized into Cost Actual Ledger")
+                .build();
+
+        when(costService.syncLabourCost(100L)).thenReturn(result);
+
+        mockMvc.perform(post("/api/v1/costs/actuals/sync-labour?projectId=100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.labourTransactionsSynced").value(6));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/actuals/project/{projectId}/breakdown - Itemized Cost Breakdown")
+    void testGetActualSpendBreakdown() throws Exception {
+        ProjectCostTrackingReportDto report = ProjectCostTrackingReportDto.builder()
+                .projectId(100L)
+                .totalApprovedBudget(new BigDecimal("1000000.00"))
+                .totalActualExpense(new BigDecimal("450000.00"))
+                .overallStatus("UNDER_BUDGET")
+                .build();
+
+        when(costService.getProjectCostTracking(100L)).thenReturn(report);
+
+        mockMvc.perform(get("/api/v1/costs/actuals/project/100/breakdown"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalApprovedBudget").value(1000000.00));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/procurement/liability-gap/project/{projectId} - Procurement Liability Gap")
+    void testGetProcurementLiabilityGap() throws Exception {
+        ProcurementExpenditureTrailDto dto = ProcurementExpenditureTrailDto.builder()
+                .projectId(100L)
+                .committedCost(new BigDecimal("250000.00"))
+                .incurredCost(new BigDecimal("180000.00"))
+                .outstandingLiability(new BigDecimal("70000.00"))
+                .build();
+
+        when(costService.getProcurementExpenditureTrail(100L)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/v1/costs/procurement/liability-gap/project/100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.outstandingLiability").value(70000.00));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/costs/evm/calculate/project/{projectId} - Generate EVM Snapshot")
+    void testCalculateEvmSnapshot() throws Exception {
+        ProjectEVMRecord record = ProjectEVMRecord.builder()
+                .id(1L)
+                .projectId(100L)
+                .evaluationDate(LocalDate.now())
+                .plannedValue(new BigDecimal("500000.00"))
+                .earnedValue(new BigDecimal("550000.00"))
+                .actualCost(new BigDecimal("480000.00"))
+                .budgetAtCompletion(new BigDecimal("1000000.00"))
+                .cpi(new BigDecimal("1.146"))
+                .spi(new BigDecimal("1.100"))
+                .estimateAtCompletion(new BigDecimal("872600.35"))
+                .costStatus("UNDER_BUDGET")
+                .scheduleStatus("AHEAD_OF_SCHEDULE")
+                .build();
+
+        when(costService.calculateAndSaveEvmSnapshot(eq(100L), any(), any())).thenReturn(record);
+
+        mockMvc.perform(post("/api/v1/costs/evm/calculate/project/100?plannedProgress=50&actualProgress=55"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.costStatus").value("UNDER_BUDGET"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/evm/trends/project/{projectId} - Historical EVM Trends")
+    void testGetEvmTrends() throws Exception {
+        ProjectEVMRecord record = ProjectEVMRecord.builder()
+                .id(1L)
+                .projectId(100L)
+                .evaluationDate(LocalDate.now())
+                .cpi(new BigDecimal("1.05"))
+                .spi(new BigDecimal("1.02"))
+                .build();
+
+        when(costService.getEvmTrends(100L)).thenReturn(List.of(record));
+
+        mockMvc.perform(get("/api/v1/costs/evm/trends/project/100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].cpi").value(1.05));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/evm/dashboard/project/{projectId} - EVM Dashboard")
+    void testGetEvmDashboard() throws Exception {
+        EvmMetricsDto evm = EvmMetricsDto.builder()
+                .projectId(100L)
+                .budgetAtCompletion(new BigDecimal("1000000.00"))
+                .spiStatus("ON_SCHEDULE")
+                .cpiStatus("UNDER_BUDGET")
+                .build();
+
+        when(costService.calculateEvmMetricsWithProgress(eq(100L), any(), any())).thenReturn(evm);
+
+        mockMvc.perform(get("/api/v1/costs/evm/dashboard/project/100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.spiStatus").value("ON_SCHEDULE"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/costs/transactions/10 - Update Cost Transaction")
+    void testUpdateCostTransaction() throws Exception {
+        CostTransactionRequestDto dto = CostTransactionRequestDto.builder()
+                .projectId(100L)
+                .costCode("LAB_01")
+                .costHead(CostHead.LABOUR)
+                .sourceType(CostSourceType.LABOUR_WAGES)
+                .amount(new BigDecimal("60000.00"))
+                .transactionDate(LocalDate.now())
+                .referenceNumber("MUSTER-002")
+                .build();
+
+        CostTransaction updated = CostTransaction.builder()
+                .id(10L)
+                .projectId(100L)
+                .amount(new BigDecimal("60000.00"))
+                .build();
+
+        when(costService.updateCostTransaction(eq(10L), any(CostTransactionRequestDto.class))).thenReturn(updated);
+
+        mockMvc.perform(put("/api/v1/costs/transactions/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.amount").value(60000.00));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/actuals/ledger/project/100 - Get Raw Cost Actual Ledger Entries")
+    void testGetCostActualLedgersByProject() throws Exception {
+        CostActualLedger ledger = CostActualLedger.builder()
+                .id(1L)
+                .projectId(100L)
+                .sourceType("STOCK_CONSUMPTION")
+                .costCode("MATERIAL")
+                .incurredQty(new BigDecimal("10.00"))
+                .unitRate(new BigDecimal("500.00"))
+                .totalCost(new BigDecimal("5000.00"))
+                .expenseDate(LocalDate.now())
+                .build();
+
+        when(costService.getCostActualLedgersByProject(100L)).thenReturn(List.of(ledger));
+
+        mockMvc.perform(get("/api/v1/costs/actuals/ledger/project/100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].totalCost").value(5000.00));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/costs/actuals/ledger/1 - Delete Cost Actual Ledger Entry")
+    void testDeleteCostActualLedger() throws Exception {
+        doNothing().when(costService).deleteCostActualLedger(1L);
+
+        mockMvc.perform(delete("/api/v1/costs/actuals/ledger/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/evm/records/1 - Get EVM Snapshot By ID")
+    void testGetEvmRecordById() throws Exception {
+        ProjectEVMRecord record = ProjectEVMRecord.builder().id(1L).projectId(100L).cpi(new BigDecimal("1.10")).build();
+        when(costService.getEvmRecordById(1L)).thenReturn(record);
+
+        mockMvc.perform(get("/api/v1/costs/evm/records/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.cpi").value(1.10));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/costs/evm/records/1 - Delete EVM Snapshot Record")
+    void testDeleteEvmRecord() throws Exception {
+        doNothing().when(costService).deleteEvmRecord(1L);
+
+        mockMvc.perform(delete("/api/v1/costs/evm/records/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/costs/project-budgets/project/100 - Get Mirrored Project Budgets")
+    void testGetProjectBudgetsByProject() throws Exception {
+        ProjectBudget pb = ProjectBudget.builder().id(1L).projectId(100L).costCode("MAT_01").allocatedAmount(new BigDecimal("50000.00")).build();
+        when(costService.getProjectBudgetsByProject(100L)).thenReturn(List.of(pb));
+
+        mockMvc.perform(get("/api/v1/costs/project-budgets/project/100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].allocatedAmount").value(50000.00));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/cost/ledger/sync/equipment/100 - Sync Equipment Fleet Usage to Cost Ledger")
+    void testSyncEquipmentCost() throws Exception {
+        CostSyncResultDto res = CostSyncResultDto.builder()
+                .projectId(100L)
+                .equipmentTransactionsSynced(3)
+                .totalSyncedAmount(new BigDecimal("36000.00"))
+                .message("Equipment fleet usage hours successfully synchronized into Cost Actual Ledger")
+                .build();
+        when(costService.syncEquipmentCost(100L)).thenReturn(res);
+
+        mockMvc.perform(post("/api/v1/cost/ledger/sync/equipment/100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.equipmentTransactionsSynced").value(3))
+                .andExpect(jsonPath("$.data.totalSyncedAmount").value(36000.00));
+    }
 }
+

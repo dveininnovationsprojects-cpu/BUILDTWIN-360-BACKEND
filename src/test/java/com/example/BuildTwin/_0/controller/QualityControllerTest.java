@@ -209,4 +209,27 @@ class QualityControllerTest {
                 .andExpect(jsonPath("$.data.openSnags").value(6))
                 .andExpect(jsonPath("$.data.openNcrs").value(2));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/quality/issues - Get All Quality Issues Globally")
+    void testGetAllQualityIssues() throws Exception {
+        QualityIssue issue = QualityIssue.builder()
+                .id(1L)
+                .projectId(100L)
+                .title("Cracked beam")
+                .issueType("NCR")
+                .ncrNumber("NCR-PRJ100-001")
+                .severity("CRITICAL")
+                .status("OPEN")
+                .build();
+
+        when(qualityService.getAllQualityIssues(any(), any(), any())).thenReturn(List.of(issue));
+
+        mockMvc.perform(get("/api/v1/quality/issues"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].ncrNumber").value("NCR-PRJ100-001"))
+                .andExpect(jsonPath("$.data[0].severity").value("CRITICAL"));
+    }
 }

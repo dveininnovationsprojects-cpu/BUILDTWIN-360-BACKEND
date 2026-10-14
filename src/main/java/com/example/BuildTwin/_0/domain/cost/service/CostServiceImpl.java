@@ -4,9 +4,15 @@ import com.example.BuildTwin._0.domain.cost.dto.*;
 import com.example.BuildTwin._0.domain.cost.enums.CostHead;
 import com.example.BuildTwin._0.domain.cost.enums.CostSourceType;
 import com.example.BuildTwin._0.domain.cost.model.Budget;
+import com.example.BuildTwin._0.domain.cost.model.CostActualLedger;
 import com.example.BuildTwin._0.domain.cost.model.CostTransaction;
+import com.example.BuildTwin._0.domain.cost.model.ProjectBudget;
+import com.example.BuildTwin._0.domain.cost.model.ProjectEVMRecord;
 import com.example.BuildTwin._0.domain.cost.repository.BudgetRepository;
+import com.example.BuildTwin._0.domain.cost.repository.CostActualLedgerRepository;
 import com.example.BuildTwin._0.domain.cost.repository.CostTransactionRepository;
+import com.example.BuildTwin._0.domain.cost.repository.ProjectBudgetRepository;
+import com.example.BuildTwin._0.domain.cost.repository.ProjectEVMRecordRepository;
 import com.example.BuildTwin._0.domain.labour.model.LabourDaily;
 import com.example.BuildTwin._0.domain.labour.repository.LabourDailyRepository;
 import com.example.BuildTwin._0.domain.materials.model.StockLedger;
@@ -40,6 +46,39 @@ public class CostServiceImpl implements CostService {
     private final ProjectRepository projectRepository;
     private final LabourDailyRepository labourDailyRepository;
     private final GrnRepository grnRepository;
+    private final ProjectBudgetRepository projectBudgetRepository;
+    private final CostActualLedgerRepository costActualLedgerRepository;
+    private final ProjectEVMRecordRepository projectEVMRecordRepository;
+    private final com.example.BuildTwin._0.domain.equipment.repository.EquipmentUsageRepository equipmentUsageRepository;
+
+    @org.springframework.beans.factory.annotation.Value("${app.cost.rates.equipment.hourly-default:1200.00}")
+    private BigDecimal defaultEquipmentHourlyRate = new BigDecimal("1200.00");
+
+    @org.springframework.beans.factory.annotation.Value("${app.cost.rates.labour.mason:200.00}")
+    private BigDecimal masonHourlyRate = new BigDecimal("200.00");
+
+    @org.springframework.beans.factory.annotation.Value("${app.cost.rates.labour.carpenter:220.00}")
+    private BigDecimal carpenterHourlyRate = new BigDecimal("220.00");
+
+    @org.springframework.beans.factory.annotation.Value("${app.cost.rates.labour.electrician:250.00}")
+    private BigDecimal electricianHourlyRate = new BigDecimal("250.00");
+
+    @org.springframework.beans.factory.annotation.Value("${app.cost.rates.labour.helper:120.00}")
+    private BigDecimal helperHourlyRate = new BigDecimal("120.00");
+
+    @org.springframework.beans.factory.annotation.Value("${app.cost.rates.labour.default:180.00}")
+    private BigDecimal defaultLabourHourlyRate = new BigDecimal("180.00");
+
+    private BigDecimal getTradeRate(com.example.BuildTwin._0.domain.labour.enums.TradeCategory trade) {
+        if (trade == null) return defaultLabourHourlyRate;
+        return switch (trade) {
+            case MASON -> masonHourlyRate;
+            case CARPENTER, BAR_BENDER, WELDER -> carpenterHourlyRate;
+            case ELECTRICIAN, PLUMBER -> electricianHourlyRate;
+            case HELPER -> helperHourlyRate;
+            default -> defaultLabourHourlyRate;
+        };
+    }
 
     // ==========================================
     // Day 1: Project Cost Structure Setup (CBS)
@@ -47,7 +86,7 @@ public class CostServiceImpl implements CostService {
 
     @Override
     public Budget createOrUpdateBudget(BudgetRequestDto dto) {
-        return budgetRepository.findByProjectIdAndCostCode(dto.getProjectId(), dto.getCostCode())
+        Budget result = budgetRepository.findByProjectIdAndCostCode(dto.getProjectId(), dto.getCostCode())
                 .map(existing -> {
                     if (dto.getBaselineAmount() != null) {
                         existing.setBaselineAmount(dto.getBaselineAmount());
@@ -57,6 +96,7 @@ public class CostServiceImpl implements CostService {
                     }
                     if (dto.getActivityId() != null) {
                         existing.setActivityId(dto.getActivityId());
+                        existing.setWbsActivityId(dto.getActivityId());
                     }
                     if (dto.getCostHead() != null) {
                         existing.setCostHead(dto.getCostHead());
@@ -70,6 +110,9 @@ public class CostServiceImpl implements CostService {
                     if (dto.getApprovedBy() != null) {
                         existing.setApprovedBy(dto.getApprovedBy());
                     }
+                    if (dto.getCurrency() != null) {
+                        existing.setCurrency(dto.getCurrency());
+                    }
                     Budget saved = budgetRepository.save(existing);
                     log.info("Updated existing CBS Budget Head: {} (ID: {}) for Project: {} | Baseline: {}, Revised: {}",
                             saved.getCostCode(), saved.getId(), saved.getProjectId(), saved.getBaselineAmount(), saved.getRevisedAmount());
@@ -79,11 +122,13 @@ public class CostServiceImpl implements CostService {
                     Budget created = budgetRepository.save(Budget.builder()
                             .projectId(dto.getProjectId())
                             .activityId(dto.getActivityId())
+                            .wbsActivityId(dto.getActivityId())
                             .costCode(dto.getCostCode())
                             .costHead(dto.getCostHead())
                             .description(dto.getDescription())
                             .baselineAmount(dto.getBaselineAmount())
                             .revisedAmount(dto.getRevisedAmount() != null ? dto.getRevisedAmount() : BigDecimal.ZERO)
+                            .currency(dto.getCurrency() != null ? dto.getCurrency() : "INR")
                             .revisionReason(dto.getRevisionReason())
                             .approvedBy(dto.getApprovedBy())
                             .status("APPROVED")
@@ -92,6 +137,28 @@ public class CostServiceImpl implements CostService {
                             created.getCostCode(), created.getId(), created.getProjectId(), created.getBaselineAmount());
                     return created;
                 });
+
+        try {
+            ProjectBudget pb = projectBudgetRepository.findByProjectIdAndCostCode(dto.getProjectId(), dto.getCostCode())
+                    .orElse(ProjectBudget.builder()
+                            .projectId(dto.getProjectId())
+                            .wbsActivityId(dto.getActivityId())
+                            .costCode(dto.getCostCode())
+                            .allocatedAmount(dto.getBaselineAmount())
+                            .revisedAmount(dto.getRevisedAmount() != null ? dto.getRevisedAmount() : BigDecimal.ZERO)
+                            .currency(dto.getCurrency() != null ? dto.getCurrency() : "INR")
+                            .description(dto.getDescription())
+                            .build());
+            pb.setAllocatedAmount(dto.getBaselineAmount());
+            if (dto.getRevisedAmount() != null) pb.setRevisedAmount(dto.getRevisedAmount());
+            if (dto.getActivityId() != null) pb.setWbsActivityId(dto.getActivityId());
+            if (dto.getDescription() != null) pb.setDescription(dto.getDescription());
+            projectBudgetRepository.save(pb);
+        } catch (Exception e) {
+            log.warn("ProjectBudget mirror sync exception: {}", e.getMessage());
+        }
+
+        return result;
     }
 
     @Override
@@ -133,6 +200,12 @@ public class CostServiceImpl implements CostService {
     public Budget getBudgetById(Long id) {
         return budgetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Budget not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Budget> getAllBudgets() {
+        return budgetRepository.findAll();
     }
 
     @Override
@@ -183,6 +256,12 @@ public class CostServiceImpl implements CostService {
     public CostTransaction getCostTransactionById(Long id) {
         return costTransactionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CostTransaction not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostTransaction> getAllCostTransactions() {
+        return costTransactionRepository.findAll();
     }
 
     @Override
@@ -242,7 +321,7 @@ public class CostServiceImpl implements CostService {
                 items.add(MaterialActualCostSummaryDto.MaterialCostItemDto.builder()
                         .materialCode(tx.getCostCode())
                         .materialName("Material Expense")
-                        .quantity(BigDecimal.ONE)
+                        .quantity(BigDecimal.ZERO)
                         .unitPrice(amt)
                         .totalCost(amt)
                         .referenceId(tx.getReferenceNumber())
@@ -278,17 +357,8 @@ public class CostServiceImpl implements CostService {
             BigDecimal otHrs = rec.getOvertimeHours() != null ? rec.getOvertimeHours() : BigDecimal.ZERO;
             BigDecimal totalHrs = stdHrs.add(otHrs).multiply(BigDecimal.valueOf(hc));
 
-            // Standard benchmark hourly wage rates per trade (default INR 150/hr)
-            BigDecimal baseRate = new BigDecimal("150.00");
-            if (rec.getTradeCategory() != null) {
-                switch (rec.getTradeCategory()) {
-                    case MASON -> baseRate = new BigDecimal("200.00");
-                    case CARPENTER, BAR_BENDER, WELDER -> baseRate = new BigDecimal("220.00");
-                    case ELECTRICIAN, PLUMBER -> baseRate = new BigDecimal("250.00");
-                    case HELPER -> baseRate = new BigDecimal("120.00");
-                    default -> baseRate = new BigDecimal("180.00");
-                }
-            }
+            // Dynamic benchmark hourly wage rates per trade (configurable via application.properties)
+            BigDecimal baseRate = getTradeRate(rec.getTradeCategory());
 
             BigDecimal stdCost = stdHrs.multiply(BigDecimal.valueOf(hc)).multiply(baseRate);
             BigDecimal otCost = otHrs.multiply(BigDecimal.valueOf(hc)).multiply(baseRate).multiply(new BigDecimal("1.50"));
@@ -320,11 +390,11 @@ public class CostServiceImpl implements CostService {
                 items.add(LabourActualCostSummaryDto.LabourCostItemDto.builder()
                         .tradeCategory("LABOUR")
                         .contractorName(tx.getVendorOrPayee() != null ? tx.getVendorOrPayee() : "Subcontractor Labour")
-                        .headcount(1)
-                        .standardHours(new BigDecimal("8.00"))
+                        .headcount(0)
+                        .standardHours(BigDecimal.ZERO)
                         .overtimeHours(BigDecimal.ZERO)
-                        .totalHours(new BigDecimal("8.00"))
-                        .hourlyRate(amt.divide(new BigDecimal("8.00"), 2, RoundingMode.HALF_UP))
+                        .totalHours(BigDecimal.ZERO)
+                        .hourlyRate(BigDecimal.ZERO)
                         .totalCost(amt)
                         .recordDate(tx.getTransactionDate() != null ? tx.getTransactionDate().toString() : null)
                         .build());
@@ -390,7 +460,7 @@ public class CostServiceImpl implements CostService {
                 int hc = rec.getHeadcount() != null ? rec.getHeadcount() : 1;
                 BigDecimal stdHrs = rec.getStandardHours() != null ? rec.getStandardHours() : new BigDecimal("8.00");
                 BigDecimal otHrs = rec.getOvertimeHours() != null ? rec.getOvertimeHours() : BigDecimal.ZERO;
-                BigDecimal rate = new BigDecimal("150.00");
+                BigDecimal rate = getTradeRate(rec.getTradeCategory());
                 BigDecimal cost = stdHrs.multiply(BigDecimal.valueOf(hc)).multiply(rate)
                         .add(otHrs.multiply(BigDecimal.valueOf(hc)).multiply(rate).multiply(new BigDecimal("1.50")))
                         .setScale(2, RoundingMode.HALF_UP);
@@ -858,6 +928,9 @@ public class CostServiceImpl implements CostService {
     public EvmMetricsDto calculateEvmMetricsWithProgress(Long projectId, Double plannedProgress, Double actualProgress) {
         BigDecimal bac = budgetRepository.getTotalApprovedBudgetByProjectId(projectId);
         BigDecimal pvBaseline = budgetRepository.getTotalBaselineBudgetByProjectId(projectId);
+        if (bac == null) {
+            bac = pvBaseline != null ? pvBaseline : BigDecimal.ZERO;
+        }
 
         BigDecimal directCost = costTransactionRepository.getTotalActualCostByProjectId(projectId);
         BigDecimal materialConsumptionCost = stockLedgerRepository.getTotalMaterialConsumptionCostByProjectId(projectId);
@@ -874,7 +947,7 @@ public class CostServiceImpl implements CostService {
         if (actualProgress != null) {
             ev = bac.multiply(BigDecimal.valueOf(actualProgress)).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
         } else {
-            ev = ac.compareTo(BigDecimal.ZERO) > 0 ? ac : pv.multiply(new BigDecimal("0.5"));
+            ev = ac.compareTo(BigDecimal.ZERO) > 0 ? ac.min(bac) : BigDecimal.ZERO;
         }
 
         BigDecimal sv = ev.subtract(pv);
@@ -980,5 +1053,301 @@ public class CostServiceImpl implements CostService {
                 log.error("Failed to run budget overrun check for project {}: {}", project.getId(), e.getMessage());
             }
         }
+    }
+
+    @Override
+    public CostSyncResultDto syncMaterialCost(Long projectId) {
+        log.info("Syncing material consumption into Cost Actual Ledger for Project ID: {}", projectId);
+        List<StockLedger> consumptionEntries = stockLedgerRepository.findByProjectId(projectId).stream()
+                .filter(e -> com.example.BuildTwin._0.domain.materials.enums.StockTransactionType.CONSUMPTION.equals(e.getTransactionType()))
+                .toList();
+
+        int matCount = 0;
+        BigDecimal totalSynced = BigDecimal.ZERO;
+
+        for (StockLedger entry : consumptionEntries) {
+            boolean exists = costActualLedgerRepository.existsBySourceTypeAndSourceReferenceId("STOCK_CONSUMPTION", entry.getId());
+            if (!exists) {
+                BigDecimal qty = entry.getQuantity() != null ? entry.getQuantity() : BigDecimal.ZERO;
+                BigDecimal price = entry.getUnitPrice() != null ? entry.getUnitPrice() : BigDecimal.ZERO;
+                BigDecimal cost = qty.multiply(price).setScale(2, RoundingMode.HALF_UP);
+
+                if (cost.compareTo(BigDecimal.ZERO) > 0) {
+                    costActualLedgerRepository.save(CostActualLedger.builder()
+                            .projectId(projectId)
+                            .wbsActivityId(entry.getActivityId())
+                            .sourceType("STOCK_CONSUMPTION")
+                            .sourceReferenceId(entry.getId())
+                            .costCode("MATERIAL")
+                            .incurredQty(qty)
+                            .unitRate(price)
+                            .totalCost(cost)
+                            .expenseDate(entry.getTimestamp() != null ? entry.getTimestamp().toLocalDate() : LocalDate.now())
+                            .build());
+
+                    costTransactionRepository.save(CostTransaction.builder()
+                            .projectId(projectId)
+                            .activityId(entry.getActivityId())
+                            .costCode("MATERIAL_CONSUMPTION")
+                            .costHead(CostHead.MATERIAL)
+                            .sourceType(CostSourceType.ACTUAL_EXPENSE)
+                            .amount(cost)
+                            .transactionDate(entry.getTimestamp() != null ? entry.getTimestamp().toLocalDate() : LocalDate.now())
+                            .referenceNumber("STK-CONS-" + entry.getId())
+                            .remarks("Auto-synced from Stock Ledger consumption #" + entry.getId())
+                            .build());
+
+                    matCount++;
+                    totalSynced = totalSynced.add(cost);
+                }
+            }
+        }
+
+        totalSynced = totalSynced.setScale(2, RoundingMode.HALF_UP);
+        return CostSyncResultDto.builder()
+                .projectId(projectId)
+                .materialTransactionsSynced(matCount)
+                .labourTransactionsSynced(0)
+                .totalSyncedAmount(totalSynced)
+                .message("Material consumption successfully synchronized into Cost Actual Ledger")
+                .build();
+    }
+
+    @Override
+    public CostSyncResultDto syncLabourCost(Long projectId) {
+        log.info("Syncing labour attendance into Cost Actual Ledger for Project ID: {}", projectId);
+        List<LabourDaily> labourRecords = labourDailyRepository.findByProjectId(projectId);
+
+        int labCount = 0;
+        BigDecimal totalSynced = BigDecimal.ZERO;
+
+        for (LabourDaily rec : labourRecords) {
+            boolean exists = costActualLedgerRepository.existsBySourceTypeAndSourceReferenceId("LABOUR_TIMESHEET", rec.getId());
+            if (!exists) {
+                int hc = rec.getHeadcount() != null ? rec.getHeadcount() : 1;
+                BigDecimal stdHrs = rec.getStandardHours() != null ? rec.getStandardHours() : new BigDecimal("8.00");
+                BigDecimal otHrs = rec.getOvertimeHours() != null ? rec.getOvertimeHours() : BigDecimal.ZERO;
+                BigDecimal rate = getTradeRate(rec.getTradeCategory());
+                BigDecimal stdCost = stdHrs.multiply(BigDecimal.valueOf(hc)).multiply(rate);
+                BigDecimal otCost = otHrs.multiply(BigDecimal.valueOf(hc)).multiply(rate).multiply(new BigDecimal("1.50"));
+                BigDecimal cost = stdCost.add(otCost).setScale(2, RoundingMode.HALF_UP);
+
+                Long wbsId = (rec.getAllocations() != null && !rec.getAllocations().isEmpty())
+                        ? rec.getAllocations().get(0).getWbsActivityId()
+                        : null;
+
+                if (cost.compareTo(BigDecimal.ZERO) > 0) {
+                    costActualLedgerRepository.save(CostActualLedger.builder()
+                            .projectId(projectId)
+                            .wbsActivityId(wbsId)
+                            .sourceType("LABOUR_TIMESHEET")
+                            .sourceReferenceId(rec.getId())
+                            .costCode("LABOUR")
+                            .incurredQty(stdHrs.add(otHrs).multiply(BigDecimal.valueOf(hc)))
+                            .unitRate(rate)
+                            .totalCost(cost)
+                            .expenseDate(rec.getRecordDate() != null ? rec.getRecordDate() : LocalDate.now())
+                            .build());
+
+                    costTransactionRepository.save(CostTransaction.builder()
+                            .projectId(projectId)
+                            .costCode("LABOUR_WAGES")
+                            .costHead(CostHead.LABOUR)
+                            .sourceType(CostSourceType.LABOUR_WAGES)
+                            .amount(cost)
+                            .transactionDate(rec.getRecordDate() != null ? rec.getRecordDate() : LocalDate.now())
+                            .referenceNumber("LAB-REC-" + rec.getId())
+                            .vendorOrPayee(rec.getContractor() != null ? rec.getContractor().getName() : "Direct Labour")
+                            .remarks("Auto-synced from Daily Labour Record #" + rec.getId())
+                            .build());
+
+                    labCount++;
+                    totalSynced = totalSynced.add(cost);
+                }
+            }
+        }
+
+        totalSynced = totalSynced.setScale(2, RoundingMode.HALF_UP);
+        return CostSyncResultDto.builder()
+                .projectId(projectId)
+                .materialTransactionsSynced(0)
+                .labourTransactionsSynced(labCount)
+                .equipmentTransactionsSynced(0)
+                .totalSyncedAmount(totalSynced)
+                .message("Contractor labour timesheet attendance successfully synchronized into Cost Actual Ledger")
+                .build();
+    }
+
+    @Override
+    public CostSyncResultDto syncEquipmentCost(Long projectId) {
+        log.info("Syncing equipment usage logsheets into Cost Actual Ledger for Project ID: {}", projectId);
+        List<com.example.BuildTwin._0.domain.equipment.model.EquipmentUsage> usageRecords = equipmentUsageRepository.findByProjectId(projectId);
+
+        int eqCount = 0;
+        BigDecimal totalSynced = BigDecimal.ZERO;
+        BigDecimal standardHourlyRate = defaultEquipmentHourlyRate; // Configurable equipment hourly operational rate
+
+        for (com.example.BuildTwin._0.domain.equipment.model.EquipmentUsage rec : usageRecords) {
+            boolean exists = costActualLedgerRepository.existsBySourceTypeAndSourceReferenceId("EQUIPMENT_USAGE", rec.getId());
+            if (!exists) {
+                BigDecimal hrs = rec.getHoursUsed() != null ? rec.getHoursUsed() : BigDecimal.ZERO;
+                BigDecimal cost = hrs.multiply(standardHourlyRate).setScale(2, RoundingMode.HALF_UP);
+
+                if (cost.compareTo(BigDecimal.ZERO) > 0) {
+                    costActualLedgerRepository.save(CostActualLedger.builder()
+                            .projectId(projectId)
+                            .wbsActivityId(rec.getActivityId())
+                            .sourceType("EQUIPMENT_USAGE")
+                            .sourceReferenceId(rec.getId())
+                            .costCode("EQUIPMENT")
+                            .incurredQty(hrs)
+                            .unitRate(standardHourlyRate)
+                            .totalCost(cost)
+                            .expenseDate(rec.getUsageDate() != null ? rec.getUsageDate() : LocalDate.now())
+                            .build());
+
+                    costTransactionRepository.save(CostTransaction.builder()
+                            .projectId(projectId)
+                            .activityId(rec.getActivityId())
+                            .costCode("EQUIPMENT_USAGE")
+                            .costHead(CostHead.EQUIPMENT)
+                            .sourceType(CostSourceType.ACTUAL_EXPENSE)
+                            .amount(cost)
+                            .transactionDate(rec.getUsageDate() != null ? rec.getUsageDate() : LocalDate.now())
+                            .referenceNumber("EQ-USE-" + rec.getId())
+                            .remarks("Auto-synced from Equipment usage #" + rec.getId())
+                            .build());
+
+                    eqCount++;
+                    totalSynced = totalSynced.add(cost);
+                }
+            }
+        }
+
+        totalSynced = totalSynced.setScale(2, RoundingMode.HALF_UP);
+        return CostSyncResultDto.builder()
+                .projectId(projectId)
+                .materialTransactionsSynced(0)
+                .labourTransactionsSynced(0)
+                .equipmentTransactionsSynced(eqCount)
+                .totalSyncedAmount(totalSynced)
+                .message("Equipment fleet usage hours successfully synchronized into Cost Actual Ledger")
+                .build();
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectCostTrackingReportDto getActualSpendBreakdown(Long projectId) {
+        return getProjectCostTracking(projectId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProcurementExpenditureTrailDto getProcurementLiabilityGap(Long projectId) {
+        return getProcurementExpenditureTrail(projectId);
+    }
+
+    @Override
+    public ProjectEVMRecord calculateAndSaveEvmSnapshot(Long projectId, Double plannedProgress, Double actualProgress) {
+        EvmMetricsDto metrics = calculateEvmMetricsWithProgress(projectId, plannedProgress, actualProgress);
+        LocalDate today = LocalDate.now();
+
+        ProjectEVMRecord record = projectEVMRecordRepository.findByProjectIdAndEvaluationDate(projectId, today)
+                .orElse(ProjectEVMRecord.builder()
+                        .projectId(projectId)
+                        .evaluationDate(today)
+                        .build());
+
+        record.setPlannedValue(metrics.getPlannedValue());
+        record.setEarnedValue(metrics.getEarnedValue());
+        record.setActualCost(metrics.getActualCost());
+        record.setBudgetAtCompletion(metrics.getBudgetAtCompletion());
+        record.setCostVariance(metrics.getCostVariance());
+        record.setScheduleVariance(metrics.getScheduleVariance());
+        record.setCpi(metrics.getCostPerformanceIndex());
+        record.setSpi(metrics.getSchedulePerformanceIndex());
+        record.setEstimateAtCompletion(metrics.getEstimateAtCompletion());
+        record.setCostStatus(metrics.getCpiStatus());
+        record.setScheduleStatus(metrics.getSpiStatus());
+
+        ProjectEVMRecord saved = projectEVMRecordRepository.save(record);
+        log.info("Saved EVM historical record for Project: {} | Date: {} | CPI: {}, SPI: {}, EAC: {}",
+                projectId, today, saved.getCpi(), saved.getSpi(), saved.getEstimateAtCompletion());
+        return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EvmMetricsDto getEvmDashboard(Long projectId) {
+        return calculateEvmMetrics(projectId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectEVMRecord> getEvmTrends(Long projectId) {
+        return projectEVMRecordRepository.findByProjectIdOrderByEvaluationDateAsc(projectId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectEVMRecord> getEvmTrends(Long projectId, LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null) {
+            return projectEVMRecordRepository.findByProjectIdAndEvaluationDateBetweenOrderByEvaluationDateAsc(projectId, startDate, endDate);
+        }
+        return projectEVMRecordRepository.findByProjectIdOrderByEvaluationDateAsc(projectId);
+    }
+
+    @Override
+    public CostTransaction updateCostTransaction(Long id, CostTransactionRequestDto dto) {
+        CostTransaction existing = getCostTransactionById(id);
+        if (dto.getProjectId() != null) existing.setProjectId(dto.getProjectId());
+        if (dto.getActivityId() != null) existing.setActivityId(dto.getActivityId());
+        if (dto.getCostCode() != null) existing.setCostCode(dto.getCostCode());
+        if (dto.getCostHead() != null) existing.setCostHead(dto.getCostHead());
+        if (dto.getSourceType() != null) existing.setSourceType(dto.getSourceType());
+        if (dto.getAmount() != null) existing.setAmount(dto.getAmount());
+        if (dto.getTransactionDate() != null) existing.setTransactionDate(dto.getTransactionDate());
+        if (dto.getReferenceNumber() != null) existing.setReferenceNumber(dto.getReferenceNumber());
+        if (dto.getVendorOrPayee() != null) existing.setVendorOrPayee(dto.getVendorOrPayee());
+        if (dto.getRemarks() != null) existing.setRemarks(dto.getRemarks());
+
+        CostTransaction updated = costTransactionRepository.save(existing);
+        log.info("Updated Cost Transaction ID: {} | New Amount: {}, Ref: '{}'", id, updated.getAmount(), updated.getReferenceNumber());
+        return updated;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CostActualLedger> getCostActualLedgersByProject(Long projectId) {
+        return costActualLedgerRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public void deleteCostActualLedger(Long id) {
+        CostActualLedger ledger = costActualLedgerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CostActualLedger not found with ID: " + id));
+        costActualLedgerRepository.delete(ledger);
+        log.warn("Deleted Cost Actual Ledger entry ID: {} for Project: {}", id, ledger.getProjectId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectEVMRecord getEvmRecordById(Long id) {
+        return projectEVMRecordRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ProjectEVMRecord not found with ID: " + id));
+    }
+
+    @Override
+    public void deleteEvmRecord(Long id) {
+        ProjectEVMRecord rec = getEvmRecordById(id);
+        projectEVMRecordRepository.delete(rec);
+        log.warn("Deleted ProjectEVMRecord snapshot ID: {} for Project: {}", id, rec.getProjectId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectBudget> getProjectBudgetsByProject(Long projectId) {
+        return projectBudgetRepository.findByProjectId(projectId);
     }
 }
