@@ -35,6 +35,12 @@ import com.example.BuildTwin._0.domain.issues.enums.IssueType;
 import com.example.BuildTwin._0.domain.issues.enums.IssueSeverity;
 import com.example.BuildTwin._0.domain.issues.enums.IssueStatus;
 import com.example.BuildTwin._0.domain.issues.repository.ProjectIssueRepository;
+import com.example.BuildTwin._0.domain.procurement.model.MaterialRequest;
+import com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder;
+import com.example.BuildTwin._0.domain.procurement.model.Grn;
+import com.example.BuildTwin._0.domain.procurement.repository.MaterialRequestRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.GrnRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -76,6 +82,9 @@ public class DataInitializer implements CommandLineRunner {
     private final EquipmentUsageRepository equipmentUsageRepository;
     private final ProjectIssueRepository projectIssueRepository;
     private final ProjectEVMRecordRepository projectEVMRecordRepository;
+    private final MaterialRequestRepository materialRequestRepository;
+    private final PurchaseOrderRepository purchaseOrderRepository;
+    private final GrnRepository grnRepository;
 
     @org.springframework.beans.factory.annotation.Value("${app.seed.enabled:true}")
     private boolean seedEnabled = true;
@@ -403,6 +412,7 @@ public class DataInitializer implements CommandLineRunner {
         Site siteA = siteRepository.findByProjectId(project.getId()).stream().findFirst().orElse(null);
         Activity actRaft = seedProjectWbsAndBudgets(project);
         seedSuppliersAndMaterials(project);
+        seedProcurementData(project, siteA, actRaft);
         seedContractorsAndEquipment(project, siteA);
         seedProjectIssues(project, actRaft != null ? actRaft.getId() : null);
         seedProjectEvmSnapshot(project);
@@ -624,6 +634,105 @@ public class DataInitializer implements CommandLineRunner {
 
             materialRepository.saveAll(List.of(m1, m2, m3, m4));
             log.info("Initialized core material master items and inventory stocks.");
+        }
+    }
+
+    private void seedProcurementData(Project project, Site site, Activity actRaft) {
+        if (materialRequestRepository.findByProjectId(project.getId()).isEmpty()) {
+            Material cement = materialRepository.findByMaterialCode("MAT-CEM-01").orElse(null);
+            Material steel = materialRepository.findByMaterialCode("MAT-STL-01").orElse(null);
+            Supplier ultraTech = supplierRepository.findBySupplierCode("SUP-ULT-01").orElse(null);
+            Supplier jswSteel = supplierRepository.findBySupplierCode("SUP-JSW-02").orElse(null);
+
+            if (cement != null && ultraTech != null) {
+                // 1. Material Requests
+                MaterialRequest mr1 = MaterialRequest.builder()
+                        .projectId(project.getId())
+                        .siteId(site != null ? site.getId() : null)
+                        .wbsActivityId(actRaft != null ? actRaft.getId() : null)
+                        .materialId(cement.getId())
+                        .requiredQty(BigDecimal.valueOf(1000.00))
+                        .requiredDate(LocalDate.now().plusDays(5))
+                        .status("APPROVED")
+                        .requestedBy("se_suresh")
+                        .approvedBy("pm_karthik")
+                        .justification("Raft foundation concrete pouring for Tower A")
+                        .remarks("Priority high - batching schedule locked")
+                        .build();
+
+                MaterialRequest mr2 = MaterialRequest.builder()
+                        .projectId(project.getId())
+                        .siteId(site != null ? site.getId() : null)
+                        .wbsActivityId(actRaft != null ? actRaft.getId() : null)
+                        .materialId(steel != null ? steel.getId() : cement.getId())
+                        .requiredQty(BigDecimal.valueOf(25.00))
+                        .requiredDate(LocalDate.now().plusDays(10))
+                        .status("PENDING")
+                        .requestedBy("se_suresh")
+                        .justification("Tower A Column starter reinforcement Fe500D rebar")
+                        .remarks("Awaiting bend schedule verification")
+                        .build();
+
+                materialRequestRepository.saveAll(List.of(mr1, mr2));
+
+                // 2. Purchase Orders
+                PurchaseOrder po1 = PurchaseOrder.builder()
+                        .poNumber("PO-PADUR-CEM-01")
+                        .projectId(project.getId())
+                        .supplierId(ultraTech.getId())
+                        .materialId(cement.getId())
+                        .orderQty(BigDecimal.valueOf(1000.00))
+                        .unitRate(BigDecimal.valueOf(380.00))
+                        .amount(BigDecimal.valueOf(380000.00))
+                        .deliveryDate(LocalDate.now().plusDays(7))
+                        .status("PARTIALLY_FULFILLED")
+                        .approvedBy("director_rajesh")
+                        .remarks("30 days payment credit terms approved")
+                        .build();
+
+                PurchaseOrder po2 = PurchaseOrder.builder()
+                        .poNumber("PO-PADUR-STL-02")
+                        .projectId(project.getId())
+                        .supplierId(jswSteel != null ? jswSteel.getId() : ultraTech.getId())
+                        .materialId(steel != null ? steel.getId() : cement.getId())
+                        .orderQty(BigDecimal.valueOf(20.00))
+                        .unitRate(BigDecimal.valueOf(62000.00))
+                        .amount(BigDecimal.valueOf(1240000.00))
+                        .deliveryDate(LocalDate.now().plusDays(12))
+                        .status("ISSUED")
+                        .approvedBy("director_rajesh")
+                        .remarks("Formal PO dispatched to JSW Depot")
+                        .build();
+
+                PurchaseOrder savedPo1 = purchaseOrderRepository.save(po1);
+                purchaseOrderRepository.save(po2);
+
+                // 3. Goods Receipt Note (GRN)
+                if (grnRepository.findByProjectId(project.getId()).isEmpty()) {
+                    Grn grn1 = Grn.builder()
+                            .grnNumber("GRN-PADUR-CEM-01")
+                            .poId(savedPo1.getId())
+                            .projectId(project.getId())
+                            .siteId(site != null ? site.getId() : null)
+                            .materialId(cement.getId())
+                            .dcNumber("DC-ULT-88412")
+                            .vehicleNumber("TN-09-CA-5521")
+                            .gateEntryNumber("GATE-2026-104")
+                            .receivedQty(BigDecimal.valueOf(600.00))
+                            .acceptedQty(BigDecimal.valueOf(580.00))
+                            .rejectedQty(BigDecimal.valueOf(20.00))
+                            .damageReason("20 bags torn/moisture-damaged in heavy transit rain")
+                            .rejectionReason("20 bags torn/moisture-damaged in heavy transit rain")
+                            .receivedBy("se_suresh")
+                            .deliveryEvidenceUrl("https://storage.buildtwin360.com/evidence/padur_cement_dc.jpg")
+                            .status("COMPLETED")
+                            .build();
+
+                    grnRepository.save(grn1);
+                }
+
+                log.info("Initialized baseline Procurement artifacts (MRs, POs, and GRN) for Padur project.");
+            }
         }
     }
 

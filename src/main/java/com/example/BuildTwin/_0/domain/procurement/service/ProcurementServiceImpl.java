@@ -372,6 +372,13 @@ public class ProcurementServiceImpl implements ProcurementService {
             grn.setStatus("COMPLETED");
         }
 
+        if (grn.getPoId() != null && (grn.getProjectId() == null || grn.getMaterialId() == null)) {
+            purchaseOrderRepository.findById(grn.getPoId()).ifPresent(po -> {
+                if (grn.getProjectId() == null) grn.setProjectId(po.getProjectId());
+                if (grn.getMaterialId() == null) grn.setMaterialId(po.getMaterialId());
+            });
+        }
+
         Grn savedGrn = grnRepository.save(grn);
         log.info("Recorded Goods Receipt Note {} (ID: {}) | PO: {}, Material: {} | DC: {}, Vehicle: {}, Gate: {} | Received: {}, Accepted: {}, Rejected: {} | Damage: '{}'",
                 savedGrn.getGrnNumber(), savedGrn.getId(), grn.getPoId(), grn.getMaterialId(), grn.getDcNumber(), grn.getVehicleNumber(), grn.getGateEntryNumber(), grn.getReceivedQty(), accepted, rejected, grn.getDamageReason());

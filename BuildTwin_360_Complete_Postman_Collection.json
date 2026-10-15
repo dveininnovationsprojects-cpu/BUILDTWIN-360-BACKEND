@@ -1498,6 +1498,765 @@
       ]
     },
     {
+      "name": "11. Procurement & Goods Receipt Notes (Epic 3)",
+      "item": [
+        {
+          "name": "Raise Material Request (FR-051)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"materialId\": 1,\n  \"requiredQty\": 500,\n  \"requiredDate\": \"2026-11-01\",\n  \"siteId\": 1,\n  \"wbsActivityId\": 2,\n  \"zone\": \"Tower A Substructure\",\n  \"justification\": \"Foundation raft slab casting\",\n  \"remarks\": \"Urgent priority batch\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Material Requests",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Material Requests by Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests/project/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests",
+                "project",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Material Requests by Status (PENDING/APPROVED)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests/project/1/status/PENDING",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests",
+                "project",
+                "1",
+                "status",
+                "PENDING"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Material Request (Pending Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requiredQty\": 450,\n  \"justification\": \"Revised casting estimate\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve / Reject Material Request (FR-051)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"approvedBy\": \"pm_karthik\",\n  \"remarks\": \"Approved for foundation pouring\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests/1/approval",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests",
+                "1",
+                "approval"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detect Projected Material Shortage (FR-056)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests/project/1/projected-shortage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests",
+                "project",
+                "1",
+                "projected-shortage"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Material Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/requests/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "requests",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Purchase Order (FR-052)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"poNumber\": \"PO-PADUR-CEM-02\",\n  \"supplierId\": 1,\n  \"projectId\": 1,\n  \"materialId\": 1,\n  \"orderQty\": 800,\n  \"unitRate\": 380,\n  \"amount\": 304000,\n  \"deliveryDate\": \"2026-11-10\",\n  \"status\": \"PENDING_APPROVAL\",\n  \"remarks\": \"Bulk dispatch batch 2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Purchase Orders",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Purchase Orders by Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders/project/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders",
+                "project",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Purchase Order by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Process PO Financial Approval (FR-052)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"approvedBy\": \"director_rajesh\",\n  \"remarks\": \"Financial sign-off complete with 30-day payment term\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders/1/approval",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders",
+                "1",
+                "approval"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Purchase Order Lifecycle Status (ISSUED)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ISSUED\",\n  \"updatedBy\": \"pm_karthik\",\n  \"remarks\": \"Dispatched to UltraTech depot\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders/1/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders",
+                "1",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get PO Fulfillment & Delivery Status (FR-061)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders/1/fulfillment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders",
+                "1",
+                "fulfillment"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Purchase Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/purchase-orders/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "purchase-orders",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Record Goods Receipt Note (GRN) (FR-053)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"poId\": 1,\n  \"materialId\": 1,\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"dcNumber\": \"DC-ULT-99120\",\n  \"vehicleNumber\": \"TN-09-CB-1234\",\n  \"gateEntryNumber\": \"GATE-2026-105\",\n  \"receivedQty\": 400,\n  \"acceptedQty\": 390,\n  \"rejectedQty\": 10,\n  \"damageReason\": \"10 bags torn in transit\",\n  \"receivedBy\": \"se_suresh\",\n  \"deliveryEvidenceUrl\": \"https://storage.buildtwin360.com/evidence/padur_dc_batch2.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/grn",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "grn"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Goods Receipt Notes",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/grn",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "grn"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get GRNs by Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/grn/project/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "grn",
+                "project",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get GRN History by Purchase Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/grn/po/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "grn",
+                "po",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get GRN by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/grn/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "grn",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update GRN Metadata",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNumber\": \"TN-09-CB-1234-CORRECTED\",\n  \"damageReason\": \"Updated inspection report note\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/grn/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "grn",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Void GRN Entry (Auto-Reverses Stock Ledger)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/procurement/grn/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "procurement",
+                "grn",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "12. Quality, Snag & NCR Workflow (Epic 5)",
       "description": "Inspection snags, Non-Conformance Reports (NCR), defect capture, rectification proof & verifier closure workflows (FR-080 - FR-084)",
       "item": [
