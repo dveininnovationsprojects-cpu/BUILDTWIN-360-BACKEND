@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-@Entity
-@Table(name = "activity_dependencies")
+@Entity(name = "WbsActivityDependency")
+@Table(name = "wbs_activity_dependencies")
 @Getter
 @Setter
 @NoArgsConstructor

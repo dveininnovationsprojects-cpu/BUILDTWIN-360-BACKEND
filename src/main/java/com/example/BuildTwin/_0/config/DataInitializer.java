@@ -56,11 +56,8 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-<<<<<<< HEAD
 import java.time.LocalDateTime;
 import java.util.HashSet;
-=======
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
 import java.util.List;
 import java.util.Set;
 
@@ -82,10 +79,8 @@ public class DataInitializer implements CommandLineRunner {
     private final FloorRepository floorRepository;
     private final ZoneRepository zoneRepository;
     private final WorkPackageRepository workPackageRepository;
-<<<<<<< HEAD
+    private final WbsActivityRepository wbsActivityRepository;
     private final UserProjectRoleRepository userProjectRoleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JdbcTemplate jdbcTemplate;
 
     private final ActivityRepository activityRepository;
     private final BudgetRepository budgetRepository;
@@ -129,13 +124,6 @@ public class DataInitializer implements CommandLineRunner {
     private String seedProjectClient = "Ashok Builders & Developers";
 
     // Exactly the 10 Stakeholder & User Roles from BuildTwin 360 SRS Section 7
-=======
-    private final WbsActivityRepository wbsActivityRepository;
-
-    /**
-     * Exact 10 roles defined in BuildTwin 360 SRS Document (Section 7).
-     */
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
     private static final List<String> EXACT_SPECIFICATION_ROLES = List.of(
             "ROLE_DIRECTOR",                   // 1. Executive / Board Level
             "ROLE_PROJECT_MANAGER",            // 2. Project Execution Head
@@ -154,18 +142,13 @@ public class DataInitializer implements CommandLineRunner {
         fixUserRolesTableConstraints();
         fixWbsActivitiesTableConstraints();
         cleanAndSyncExactRoles();
-<<<<<<< HEAD
         if (seedEnabled) {
             seedAllSpecificationUsers();
             seedDefaultProjectAndSites();
+            seedDefaultWbsActivities();
         } else {
             log.info("Application demo data seeding is disabled via 'app.seed.enabled=false'.");
         }
-=======
-        seedOrUpdateAdminUser();
-        seedDefaultProjectAndSites();
-        seedDefaultWbsActivities();
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
     }
 
     private void fixUserRolesTableConstraints() {
@@ -223,7 +206,6 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Synchronized BuildTwin 360 roles to exact {} specification roles.", EXACT_SPECIFICATION_ROLES.size());
     }
 
-<<<<<<< HEAD
     /**
      * Seeds login credentials for all 10 roles according to BuildTwin 360 SRS Section 7.
      */
@@ -234,11 +216,24 @@ public class DataInitializer implements CommandLineRunner {
         // 1. System Administrator & Director
         userRepository.findByUsername(seedAdminUsername).ifPresentOrElse(
                 existingAdmin -> {
+                    boolean needsUpdate = false;
+                    if (!passwordEncoder.matches(seedAdminPassword, existingAdmin.getPassword())) {
+                        existingAdmin.setPassword(passwordEncoder.encode(seedAdminPassword));
+                        needsUpdate = true;
+                    }
                     boolean hasAdmin = existingAdmin.getRoles().stream().anyMatch(r -> "ROLE_ADMIN".equals(r.getName()));
                     if (!hasAdmin) {
                         existingAdmin.getRoles().add(adminRole);
                         existingAdmin.getRoles().add(directorRole);
+                        needsUpdate = true;
+                    }
+                    if (!"ACTIVE".equals(existingAdmin.getStatus())) {
+                        existingAdmin.setStatus("ACTIVE");
+                        needsUpdate = true;
+                    }
+                    if (needsUpdate) {
                         userRepository.save(existingAdmin);
+                        log.info("Updated existing 'admin' user with correct credentials and active status.");
                     }
                 },
                 () -> {
@@ -246,47 +241,11 @@ public class DataInitializer implements CommandLineRunner {
                             .username(seedAdminUsername)
                             .email(seedAdminEmail)
                             .password(passwordEncoder.encode(seedAdminPassword))
-=======
-    private void seedOrUpdateAdminUser() {
-        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new IllegalStateException("ROLE_ADMIN not found"));
-
-        userRepository.findByUsername("admin").ifPresentOrElse(
-                user -> {
-                    boolean needsUpdate = false;
-                    if (!passwordEncoder.matches("Admin@123", user.getPassword())) {
-                        user.setPassword(passwordEncoder.encode("Admin@123"));
-                        needsUpdate = true;
-                    }
-                    if (!user.getRoles().contains(adminRole)) {
-                        user.setRoles(Set.of(adminRole));
-                        needsUpdate = true;
-                    }
-                    if (!"ACTIVE".equals(user.getStatus())) {
-                        user.setStatus("ACTIVE");
-                        needsUpdate = true;
-                    }
-                    if (needsUpdate) {
-                        userRepository.save(user);
-                        log.info("Updated existing 'admin' user with correct credentials and active status.");
-                    }
-                },
-                () -> {
-                    User admin = User.builder()
-                            .username("admin")
-                            .email("admin@buildtwin360.com")
-                            .password(passwordEncoder.encode("Admin@123"))
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
                             .status("ACTIVE")
-                            .roles(Set.of(adminRole))
+                            .roles(new HashSet<>(Set.of(adminRole, directorRole)))
                             .build();
-<<<<<<< HEAD
                     userRepository.save(adminUser);
                     log.info("Initialized default administrator: username='{}', email='{}'", seedAdminUsername, seedAdminEmail);
-=======
-                    userRepository.save(admin);
-                    log.info("Created default system administrator user 'admin' (password: Admin@123).");
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
                 }
         );
 
@@ -320,7 +279,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedDefaultProjectAndSites() {
-<<<<<<< HEAD
         User admin = userRepository.findByUsername(seedAdminUsername).orElse(null);
 
         Project project;
@@ -330,47 +288,23 @@ public class DataInitializer implements CommandLineRunner {
                     .code(seedProjectCode)
                     .description("Flagship 18-storey twin-tower residential community with 220 luxury units and club facilities in Padur, OMR, Chennai.")
                     .clientName(seedProjectClient)
-=======
-        if (projectRepository.findByCode("PADUR-AG-01").isEmpty()) {
-            User admin = userRepository.findByUsername("admin").orElse(null);
-
-            Project project = Project.builder()
-                    .name("Ashok Grandeur - Padur, Chennai")
-                    .code("PADUR-AG-01")
-                    .description("High-rise residential and commercial gated community spanning 12 acres with 3 residential towers and a luxury clubhouse.")
-                    .clientName("Ashok Residential Infrastructure Pvt Ltd")
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
                     .projectType("RESIDENTIAL")
                     .status("IN_PROGRESS")
                     .location("Old Mahabalipuram Road (OMR), Padur, Chennai, Tamil Nadu - 603103")
                     .plannedStartDate(LocalDate.of(2026, 1, 15))
                     .plannedEndDate(LocalDate.of(2028, 6, 30))
-<<<<<<< HEAD
-                    .actualStartDate(LocalDate.of(2026, 9, 5))
-                    .estimatedBudget(seedProjectBudget)
-=======
                     .actualStartDate(LocalDate.of(2026, 2, 1))
-                    .estimatedBudget(BigDecimal.valueOf(185000000.00))
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
+                    .estimatedBudget(seedProjectBudget)
                     .currency("INR")
                     .totalBuiltUpAreaSqFt(485000.0)
                     .projectManagerId(admin != null ? admin.getId() : null)
                     .build();
 
-<<<<<<< HEAD
             project = projectRepository.save(newProj);
             log.info("Initialized master construction project: '{}' ({})", project.getName(), project.getCode());
 
             Site siteA = Site.builder()
                     .project(project)
-                    .code("PADUR-TWR-A")
-=======
-            Project saved = projectRepository.save(project);
-            log.info("Initialized default Project: '{}' (ID: {})", saved.getName(), saved.getId());
-
-            Site siteA = Site.builder()
-                    .project(saved)
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
                     .name("Tower A (Stilt + 18 Floors)")
                     .code("SITE-TWR-A")
                     .location("Padur OMR Chennai")
@@ -383,12 +317,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
 
             Site siteB = Site.builder()
-<<<<<<< HEAD
                     .project(project)
-                    .code("PADUR-TWR-B")
-=======
-                    .project(saved)
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
                     .name("Tower B (Stilt + 18 Floors)")
                     .code("SITE-TWR-B")
                     .location("Padur OMR Chennai")
@@ -401,14 +330,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
 
             Site siteClub = Site.builder()
-<<<<<<< HEAD
                     .project(project)
-                    .code("PADUR-CLUB-01")
-                    .name("Clubhouse & Podium Amenities")
-                    .siteType("AMENITIES")
-                    .location("Central Podium, Ashok Grandeur Campus")
-=======
-                    .project(saved)
                     .name("Grandeur Luxury Clubhouse & Amenities")
                     .code("SITE-CLUB-01")
                     .location("Padur OMR Chennai")
@@ -416,7 +338,6 @@ public class DataInitializer implements CommandLineRunner {
                     .longitude(80.2268)
                     .siteIncharge("S. Praveen - Facilities Engineer")
                     .siteType("COMMERCIAL_AMENITY")
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
                     .status("ACTIVE")
                     .areaSqFt(35000.0)
                     .build();
@@ -484,10 +405,7 @@ public class DataInitializer implements CommandLineRunner {
 
             zoneRepository.saveAll(List.of(zone101, zone102, zoneCorridor));
 
-<<<<<<< HEAD
-=======
             // 4. Seed Standard Work Packages
->>>>>>> 3da412ae6ba008f8de15ace2d13bb96aaf8e5e34
             WorkPackage wpCivil = WorkPackage.builder()
                     .project(project)
                     .site(siteA)

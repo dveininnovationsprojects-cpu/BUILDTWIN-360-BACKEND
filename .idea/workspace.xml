@@ -5,17 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="pull selva code">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/config/DataInitializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/config/DataInitializer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/BuildingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/BuildingController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/FloorController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/FloorController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProjectRoleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ProjectRoleController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/SiteController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/SiteController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/UserController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WorkPackageController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WorkPackageController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ZoneController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/ZoneController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/seed_buildtwin360_demo.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/seed_buildtwin360_demo.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/controller/ContractorControllerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/controller/ContractorControllerTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/model/ActivityDependency.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/model/ActivityDependency.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/repository/ActivityDependencyRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/repository/ActivityDependencyRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/resources/application-test.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/resources/application-test.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -146,7 +140,7 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "Spring Boot.BuildTwin360Application.executor": "Run",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main2",
+    "git-widget-placeholder": "selva",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "E:/projects folder/construction project",
