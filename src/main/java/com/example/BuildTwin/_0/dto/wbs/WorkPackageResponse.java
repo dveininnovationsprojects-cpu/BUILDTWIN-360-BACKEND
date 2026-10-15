@@ -71,6 +71,15 @@ public class WorkPackageResponse {
     @Schema(description = "Incharge engineer name", example = "ramesh_site")
     private String inchargeUserName;
 
+    @Schema(description = "Total activities configured in this work package", example = "12")
+    private Integer totalActivities;
+
+    @Schema(description = "Number of activities completed in this work package", example = "4")
+    private Integer completedActivities;
+
+    @Schema(description = "Weighted progress percentage for this work package", example = "35.5")
+    private Double progressPercentage;
+
     @Schema(description = "Created timestamp")
     private LocalDateTime createdAt;
 
