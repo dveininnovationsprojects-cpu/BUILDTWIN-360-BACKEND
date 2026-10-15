@@ -111,3 +111,41 @@ SELECT p.id, CURRENT_DATE, 18000000.00, 16500000.00, 15500000.00, 45000000.00, 1
 FROM projects p WHERE p.code = 'PADUR-AG-01'
 ON CONFLICT (project_id, evaluation_date) DO NOTHING;
 
+-- 10. Week 8: Quality Inspections & NCR Defects
+INSERT INTO quality_issues (project_id, title, issue_type, ncr_number, location, category, severity, status, due_date, responsible_party, description, defect_photo_url)
+SELECT p.id, 'Substandard rebar reinforcement tensile strength', 'NCR', 'NCR-PADUR-01', 'Tower A Raft Foundation', 'STRUCTURAL', 'CRITICAL', 'OPEN', CURRENT_DATE + INTERVAL '3 day', 'L&T Construction (Civil Div)', 'Tensile test yielded 460 MPa against mandatory 500 MPa specification. Immediate rebar replacement required.', 'https://storage.buildtwin360.com/evidence/rebar_tensile_fail.jpg'
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO quality_issues (project_id, title, issue_type, ncr_number, location, category, severity, status, due_date, responsible_party, description, defect_photo_url)
+SELECT p.id, 'Concrete honeycombing on basement retaining shear wall', 'SNAG', NULL, 'Basement Retaining Wall Grid B4-B6', 'CONCRETE', 'HIGH', 'RECTIFICATION_SUBMITTED', CURRENT_DATE + INTERVAL '2 day', 'L&T Construction (Civil Div)', 'Honeycombed pockets after shutter stripping due to congested rebar and inadequate needle vibration.', 'https://storage.buildtwin360.com/evidence/honeycomb_b4.jpg'
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+-- 11. Week 8: Project 3x3 Risk Register
+INSERT INTO risks (project_id, risk_title, probability, impact, severity, risk_score, category, mitigation, contingency_plan, owner, status)
+SELECT p.id, 'Deep excavation monsoon water ingress & pit flooding', 'HIGH', 'HIGH', 'CRITICAL', 9, 'SAFETY', 'Deploy 4x 15HP dewatering submersible pumps with dedicated diesel backup generator.', 'Pre-cast cutoff drainage trenches along site perimeter to divert surface runoff.', 'Karthik Raman (PM)', 'IDENTIFIED'
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO risks (project_id, risk_title, probability, impact, severity, risk_score, category, mitigation, contingency_plan, owner, status)
+SELECT p.id, 'Structural steel & rebar market price volatility', 'MEDIUM', 'HIGH', 'CRITICAL', 6, 'COMMERCIAL', 'Lock in fixed quarterly procurement contract with primary producer (JSW Steel).', 'Procure advance buffer stock of 50 tonnes at current rate.', 'Director (Procurement)', 'MONITORED'
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO risks (project_id, risk_title, probability, impact, severity, risk_score, category, mitigation, contingency_plan, owner, status)
+SELECT p.id, 'Grid substation power shutdown halting concrete pump & crane', 'LOW', 'HIGH', 'MEDIUM', 3, 'TECHNICAL', 'Synchronize on-site 250 kVA Caterpillar silent DG set with auto-mains failure panel.', 'Contract standby mobile generator rental provider within 1 hour SLA.', 'Plant Engineer Suresh', 'MITIGATED'
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+-- 12. Week 8: Site Obstacles & Work Blockers
+INSERT INTO issues (project_id, title, issue_type, priority, severity, owner, impact_area, days_delayed, due_date, status, cause_code, description)
+SELECT p.id, 'Liebherr Tower Crane main hoist motor electrical brake failure', 'BLOCKER', 'CRITICAL', 'CRITICAL', 'Plant Engineer Suresh', 'WORKFLOW', 3, CURRENT_DATE + INTERVAL '1 day', 'OPEN', 'EQUIPMENT_BREAKDOWN', 'Main hoist brake coil burnt during heavy panel lifting. Shuttering & rebar lifting halted on Tower A.'
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO issues (project_id, title, issue_type, priority, severity, owner, impact_area, days_delayed, due_date, status, cause_code, description)
+SELECT p.id, 'Delay in CMDA municipal heavy vehicle transit movement permit', 'BLOCKER', 'HIGH', 'HIGH', 'Liaison Officer Ramesh', 'SCHEDULE', 2, CURRENT_DATE + INTERVAL '2 day', 'IN_PROGRESS', 'MATERIAL_DELAY', 'Chennai traffic police restricted transit of 36m concrete boom pump during daytime peak hours. Evening transit clearance pending.'
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+

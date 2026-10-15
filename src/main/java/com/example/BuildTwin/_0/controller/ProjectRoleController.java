@@ -50,7 +50,8 @@ public class ProjectRoleController {
     public ResponseEntity<ApiResponse<ProjectRoleResponse>> assignProjectRole(
             @Valid @RequestBody AssignProjectRoleRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        ProjectRoleResponse response = projectRoleService.assignProjectRole(request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        ProjectRoleResponse response = projectRoleService.assignProjectRole(request, username);
         return new ResponseEntity<>(ApiResponse.created(response, "Project role assigned successfully"), HttpStatus.CREATED);
     }
 
@@ -103,7 +104,8 @@ public class ProjectRoleController {
     public ResponseEntity<ApiResponse<Void>> revokeProjectRole(
             @PathVariable Long id,
             @Parameter(hidden = true) Authentication authentication) {
-        projectRoleService.revokeProjectRole(id, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        projectRoleService.revokeProjectRole(id, username);
         return ResponseEntity.ok(ApiResponse.success(null, "Project role revoked successfully"));
     }
 }

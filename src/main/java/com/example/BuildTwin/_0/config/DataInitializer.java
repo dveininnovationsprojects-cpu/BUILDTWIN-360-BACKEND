@@ -31,10 +31,16 @@ import com.example.BuildTwin._0.domain.equipment.model.EquipmentUsage;
 import com.example.BuildTwin._0.domain.equipment.repository.EquipmentRepository;
 import com.example.BuildTwin._0.domain.equipment.repository.EquipmentUsageRepository;
 import com.example.BuildTwin._0.domain.issues.model.ProjectIssue;
+import com.example.BuildTwin._0.domain.issues.model.IssueBlocker;
+import com.example.BuildTwin._0.domain.issues.model.ProjectRisk;
 import com.example.BuildTwin._0.domain.issues.enums.IssueType;
 import com.example.BuildTwin._0.domain.issues.enums.IssueSeverity;
 import com.example.BuildTwin._0.domain.issues.enums.IssueStatus;
 import com.example.BuildTwin._0.domain.issues.repository.ProjectIssueRepository;
+import com.example.BuildTwin._0.domain.issues.repository.IssueBlockerRepository;
+import com.example.BuildTwin._0.domain.issues.repository.ProjectRiskRepository;
+import com.example.BuildTwin._0.domain.quality.model.QualityIssue;
+import com.example.BuildTwin._0.domain.quality.repository.QualityIssueRepository;
 import com.example.BuildTwin._0.domain.procurement.model.MaterialRequest;
 import com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder;
 import com.example.BuildTwin._0.domain.procurement.model.Grn;
@@ -81,6 +87,9 @@ public class DataInitializer implements CommandLineRunner {
     private final EquipmentRepository equipmentRepository;
     private final EquipmentUsageRepository equipmentUsageRepository;
     private final ProjectIssueRepository projectIssueRepository;
+    private final QualityIssueRepository qualityIssueRepository;
+    private final ProjectRiskRepository projectRiskRepository;
+    private final IssueBlockerRepository issueBlockerRepository;
     private final ProjectEVMRecordRepository projectEVMRecordRepository;
     private final MaterialRequestRepository materialRequestRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
@@ -415,6 +424,9 @@ public class DataInitializer implements CommandLineRunner {
         seedProcurementData(project, siteA, actRaft);
         seedContractorsAndEquipment(project, siteA);
         seedProjectIssues(project, actRaft != null ? actRaft.getId() : null);
+        seedQualityIssues(project);
+        seedProjectRisks(project);
+        seedIssueBlockers(project);
         seedProjectEvmSnapshot(project);
     }
 
@@ -964,6 +976,131 @@ public class DataInitializer implements CommandLineRunner {
 
             projectEVMRecordRepository.save(evm);
             log.info("Initialized baseline EVM historical analytics snapshot for project ID: {}", project.getId());
+        }
+    }
+
+    private void seedQualityIssues(Project project) {
+        if (qualityIssueRepository.findByProjectId(project.getId()).isEmpty()) {
+            QualityIssue q1 = QualityIssue.builder()
+                    .projectId(project.getId())
+                    .title("Substandard rebar reinforcement tensile strength")
+                    .issueType("NCR")
+                    .ncrNumber("NCR-PADUR-01")
+                    .location("Tower A Raft Foundation")
+                    .category("STRUCTURAL")
+                    .severity("CRITICAL")
+                    .status("OPEN")
+                    .dueDate(LocalDate.now().plusDays(3))
+                    .responsibleParty("L&T Construction (Civil Div)")
+                    .description("Tensile test yielded 460 MPa against mandatory 500 MPa specification. Immediate rebar replacement required.")
+                    .defectPhotoUrl("https://storage.buildtwin360.com/evidence/rebar_tensile_fail.jpg")
+                    .build();
+
+            QualityIssue q2 = QualityIssue.builder()
+                    .projectId(project.getId())
+                    .title("Concrete honeycombing on basement retaining shear wall")
+                    .issueType("SNAG")
+                    .location("Basement Retaining Wall Grid B4-B6")
+                    .category("CONCRETE")
+                    .severity("HIGH")
+                    .status("RECTIFICATION_SUBMITTED")
+                    .dueDate(LocalDate.now().plusDays(2))
+                    .responsibleParty("L&T Construction (Civil Div)")
+                    .description("Honeycombed pockets after shutter stripping due to congested rebar and inadequate needle vibration.")
+                    .defectPhotoUrl("https://storage.buildtwin360.com/evidence/honeycomb_b4.jpg")
+                    .rectificationPhotoUrl("https://storage.buildtwin360.com/evidence/honeycomb_rectified.jpg")
+                    .resolutionNotes("Chipped off porous matrix, applied zinc-rich primer and non-shrink high-strength micro-concrete.")
+                    .resolvedBy("Murugan (Site Engineer)")
+                    .resolvedAt(LocalDateTime.now().minusHours(6))
+                    .build();
+
+            qualityIssueRepository.saveAll(List.of(q1, q2));
+            log.info("Initialized 2 realistic Quality Snag & NCR records for project ID: {}", project.getId());
+        }
+    }
+
+    private void seedProjectRisks(Project project) {
+        if (projectRiskRepository.findByProjectId(project.getId()).isEmpty()) {
+            ProjectRisk r1 = ProjectRisk.builder()
+                    .projectId(project.getId())
+                    .riskTitle("Deep excavation monsoon water ingress & pit flooding")
+                    .probability("HIGH")
+                    .impact("HIGH")
+                    .category("SAFETY")
+                    .mitigation("Deploy 4x 15HP dewatering submersible pumps with dedicated diesel backup generator.")
+                    .contingencyPlan("Pre-cast cutoff drainage trenches along site perimeter to divert surface runoff.")
+                    .owner("Karthik Raman (PM)")
+                    .status("IDENTIFIED")
+                    .build();
+            r1.computeSeverityAndScore();
+
+            ProjectRisk r2 = ProjectRisk.builder()
+                    .projectId(project.getId())
+                    .riskTitle("Structural steel & rebar market price volatility")
+                    .probability("MEDIUM")
+                    .impact("HIGH")
+                    .category("COMMERCIAL")
+                    .mitigation("Lock in fixed quarterly procurement contract with primary producer (JSW Steel).")
+                    .contingencyPlan("Procure advance buffer stock of 50 tonnes at current rate.")
+                    .owner("Director (Procurement)")
+                    .status("MONITORED")
+                    .build();
+            r2.computeSeverityAndScore();
+
+            ProjectRisk r3 = ProjectRisk.builder()
+                    .projectId(project.getId())
+                    .riskTitle("Grid substation power shutdown halting concrete pump & crane")
+                    .probability("LOW")
+                    .impact("HIGH")
+                    .category("TECHNICAL")
+                    .mitigation("Synchronize on-site 250 kVA Caterpillar silent DG set with auto-mains failure panel.")
+                    .contingencyPlan("Contract standby mobile generator rental provider within 1 hour SLA.")
+                    .owner("Plant Engineer Suresh")
+                    .status("MITIGATED")
+                    .resolvedBy("Plant Engineer Suresh")
+                    .resolvedAt(LocalDateTime.now().minusDays(1))
+                    .build();
+            r3.computeSeverityAndScore();
+
+            projectRiskRepository.saveAll(List.of(r1, r2, r3));
+            log.info("Initialized 3 realistic Project Risk Matrix records for project ID: {}", project.getId());
+        }
+    }
+
+    private void seedIssueBlockers(Project project) {
+        if (issueBlockerRepository.findByProjectId(project.getId()).isEmpty()) {
+            IssueBlocker b1 = IssueBlocker.builder()
+                    .projectId(project.getId())
+                    .title("Liebherr Tower Crane main hoist motor electrical brake failure")
+                    .issueType("BLOCKER")
+                    .priority("CRITICAL")
+                    .severity("CRITICAL")
+                    .owner("Plant Engineer Suresh")
+                    .impactArea("WORKFLOW")
+                    .daysDelayed(3)
+                    .dueDate(LocalDate.now().plusDays(1))
+                    .status("OPEN")
+                    .causeCode("EQUIPMENT_BREAKDOWN")
+                    .description("Main hoist brake coil burnt during heavy panel lifting. Shuttering & rebar lifting halted on Tower A.")
+                    .build();
+
+            IssueBlocker b2 = IssueBlocker.builder()
+                    .projectId(project.getId())
+                    .title("Delay in CMDA municipal heavy vehicle transit movement permit")
+                    .issueType("BLOCKER")
+                    .priority("HIGH")
+                    .severity("HIGH")
+                    .owner("Liaison Officer Ramesh")
+                    .impactArea("SCHEDULE")
+                    .daysDelayed(2)
+                    .dueDate(LocalDate.now().plusDays(2))
+                    .status("IN_PROGRESS")
+                    .causeCode("MATERIAL_DELAY")
+                    .description("Chennai traffic police restricted transit of 36m concrete boom pump during daytime peak hours. Evening transit clearance pending.")
+                    .build();
+
+            issueBlockerRepository.saveAll(List.of(b1, b2));
+            log.info("Initialized 2 realistic Site Blocker records for project ID: {}", project.getId());
         }
     }
 }
