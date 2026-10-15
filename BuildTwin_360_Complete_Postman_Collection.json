@@ -4085,6 +4085,527 @@
           }
         }
       ]
+    },
+    {
+      "name": "18. Contractor Master & Subcontractor Management (FR-040)",
+      "description": "Contractor & Subcontractor directory, trade specialization, parent hierarchy, and performance metrics.",
+      "item": [
+        {
+          "name": "18.1 List All Contractors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.2 List Subcontractors Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/subcontractors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "subcontractors"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.3 Get Available Trade Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/trades",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "trades"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.4 Filter Contractors by Trade (e.g. MASON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/trade/MASON",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "trade",
+                "MASON"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.5 Get Contractor by Code (CNT-LNT-01)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/code/CNT-LNT-01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "code",
+                "CNT-LNT-01"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.6 Create New Contractor / Subcontractor Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractorCode\": \"CNT-SHP-03\",\n  \"name\": \"Shapoorji Pallonji EPC\",\n  \"companyName\": \"Shapoorji Pallonji & Co. Ltd\",\n  \"tradeSpecialization\": \"CARPENTER\",\n  \"contactNumber\": \"9840112233\",\n  \"email\": \"shapur.contractor@sp.com\",\n  \"address\": \"SP Infocity, Perungudi, Chennai\",\n  \"contractorType\": \"MAIN_CONTRACTOR\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.7 Get Contractor By ID (ID: 1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.8 Update Contractor Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractorCode\": \"CNT-LNT-01\",\n  \"name\": \"L&T Construction (Civil Infrastructure Div)\",\n  \"companyName\": \"Larsen & Toubro Ltd\",\n  \"tradeSpecialization\": \"MASON\",\n  \"contactNumber\": \"9876543210\",\n  \"email\": \"padur.civil@intecc.com\",\n  \"address\": \"L&T Construction Campus, Manapakkam, Chennai - 600089\",\n  \"contractorType\": \"MAIN_CONTRACTOR\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.9 Get Subcontractors Under Main Contractor (Parent ID: 1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/1/subcontractors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "1",
+                "subcontractors"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.10 Contractor Performance Summary (Quality, Delay, Progress, Headcount)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/1/performance-summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "1",
+                "performance-summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.11 Deactivate Contractor Profile (Soft Delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/contractors/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contractors",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Daily Labour & Headcount Management (FR-041)",
+      "description": "Daily headcount, trade hours, overtime, activity task allocations, and productivity KPIs.",
+      "item": [
+        {
+          "name": "19.1 Record Daily Labour Headcount & Allocations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"contractorId\": 1,\n  \"tradeCategory\": \"MASON\",\n  \"headcount\": 15,\n  \"standardHours\": 8,\n  \"overtimeHours\": 2,\n  \"recordDate\": \"2026-10-15\",\n  \"supervisorNotes\": \"Substructure raft foundation concreting batch work\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/labour/daily",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "labour",
+                "daily"
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.2 Get Daily Labour Log By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/labour/daily/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "labour",
+                "daily",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.3 Get Daily Labour Logs By Project (Project ID: 1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/labour/daily/project/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "labour",
+                "daily",
+                "project",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.4 Get Total Aggregated Project Headcount on Date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/labour/daily/project/1/headcount?date=2026-10-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "labour",
+                "daily",
+                "project",
+                "1",
+                "headcount"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-10-15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.5 Get Labour Logs By Contractor (Contractor ID: 1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/labour/daily/contractor/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "labour",
+                "daily",
+                "contractor",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.6 Labour Hour Summary (Standard vs Overtime)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/labour/hours-summary?projectId=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "labour",
+                "hours-summary"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.7 On-Demand Productivity Calculator API",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plannedQuantity\": 100,\n  \"completedQuantity\": 85,\n  \"unitOfMeasure\": \"SQM\",\n  \"totalLabourHours\": 120\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/labour/productivity/calculate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "labour",
+                "productivity",
+                "calculate"
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }
