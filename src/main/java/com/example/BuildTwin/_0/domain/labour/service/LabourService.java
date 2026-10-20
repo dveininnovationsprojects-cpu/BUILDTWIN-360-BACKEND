@@ -7,8 +7,6 @@ import com.example.BuildTwin._0.domain.labour.model.LabourDaily;
 import com.example.BuildTwin._0.domain.labour.repository.ContractorRepository;
 import com.example.BuildTwin._0.domain.labour.repository.LabourAllocationRepository;
 import com.example.BuildTwin._0.domain.labour.repository.LabourDailyRepository;
-import com.example.BuildTwin._0.domain.wbs.model.Activity;
-import com.example.BuildTwin._0.domain.wbs.repository.ActivityRepository;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +25,6 @@ public class LabourService {
     private final LabourDailyRepository labourDailyRepository;
     private final ContractorRepository contractorRepository;
     private final LabourAllocationRepository labourAllocationRepository;
-    private final ActivityRepository activityRepository;
 
     @Transactional
     public LabourDaily recordDailyLabour(LabourDailyRecordDto dto) {
@@ -163,13 +160,9 @@ public class LabourService {
 
     @Transactional(readOnly = true)
     public ProductivityResponseDto calculateActivityProductivity(Long activityId, BigDecimal overrideCompletedQty) {
-        Activity activity = activityRepository.findById(activityId)
-                .orElse(null);
-
-        String activityName = activity != null ? activity.getName() : "WBS Activity #" + activityId;
-        String unit = activity != null && activity.getUnit() != null ? activity.getUnit() : "unit";
-        BigDecimal completedQty = overrideCompletedQty != null ? overrideCompletedQty
-                : (activity != null && activity.getPlannedQty() != null ? activity.getPlannedQty() : BigDecimal.valueOf(100));
+        String activityName = "Activity #" + activityId;
+        String unit = "unit";
+        BigDecimal completedQty = overrideCompletedQty != null ? overrideCompletedQty : BigDecimal.valueOf(100);
 
         List<LabourAllocation> allocations = labourAllocationRepository.findByWbsActivityId(activityId);
         BigDecimal totalHours = allocations.stream()

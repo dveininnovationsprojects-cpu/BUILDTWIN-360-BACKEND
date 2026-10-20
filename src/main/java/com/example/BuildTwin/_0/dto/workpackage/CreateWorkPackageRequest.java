@@ -1,4 +1,4 @@
-package com.example.BuildTwin._0.dto.wbs;
+package com.example.BuildTwin._0.dto.workpackage;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

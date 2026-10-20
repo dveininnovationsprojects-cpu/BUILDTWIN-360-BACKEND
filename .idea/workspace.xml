@@ -6,6 +6,22 @@
   <component name="ChangeListManager">
     <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WorkPackageController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/controller/WorkPackageController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/service/LabourService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/service/LabourService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/model/Activity.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/model/ActivityDependency.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/package-info.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/repository/ActivityDependencyRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/repository/ActivityRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/service/WbsService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/wbs/service/WbsServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/dto/wbs/CreateWorkPackageRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/dto/wbs/UpdateWorkPackageRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/dto/wbs/UpdateWorkPackageStatusRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/dto/wbs/WorkPackageResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/WorkPackageService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/WorkPackageService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/WorkPackageServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/WorkPackageServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/domain/labour/service/LabourServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/domain/labour/service/LabourServiceTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,23 +65,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.5139976988234958" />
-      <entry key="MS500" value="2.4479469230073074" />
-      <entry key="S2" value="4.252299293103874" />
-      <entry key="S5" value="7.821020245008382" />
-      <entry key="S10" value="14.153268623785198" />
-      <entry key="S30" value="39.84197155445568" />
-      <entry key="S60" value="72.30873429917453" />
-      <entry key="M2" value="122.43699469334983" />
-      <entry key="M5" value="204.55367745282683" />
-      <entry key="M10" value="257.9748728139719" />
-      <entry key="M15" value="281.19575278431336" />
-      <entry key="M30" value="307.9796053424485" />
-      <entry key="H1" value="322.9130373510411" />
-      <entry key="H2" value="330.8059325214746" />
-      <entry key="H4" value="334.8644871380856" />
-      <entry key="D1" value="338.3053312631927" />
-      <entry key="W1" value="338.9006280043688" />
+      <entry key="MS100" value="1.0000000000081248" />
+      <entry key="MS500" value="1.0154415649421171" />
+      <entry key="S2" value="2.350721439413911" />
+      <entry key="S5" value="6.24812657886648" />
+      <entry key="S10" value="12.792964713909011" />
+      <entry key="S30" value="38.67852109064793" />
+      <entry key="S60" value="71.88373675801495" />
+      <entry key="M2" value="123.25546264704467" />
+      <entry key="M5" value="207.73203549462661" />
+      <entry key="M10" value="262.9287026358759" />
+      <entry key="M15" value="286.98063107374594" />
+      <entry key="M30" value="314.7656492703197" />
+      <entry key="H1" value="330.27638044632454" />
+      <entry key="H2" value="338.47975828075147" />
+      <entry key="H4" value="342.69938251089866" />
+      <entry key="D1" value="346.27752872156896" />
+      <entry key="W1" value="346.8966491658132" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -87,23 +103,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.2762076267946147" />
-      <entry key="MS500" value="2.1811146389061915" />
-      <entry key="S2" value="4.07125857388954" />
-      <entry key="S5" value="7.631045233418245" />
-      <entry key="S10" value="13.99736869704862" />
-      <entry key="S30" value="39.75494114408641" />
-      <entry key="S60" value="72.24814572155087" />
-      <entry key="M2" value="122.39432765119167" />
-      <entry key="M5" value="204.52921413307274" />
-      <entry key="M10" value="257.96037795213965" />
-      <entry key="M15" value="281.18544778279914" />
-      <entry key="M30" value="307.97408669878797" />
-      <entry key="H1" value="322.9101767417204" />
-      <entry key="H2" value="330.804475550349" />
-      <entry key="H4" value="334.8637518092711" />
-      <entry key="D1" value="338.30520774253" />
-      <entry key="W1" value="338.90061033470226" />
+      <entry key="MS100" value="0.003448058586920359" />
+      <entry key="MS500" value="0.3367484774476577" />
+      <entry key="S2" value="2.071972377895506" />
+      <entry key="S5" value="6.056225028014986" />
+      <entry key="S10" value="12.630441847016533" />
+      <entry key="S30" value="38.57710876454344" />
+      <entry key="S60" value="71.81293908722792" />
+      <entry key="M2" value="123.20660312865819" />
+      <entry key="M5" value="207.70464967105337" />
+      <entry key="M10" value="262.9126251871146" />
+      <entry key="M15" value="286.9692371070123" />
+      <entry key="M30" value="314.75956680335185" />
+      <entry key="H1" value="330.27323256024425" />
+      <entry key="H2" value="338.4781562553117" />
+      <entry key="H4" value="342.6985742910263" />
+      <entry key="D1" value="346.27739300098415" />
+      <entry key="W1" value="346.89662975203004" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
