@@ -103,6 +103,14 @@ public class DailyProgressReport {
     @Builder.Default
     private Integer totalActivitiesLogged = 0;
 
+    @Column(name = "total_blockers_count")
+    @Builder.Default
+    private Integer totalBlockersCount = 0;
+
+    @Column(name = "open_blockers_count")
+    @Builder.Default
+    private Integer openBlockersCount = 0;
+
     @OneToMany(mappedBy = "dpr", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<DprActivityItem> activityItems = new ArrayList<>();
@@ -138,6 +146,13 @@ public class DailyProgressReport {
                 : 0;
         this.totalEquipmentCount = equipmentItems != null
                 ? equipmentItems.stream().mapToInt(e -> e.getQuantity() != null ? e.getQuantity() : 0).sum()
+                : 0;
+        this.totalBlockersCount = activityItems != null
+                ? (int) activityItems.stream().filter(i -> Boolean.TRUE.equals(i.getIsBlocker())).count()
+                : 0;
+        this.openBlockersCount = activityItems != null
+                ? (int) activityItems.stream().filter(i -> Boolean.TRUE.equals(i.getIsBlocker())
+                        && (i.getBlockerStatus() == null || i.getBlockerStatus() == BlockerStatus.OPEN || i.getBlockerStatus() == BlockerStatus.IN_PROGRESS)).count()
                 : 0;
     }
 }

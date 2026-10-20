@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Executive summary metrics and KPIs for Daily Progress Reports on a project")
+@Schema(description = "Executive summary metrics and KPIs for Daily Progress Reports on a project with Blocker insights")
 public class DprSummaryResponse {
 
     @Schema(description = "Project ID", example = "1")
@@ -39,6 +39,12 @@ public class DprSummaryResponse {
 
     @Schema(description = "Total safety incidents recorded to date", example = "1")
     private Long totalSafetyIncidents;
+
+    @Schema(description = "Total activity blockers logged across all project DPRs", example = "12")
+    private Long totalBlockersLogged;
+
+    @Schema(description = "Active open activity blockers across project DPRs", example = "3")
+    private Long openBlockersCount;
 
     @Schema(description = "Most recent report date filed", example = "2026-10-10")
     private LocalDate latestReportDate;

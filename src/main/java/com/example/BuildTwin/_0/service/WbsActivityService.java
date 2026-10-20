@@ -51,4 +51,10 @@ public interface WbsActivityService {
     WbsTreeResponse getWbsTree(Long projectId);
 
     WbsTreeResponse.WorkPackageNode getWorkPackageWbsTree(Long workPackageId);
+
+    ActivityProgressPercentageResponse getActivityProgressTracking(Long activityId);
+
+    ProjectProgressPercentageResponse getProjectProgressTracking(Long projectId, String discipline, Long workPackageId);
+
+    WorkPackageProgressPercentageResponse getWorkPackageProgressTracking(Long workPackageId);
 }

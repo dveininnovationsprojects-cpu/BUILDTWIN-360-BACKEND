@@ -1,0 +1,451 @@
+{
+  "info": {
+    "_postman_id": "b360-progress-percentage-tracking-v1",
+    "name": "BuildTwin 360 - Progress Percentage Tracking API",
+    "description": "Enterprise Postman Collection for Progress Percentage Tracking in BuildTwin 360.\nCovers:\n1. Activity-level Planned vs Actual % Tracking & S-Curve Schedule Projection\n2. Work Package Weighted Progress Percentage Breakdown\n3. Project Dashboard Overall Progress % with Discipline, Work Package, & Location Breakdown\n4. Field Quantity Tracking Integration via Daily Progress Reports\n\nBase URL: {{base_url}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "work_package_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_id",
+      "value": "101",
+      "type": "string"
+    },
+    {
+      "key": "dpr_id",
+      "value": "10",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Save Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    var token = jsonData.token || (jsonData.data && jsonData.data.token);",
+                  "    if (token) {",
+                  "        pm.collectionVariables.set('token', token);",
+                  "        console.log('Saved JWT Bearer Token');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "User login to acquire Bearer token for authorized requests."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Activity Progress Percentage Tracking",
+      "item": [
+        {
+          "name": "Get Activity Progress Tracking (WBS Path)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/wbs-activities/{{activity_id}}/progress-tracking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wbs-activities",
+                "{{activity_id}}",
+                "progress-tracking"
+              ]
+            },
+            "description": "Calculates detailed progress metrics for an activity: planned vs actual progress %, planned vs actual quantity, remaining quantity, schedule variance, S-curve linear schedule projection, performance status (AHEAD, ON_TRACK, BEHIND, NOT_STARTED, COMPLETED), and nested child subtasks breakdown."
+          }
+        },
+        {
+          "name": "Get Activity Progress Tracking (Activities Path)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/progress-tracking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "progress-tracking"
+              ]
+            },
+            "description": "Alternative alias endpoint for activity progress tracking: /api/v1/activities/{id}/progress-tracking."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Work Package Progress Percentage Tracking",
+      "item": [
+        {
+          "name": "Get Work Package Progress Tracking (Weighted Rollup)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/work-packages/{{work_package_id}}/progress-percentage-tracking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "work-packages",
+                "{{work_package_id}}",
+                "progress-percentage-tracking"
+              ]
+            },
+            "description": "Detailed progress tracking breakdown for a specific work package: weighted planned vs actual progress %, schedule variance %, performance status, total / completed / in-progress / planned / delayed activity counts, and full activity list."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Project Progress Percentage Dashboard",
+      "item": [
+        {
+          "name": "Get Project Progress Dashboard (All Disciplines & Packages)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/progress-percentage-tracking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "progress-percentage-tracking"
+              ]
+            },
+            "description": "Executive dashboard for project progress percentage tracking:\n- Overall weighted Planned vs Actual Progress %\n- Overall Schedule Variance and Performance Status\n- Breakdown across Disciplines (CIVIL, MEP, ARCHITECTURAL, etc.)\n- Breakdown across Work Packages with weighted contributions\n- Breakdown across physical Buildings / Locations"
+          }
+        },
+        {
+          "name": "Get Project Progress Filtered by Discipline",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/progress-percentage-tracking?discipline=CIVIL",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "progress-percentage-tracking"
+              ],
+              "query": [
+                {
+                  "key": "discipline",
+                  "value": "CIVIL",
+                  "description": "Filter project metrics by trade discipline"
+                }
+              ]
+            },
+            "description": "Filter project progress percentage tracking by trade discipline."
+          }
+        },
+        {
+          "name": "Get Project Progress Filtered by Work Package",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/progress-percentage-tracking?workPackageId=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "progress-percentage-tracking"
+              ],
+              "query": [
+                {
+                  "key": "workPackageId",
+                  "value": "1",
+                  "description": "Filter project metrics by specific work package"
+                }
+              ]
+            },
+            "description": "Filter project progress percentage tracking by specific work package ID."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Field Quantity Tracking Integration (DPR)",
+      "item": [
+        {
+          "name": "Log Daily Quantity Installed via DPR Activity Item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": 101,\n  \"workPackageId\": 1,\n  \"tradeCategory\": \"CIVIL\",\n  \"description\": \"Poured M30 Grade concrete for Column C1-C10\",\n  \"plannedQuantity\": 100.0,\n  \"quantityToday\": 25.0,\n  \"unitOfMeasure\": \"CU_M\",\n  \"location\": \"Building A - Level 1\",\n  \"remarks\": \"Casting completed within scheduled shift\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/dpr/{{dpr_id}}/activities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "dpr",
+                "{{dpr_id}}",
+                "activities"
+              ]
+            },
+            "description": "Records daily quantity completed on site into the DPR. The cumulative quantity feeds automatically into progress percentage calculations."
+          }
+        },
+        {
+          "name": "Get Activity Quantity Tracking Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/quantity-tracking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "quantity-tracking"
+              ]
+            },
+            "description": "Returns planned vs cumulative executed quantity, balance quantity, and percentage completed."
+          }
+        },
+        {
+          "name": "Direct Progress % and Quantity Update via WBS Activity API",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completedQuantity\": 75.0,\n  \"progressPercentage\": 75.0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/wbs-activities/{{activity_id}}/progress",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wbs-activities",
+                "{{activity_id}}",
+                "progress"
+              ]
+            },
+            "description": "Directly updates completed quantity and progress percentage on the WBS activity with automatic rollup to parents."
+          }
+        }
+      ]
+    }
+  ]
+}

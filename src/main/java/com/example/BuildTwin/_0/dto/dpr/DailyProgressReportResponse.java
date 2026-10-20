@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Complete Daily Progress Report (DPR) detail representation")
+@Schema(description = "Complete Daily Progress Report (DPR) detail representation with Blocker & Remarks Support")
 public class DailyProgressReportResponse {
 
     @Schema(description = "DPR Report ID", example = "1")
@@ -84,6 +84,12 @@ public class DailyProgressReportResponse {
 
     @Schema(description = "Number of active activities logged today", example = "3")
     private Integer totalActivitiesLogged;
+
+    @Schema(description = "Total blockers logged today in this DPR", example = "2")
+    private Integer totalBlockersCount;
+
+    @Schema(description = "Total open blockers requiring resolution", example = "1")
+    private Integer openBlockersCount;
 
     @Schema(description = "Creation timestamp", example = "2026-10-10T17:00:00")
     private LocalDateTime createdAt;

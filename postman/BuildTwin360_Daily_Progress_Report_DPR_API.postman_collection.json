@@ -1,0 +1,1140 @@
+{
+  "info": {
+    "_postman_id": "b360-daily-progress-report-dpr-v1",
+    "name": "BuildTwin 360 - Daily Progress Report (DPR) API Module",
+    "description": "Enterprise Postman Collection for Daily Progress Report (DPR), DPR Activity Management & Activity Quantity Tracking in BuildTwin 360.\nCovers:\n0. Authentication & Token Extraction\n1. Daily Progress Report (DPR) Core CRUD & Dashboards\n2. DPR Activity APIs (Add, List, Get by ID, Update, Delete, WBS Activity DPR Progress History)\n3. Activity Quantity Tracking (DPR Summary, Single Activity Analytics, Project-Wide Quantity Tracking Dashboard)\n4. Other Line Items (Labor, Equipment, Materials, Photos)\n5. Review & Approval Workflow (Submit, Approve with WBS cascade, Reject with reason)\n\nBase URL: http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "dpr_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_item_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "labor_item_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "equipment_item_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "material_item_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "photo_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "dpr_activity_item_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Extract JWT Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.collectionVariables.set('token', response.data.accessToken);",
+                  "    console.log('JWT Token successfully stored in {{token}}');",
+                  "}",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin@buildtwin.com\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Daily Progress Report (DPR) Core",
+      "item": [
+        {
+          "name": "Create Draft DPR (Full Nested Payload)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.id) {",
+                  "    pm.collectionVariables.set('dpr_id', response.data.id);",
+                  "    console.log('Stored created DPR ID: ' + response.data.id);",
+                  "}",
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportDate\": \"2026-10-12\",\n  \"shift\": \"DAY_SHIFT\",\n  \"weatherCondition\": \"SUNNY\",\n  \"temperatureCelsius\": 33.5,\n  \"siteEngineer\": \"Engr. Rajesh Kumar\",\n  \"generalNotes\": \"Tower A 4th floor structural slab reinforcement and electrical conduit checking completed. Casting initiated at 11:00 AM.\",\n  \"safetyIncidentsCount\": 0,\n  \"safetyNotes\": \"Toolbox talk conducted on height harness anchor lines & lifeline safety. Zero incidents.\",\n  \"qualityObservations\": \"Slump test 125mm verified against mix design M35. 6 concrete cubes casted.\",\n  \"siteHindrances\": \"Minor grid voltage fluctuation at 02:00 PM; shifted immediately to 125 kVA standby diesel generator.\",\n  \"activityItems\": [\n    {\n      \"activityId\": {{activity_id}},\n      \"quantityToday\": 35.5,\n      \"locationReference\": \"Tower A - Level 4 - Pour A\",\n      \"remarks\": \"Reinforced cement concrete poured with boom pump\"\n    }\n  ],\n  \"laborItems\": [\n    {\n      \"tradeCategory\": \"Masons & Concreters\",\n      \"headcount\": 12,\n      \"hoursWorked\": 8.0,\n      \"subcontractorName\": \"Apex Concrete Works\",\n      \"remarks\": \"Pour screeding and vibrator crew\"\n    }\n  ],\n  \"equipmentItems\": [\n    {\n      \"equipmentName\": \"Concrete Boom Placer (36m)\",\n      \"equipmentCode\": \"EQ-BP-01\",\n      \"quantity\": 1,\n      \"operatingHours\": 6.5,\n      \"idleHours\": 1.0,\n      \"breakdownHours\": 0.0,\n      \"fuelConsumedLiters\": 48.0,\n      \"remarks\": \"Flushed and cleaned pipeline post pour\"\n    }\n  ],\n  \"materialItems\": [\n    {\n      \"materialName\": \"Ready Mix Concrete M35\",\n      \"unitOfMeasure\": \"CUM\",\n      \"quantityReceived\": 35.5,\n      \"quantityConsumed\": 35.5,\n      \"supplierName\": \"UltraTech RMC Plant\",\n      \"challanOrInvoiceNumber\": \"DC-2026-10492\",\n      \"remarks\": \"Batch transit temperature 29C\"\n    }\n  ],\n  \"photoAttachments\": [\n    {\n      \"photoUrl\": \"https://storage.buildtwin360.com/sites/prj1/photos/pour_level4_progress.jpg\",\n      \"caption\": \"Slab concrete casting in progress on Tower A Level 4\",\n      \"category\": \"PROGRESS\",\n      \"takenAt\": \"2026-10-12T11:45:00\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/dpr",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "dpr"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List DPRs for Project (with Optional Filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/dpr?startDate=2026-10-01&endDate=2026-10-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "dpr"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-10-31"
+                },
+                {
+                  "key": "status",
+                  "value": "DRAFT",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Executive DPR Summary & KPIs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/dpr/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "dpr",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get DPR Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update DPR Header Metadata",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shift\": \"DAY_SHIFT\",\n  \"weatherCondition\": \"CLOUDY\",\n  \"temperatureCelsius\": 31.0,\n  \"siteEngineer\": \"Engr. Rajesh Kumar\",\n  \"generalNotes\": \"Updated evening summary: Curing burlap laid out on finished slab sections.\",\n  \"safetyIncidentsCount\": 0,\n  \"safetyNotes\": \"All workers exited site safely at 06:00 PM after shift handover.\",\n  \"qualityObservations\": \"Finishing smoothness inspected and approved.\",\n  \"siteHindrances\": \"None\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Draft DPR",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. DPR Activity APIs",
+      "item": [
+        {
+          "name": "Add WBS Activity Item to DPR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.activityItems && response.data.activityItems.length > 0) {",
+                  "    var lastItem = response.data.activityItems[response.data.activityItems.length - 1];",
+                  "    pm.collectionVariables.set('activity_item_id', lastItem.id);",
+                  "    console.log('Stored activity_item_id: ' + lastItem.id);",
+                  "}",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": {{activity_id}},\n  \"quantityToday\": 25.0,\n  \"locationReference\": \"Tower A - Level 4 - Drop Beams\",\n  \"remarks\": \"Beam bottom vibrated and levelled\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List All Activity Items in DPR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single DPR Activity Item by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities/{{activity_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities",
+                "{{activity_item_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update DPR Activity Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantityToday\": 30.0,\n  \"locationReference\": \"Tower A - Level 4 - Grid C4-C8\",\n  \"remarks\": \"Updated quantity after evening transit ticket reconciliation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities/{{activity_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities",
+                "{{activity_item_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove WBS Activity Item from DPR",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities/{{activity_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities",
+                "{{activity_item_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get WBS Activity DPR Progress History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/activities/{{activity_id}}/dpr-progress",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "activities",
+                "{{activity_id}}",
+                "dpr-progress"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Activity Quantity Tracking",
+      "item": [
+        {
+          "name": "1. Get DPR Quantity Tracking Summary (Header + Items Breakdown)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/quantity-tracking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "quantity-tracking"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Get Single WBS Activity Quantity Tracking Analytics & History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/activities/{{activity_id}}/quantity-tracking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "activities",
+                "{{activity_id}}",
+                "quantity-tracking"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Get Project-Wide Quantity Tracking Dashboard (Discipline Rollup & Status Filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/activity-quantity-tracking?discipline=CIVIL&status=ON_TRACK",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "activity-quantity-tracking"
+              ],
+              "query": [
+                {
+                  "key": "discipline",
+                  "value": "CIVIL"
+                },
+                {
+                  "key": "status",
+                  "value": "ON_TRACK"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Other Line Items (Labor, Equipment, Materials, Photos)",
+      "item": [
+        {
+          "name": "Add Labor Item to DPR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tradeCategory\": \"Electricians & Conduit Installers\",\n  \"headcount\": 4,\n  \"hoursWorked\": 8.0,\n  \"subcontractorName\": \"Volt Electricals\",\n  \"remarks\": \"Embedded junction boxes before concrete pour\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/labor",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "labor"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Labor Item from DPR",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/labor/{{labor_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "labor",
+                "{{labor_item_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Equipment Item to DPR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentName\": \"Tower Crane #1\",\n  \"equipmentCode\": \"EQ-TC-01\",\n  \"quantity\": 1,\n  \"operatingHours\": 7.0,\n  \"idleHours\": 1.0,\n  \"breakdownHours\": 0.0,\n  \"fuelConsumedLiters\": 0.0,\n  \"remarks\": \"Electric tower crane lifted rebar bundles\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/equipment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "equipment"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Equipment Item from DPR",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/equipment/{{equipment_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "equipment",
+                "{{equipment_item_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Material Item to DPR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materialName\": \"Curing Compound Liquid\",\n  \"unitOfMeasure\": \"LITERS\",\n  \"quantityReceived\": 50.0,\n  \"quantityConsumed\": 25.0,\n  \"supplierName\": \"Fosroc Chemicals Ltd\",\n  \"challanOrInvoiceNumber\": \"CH-2026-5541\",\n  \"remarks\": \"Applied immediately post de-shuttering\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/materials",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "materials"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Material Item from DPR",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/materials/{{material_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "materials",
+                "{{material_item_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Photo Attachment to DPR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photoUrl\": \"https://storage.buildtwin360.com/sites/prj1/photos/20261012_slump_test.jpg\",\n  \"caption\": \"Slump cone test showing 125mm workability at site laboratory\",\n  \"category\": \"QUALITY\",\n  \"takenAt\": \"2026-10-12T11:15:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/photos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "photos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Photo Attachment from DPR",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/photos/{{photo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "photos",
+                "{{photo_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Approval & Review Workflow",
+      "item": [
+        {
+          "name": "1. Submit DPR for Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "submit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Reject DPR (Returns with Feedback Reason)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Cube test cast count is reported as 6, but lab inward sheet shows 3 cubes. Please clarify before approval.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "reject"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Approve DPR (Cascades to WBS + ActivityProgressLog)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "approve"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Blocker & Remarks Support",
+      "item": [
+        {
+          "name": "1. Add Activity with Blocker & Remarks to DPR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": 101,\n  \"quantityToday\": 15.0,\n  \"locationReference\": \"Tower A - Level 3 - Grid C4\",\n  \"remarks\": \"Concrete pump experienced intermittent pressure drops; pour temporarily suspended.\",\n  \"isBlocker\": true,\n  \"blockerCategory\": \"EQUIPMENT_BREAKDOWN\",\n  \"blockerReason\": \"Hydraulic pressure sensor malfunction on 36m concrete boom placer pump\",\n  \"blockerSeverity\": \"CRITICAL\",\n  \"impactHours\": 2.5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Update Activity Blocker & Remarks Details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantityToday\": 18.5,\n  \"locationReference\": \"Tower A - Level 3 - Grid C4-C6\",\n  \"remarks\": \"Sensor recalibrated by technician; pour resumed at 14:30 PM\",\n  \"isBlocker\": true,\n  \"blockerCategory\": \"EQUIPMENT_BREAKDOWN\",\n  \"blockerReason\": \"Hydraulic pressure sensor calibrated; backup technician on site\",\n  \"blockerSeverity\": \"HIGH\",\n  \"blockerStatus\": \"IN_PROGRESS\",\n  \"impactHours\": 2.0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities/{{dpr_activity_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities",
+                "{{dpr_activity_item_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. List Blockers for Specific DPR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/blockers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "blockers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Get Project-Wide Blocker Register (with Filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/dpr/blockers?status=OPEN&category=EQUIPMENT_BREAKDOWN&severity=CRITICAL",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "dpr",
+                "blockers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "OPEN",
+                  "description": "Filter by status: OPEN, IN_PROGRESS, RESOLVED, WAIVED"
+                },
+                {
+                  "key": "category",
+                  "value": "EQUIPMENT_BREAKDOWN",
+                  "description": "Filter by blocker category"
+                },
+                {
+                  "key": "severity",
+                  "value": "CRITICAL",
+                  "description": "Filter by severity: LOW, MEDIUM, HIGH, CRITICAL"
+                },
+                {
+                  "key": "activityId",
+                  "value": "{{activity_id}}",
+                  "disabled": true,
+                  "description": "Optional filter by activity ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Get Project Blocker Analytics & Breakdown Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/dpr/blockers/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "dpr",
+                "blockers",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "6. Resolve / Mitigate Blocker on DPR Activity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\",\n  \"resolutionNotes\": \"Hydraulic sensor replaced with OEM part by service technician. 100% flow pressure verified and certified.\",\n  \"remarks\": \"Normal concrete pumping restored. Shift target met with minor delay.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dpr/{{dpr_id}}/activities/{{dpr_activity_item_id}}/resolve-blocker",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dpr",
+                "{{dpr_id}}",
+                "activities",
+                "{{dpr_activity_item_id}}",
+                "resolve-blocker"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -58,6 +58,20 @@ public class ActivityProgressLog {
     @Column(name = "recorded_by", nullable = false)
     private String recordedBy;
 
+    // Blocker & Remarks tracking
+    @Column(name = "is_blocker")
+    @Builder.Default
+    private Boolean isBlocker = false;
+
+    @Column(name = "blocker_category", length = 50)
+    private String blockerCategory;
+
+    @Column(name = "blocker_reason", columnDefinition = "TEXT")
+    private String blockerReason;
+
+    @Column(name = "remarks", columnDefinition = "TEXT")
+    private String remarks;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
