@@ -13,6 +13,10 @@ public interface SupplierService {
 
     Supplier getSupplierById(Long id);
 
+    Supplier getSupplierByCode(String code);
+
+    List<Supplier> getSuppliersByStatus(String status);
+
     Supplier updateSupplier(Long id, SupplierCreateDto dto);
 
     void deleteSupplier(Long id);

@@ -33,9 +33,16 @@ public class Budget {
     @Column(name = "activity_id")
     private Long activityId;
 
+    @Column(name = "wbs_activity_id")
+    private Long wbsActivityId;
+
     @NotBlank(message = "Cost code is required")
     @Column(name = "cost_code", nullable = false, length = 50)
     private String costCode;
+
+    @Builder.Default
+    @Column(name = "currency", length = 10)
+    private String currency = "INR";
 
     @Enumerated(EnumType.STRING)
     @Column(name = "cost_head", length = 30)
@@ -46,11 +53,42 @@ public class Budget {
     @Column(name = "baseline_amount", nullable = false, precision = 14, scale = 2)
     private BigDecimal baselineAmount;
 
+    @Column(name = "description")
+    private String description;
+
     @Builder.Default
     @Column(name = "revised_amount", precision = 14, scale = 2)
     private BigDecimal revisedAmount = BigDecimal.ZERO;
 
+    @Column(name = "revision_reason", length = 500)
+    private String revisionReason;
+
+    @Column(name = "approved_by", length = 100)
+    private String approvedBy;
+
+    @Builder.Default
+    @Column(name = "status", length = 30)
+    private String status = "APPROVED";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    public Long getWbsActivityId() {
+        return wbsActivityId != null ? wbsActivityId : activityId;
+    }
+
+    public BigDecimal getAllocatedAmount() {
+        return baselineAmount;
+    }
+
+    public BigDecimal getTotalWorkingBudget() {
+        BigDecimal base = baselineAmount != null ? baselineAmount : BigDecimal.ZERO;
+        BigDecimal rev = revisedAmount != null ? revisedAmount : BigDecimal.ZERO;
+        return base.add(rev);
+    }
 }

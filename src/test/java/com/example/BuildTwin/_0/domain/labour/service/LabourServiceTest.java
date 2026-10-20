@@ -8,6 +8,8 @@ import com.example.BuildTwin._0.domain.labour.model.LabourDaily;
 import com.example.BuildTwin._0.domain.labour.repository.ContractorRepository;
 import com.example.BuildTwin._0.domain.labour.repository.LabourAllocationRepository;
 import com.example.BuildTwin._0.domain.labour.repository.LabourDailyRepository;
+import com.example.BuildTwin._0.domain.wbs.model.Activity;
+import com.example.BuildTwin._0.domain.wbs.repository.ActivityRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,9 @@ class LabourServiceTest {
 
     @Mock
     private LabourAllocationRepository labourAllocationRepository;
+
+    @Mock
+    private ActivityRepository activityRepository;
 
     @InjectMocks
     private LabourService labourService;
@@ -117,18 +122,26 @@ class LabourServiceTest {
     @Test
     @DisplayName("Calculate Activity Productivity - Success")
     void calculateActivityProductivity_Success() {
+        Activity activity = Activity.builder()
+                .id(101L)
+                .name("Concreting")
+                .unit("m3")
+                .plannedQty(BigDecimal.valueOf(100.0))
+                .build();
+
         LabourAllocation alloc = LabourAllocation.builder()
                 .wbsActivityId(101L)
                 .hoursAllocated(BigDecimal.valueOf(50.0))
                 .build();
 
+        when(activityRepository.findById(101L)).thenReturn(Optional.of(activity));
         when(labourAllocationRepository.findByWbsActivityId(101L)).thenReturn(List.of(alloc));
 
-        ProductivityResponseDto prod = labourService.calculateActivityProductivity(101L, BigDecimal.valueOf(100.0));
+        ProductivityResponseDto prod = labourService.calculateActivityProductivity(101L, null);
 
         assertThat(prod).isNotNull();
         assertThat(prod.getActivityId()).isEqualTo(101L);
-        assertThat(prod.getUnit()).isEqualTo("unit");
+        assertThat(prod.getUnit()).isEqualTo("m3");
         assertThat(prod.getOutputPerLabourHour()).isEqualByComparingTo(BigDecimal.valueOf(2.0000));
         assertThat(prod.getManHoursPerUnit()).isEqualByComparingTo(BigDecimal.valueOf(0.5000));
     }

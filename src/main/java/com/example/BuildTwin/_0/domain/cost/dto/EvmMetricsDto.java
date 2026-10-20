@@ -60,6 +60,16 @@ public class EvmMetricsDto {
     @Schema(description = "Variance At Completion (VAC = BAC - EAC)", example = "66666.67")
     private BigDecimal varianceAtCompletion;
 
+    /** To-Complete Performance Index (TCPI = (BAC - EV) / (BAC - AC)) */
+    @Schema(description = "To-Complete Performance Index (TCPI = (BAC - EV) / (BAC - AC))", example = "0.9500")
+    private BigDecimal toCompletePerformanceIndex;
+
+    @Schema(description = "Planned progress percentage", example = "50.00%")
+    private String plannedProgressPercentage;
+
+    @Schema(description = "Actual progress percentage achieved", example = "52.00%")
+    private String actualProgressPercentage;
+
     @Schema(description = "Status of Schedule Performance (ON_SCHEDULE, BEHIND_SCHEDULE)", example = "ON_SCHEDULE")
     private String spiStatus;
 

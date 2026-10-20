@@ -46,12 +46,30 @@ public class Supplier {
     @Column(name = "gstin", length = 15)
     private String gstin;
 
+    @Column(name = "pan_number", length = 20)
+    private String panNumber;
+
+    @Column(name = "bank_account_number", length = 50)
+    private String bankAccountNumber;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @Column(name = "bank_ifsc_code", length = 20)
+    private String bankIfscCode;
+
+    @Column(name = "bank_branch", length = 100)
+    private String bankBranch;
+
+    @Column(name = "category_specialization", length = 255)
+    private String categorySpecialization; // e.g., CEMENT, STEEL, AGGREGATES, RMC
+
     @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 
     @Builder.Default
     @Column(name = "status", nullable = false, length = 30)
-    private String status = "ACTIVE";
+    private String status = "ACTIVE"; // ACTIVE, PENDING_VERIFICATION, BLACKLISTED
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

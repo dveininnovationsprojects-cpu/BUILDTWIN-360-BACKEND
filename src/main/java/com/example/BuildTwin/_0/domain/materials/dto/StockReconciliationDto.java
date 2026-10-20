@@ -37,3 +37,4 @@ public class StockReconciliationDto {
     @Schema(description = "Audit observations or variance remarks", example = "Physical audit found 20 damaged bags due to water seepage")
     private String remarks;
 }
+

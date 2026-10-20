@@ -4,6 +4,13 @@ import com.example.BuildTwin._0.domain.cost.dto.EvmMetricsDto;
 import com.example.BuildTwin._0.domain.cost.repository.BudgetRepository;
 import com.example.BuildTwin._0.domain.cost.repository.CostTransactionRepository;
 import com.example.BuildTwin._0.domain.materials.repository.StockLedgerRepository;
+import com.example.BuildTwin._0.domain.cost.repository.CostActualLedgerRepository;
+import com.example.BuildTwin._0.domain.cost.repository.ProjectBudgetRepository;
+import com.example.BuildTwin._0.domain.cost.repository.ProjectEVMRecordRepository;
+import com.example.BuildTwin._0.domain.labour.repository.LabourDailyRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.GrnRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository;
+import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +34,27 @@ class EvmAnalyticsTest {
 
     @Mock
     private StockLedgerRepository stockLedgerRepository;
+
+    @Mock
+    private PurchaseOrderRepository purchaseOrderRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
+
+    @Mock
+    private LabourDailyRepository labourDailyRepository;
+
+    @Mock
+    private GrnRepository grnRepository;
+
+    @Mock
+    private ProjectBudgetRepository projectBudgetRepository;
+
+    @Mock
+    private CostActualLedgerRepository costActualLedgerRepository;
+
+    @Mock
+    private ProjectEVMRecordRepository projectEVMRecordRepository;
 
     @InjectMocks
     private CostServiceImpl costService;

@@ -52,7 +52,8 @@ public class SiteController {
             @PathVariable Long projectId,
             @Valid @RequestBody CreateSiteRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        SiteResponse created = siteService.createSite(projectId, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        SiteResponse created = siteService.createSite(projectId, request, username);
         return new ResponseEntity<>(ApiResponse.created(created, "Site created successfully under project"), HttpStatus.CREATED);
     }
 
@@ -128,7 +129,8 @@ public class SiteController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateSiteRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        SiteResponse updated = siteService.updateSite(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        SiteResponse updated = siteService.updateSite(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Site updated successfully"));
     }
 
@@ -151,7 +153,8 @@ public class SiteController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateSiteStatusRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        SiteResponse updated = siteService.updateSiteStatus(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        SiteResponse updated = siteService.updateSiteStatus(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Site status updated successfully"));
     }
 
@@ -168,7 +171,8 @@ public class SiteController {
     public ResponseEntity<ApiResponse<Void>> deleteSite(
             @PathVariable Long id,
             @Parameter(hidden = true) Authentication authentication) {
-        siteService.deleteSite(id, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        siteService.deleteSite(id, username);
         return ResponseEntity.ok(ApiResponse.success(null, "Site deleted successfully"));
     }
 }

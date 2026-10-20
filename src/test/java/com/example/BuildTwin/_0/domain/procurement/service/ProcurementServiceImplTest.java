@@ -10,6 +10,7 @@ import com.example.BuildTwin._0.domain.procurement.model.Grn;
 import com.example.BuildTwin._0.domain.procurement.model.MaterialRequest;
 import com.example.BuildTwin._0.domain.procurement.repository.GrnRepository;
 import com.example.BuildTwin._0.domain.procurement.repository.MaterialRequestRepository;
+import com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository;
 import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,9 @@ class ProcurementServiceImplTest {
 
     @Mock
     private GrnRepository grnRepository;
+
+    @Mock
+    private PurchaseOrderRepository purchaseOrderRepository;
 
     @Mock
     private MaterialRepository materialRepository;
@@ -181,5 +185,259 @@ class ProcurementServiceImplTest {
         assertEquals(new BigDecimal("300.00"), dto.getTotalRequestedQty());
         assertEquals(new BigDecimal("200.00"), dto.getProjectedShortage());
         assertEquals("SHORTAGE", dto.getStatus());
+    }
+
+    @Test
+    @DisplayName("Should update pending material request successfully")
+    void testUpdateMaterialRequest_Success() {
+        MaterialRequest updatePayload = MaterialRequest.builder()
+                .requiredQty(new BigDecimal("250.00"))
+                .remarks("Typo corrected from 2500 to 250")
+                .build();
+
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+        when(materialRequestRepository.save(any(MaterialRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        MaterialRequest updated = procurementService.updateMaterialRequest(10L, updatePayload);
+
+        assertEquals(new BigDecimal("250.00"), updated.getRequiredQty());
+        assertEquals("Typo corrected from 2500 to 250", updated.getRemarks());
+        verify(materialRequestRepository).save(sampleRequest);
+    }
+
+    @Test
+    @DisplayName("Should throw BadRequestException when updating non-pending material request")
+    void testUpdateMaterialRequest_ThrowsWhenNotPending() {
+        sampleRequest.setStatus("APPROVED");
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+
+        MaterialRequest updatePayload = MaterialRequest.builder().requiredQty(new BigDecimal("200.00")).build();
+
+        assertThrows(BadRequestException.class, () -> procurementService.updateMaterialRequest(10L, updatePayload));
+        verify(materialRequestRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should process purchase order approval and update status")
+    void testUpdatePurchaseOrderApproval_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .supplierId(3L)
+                .projectId(100L)
+                .amount(new BigDecimal("150000.00"))
+                .status("PENDING_APPROVAL")
+                .build();
+
+        com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderApprovalDto approvalDto = com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderApprovalDto.builder()
+                .status("APPROVED")
+                .approvedBy("Director_Murugan")
+                .remarks("Approved with credit terms")
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(purchaseOrderRepository.save(any(com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder approvedPo = procurementService.updatePurchaseOrderApproval(50L, approvalDto);
+
+        assertEquals("APPROVED", approvedPo.getStatus());
+        assertEquals("Director_Murugan", approvedPo.getApprovedBy());
+        verify(purchaseOrderRepository).save(po);
+    }
+
+    @Test
+    @DisplayName("Should calculate PO fulfillment metrics correctly from GRNs")
+    void testGetPoFulfillmentStatus_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .supplierId(3L)
+                .projectId(100L)
+                .materialId(1L)
+                .orderQty(new BigDecimal("500.00"))
+                .status("PARTIALLY_DELIVERED")
+                .build();
+
+        Grn grn1 = Grn.builder()
+                .poId(50L)
+                .receivedQty(new BigDecimal("300.00"))
+                .acceptedQty(new BigDecimal("290.00"))
+                .rejectedQty(new BigDecimal("10.00"))
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(grnRepository.findByPoId(50L)).thenReturn(List.of(grn1));
+
+        com.example.BuildTwin._0.domain.procurement.dto.PoFulfillmentDto fulfillment = procurementService.getPoFulfillmentStatus(50L);
+
+        assertNotNull(fulfillment);
+        assertEquals(new BigDecimal("500.00"), fulfillment.getOrderQty());
+        assertEquals(new BigDecimal("300.00"), fulfillment.getTotalReceivedQty());
+        assertEquals(new BigDecimal("290.00"), fulfillment.getTotalAcceptedQty());
+        assertEquals(new BigDecimal("210.00"), fulfillment.getRemainingQty());
+        assertEquals("58.00%", fulfillment.getFulfillmentPercentage());
+    }
+
+    @Test
+    @DisplayName("Should cancel material request and set status to CANCELLED")
+    void testCancelMaterialRequest_Success() {
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+        when(materialRequestRepository.save(any(MaterialRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        procurementService.deleteMaterialRequest(10L);
+
+        assertEquals("CANCELLED", sampleRequest.getStatus());
+        verify(materialRequestRepository).save(sampleRequest);
+    }
+
+    @Test
+    @DisplayName("Should throw BadRequestException when cancelling an ORDERED material request")
+    void testCancelMaterialRequest_ThrowsWhenOrdered() {
+        sampleRequest.setStatus("ORDERED");
+        when(materialRequestRepository.findById(10L)).thenReturn(Optional.of(sampleRequest));
+
+        assertThrows(BadRequestException.class, () -> procurementService.deleteMaterialRequest(10L));
+        verify(materialRequestRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should update PO lifecycle status successfully (DRAFT -> ISSUED)")
+    void testUpdatePurchaseOrderStatus_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .status("DRAFT")
+                .build();
+
+        com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto statusDto = com.example.BuildTwin._0.domain.procurement.dto.PurchaseOrderStatusDto.builder()
+                .status("ISSUED")
+                .remarks("Formal PO dispatched to vendor")
+                .updatedBy("Procurement_Officer")
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(purchaseOrderRepository.save(any(com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder updated = procurementService.updatePurchaseOrderStatus(50L, statusDto);
+
+        assertEquals("ISSUED", updated.getStatus());
+        assertEquals("Formal PO dispatched to vendor", updated.getRemarks());
+        assertEquals("Procurement_Officer", updated.getApprovedBy());
+    }
+
+    @Test
+    @DisplayName("Should cancel Purchase Order and set status to CANCELLED")
+    void testCancelPurchaseOrder_Success() {
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .status("ISSUED")
+                .build();
+
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(purchaseOrderRepository.save(any(com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        procurementService.deletePurchaseOrder(50L);
+
+        assertEquals("CANCELLED", po.getStatus());
+        verify(purchaseOrderRepository).save(po);
+    }
+
+    @Test
+    @DisplayName("Should void GRN, reverse stock in StockLedger, and update status to VOID")
+    void testVoidGrn_Success() {
+        Grn grn = Grn.builder()
+                .id(101L)
+                .poId(50L)
+                .projectId(100L)
+                .siteId(2L)
+                .materialId(1L)
+                .receivedQty(new BigDecimal("100.00"))
+                .acceptedQty(new BigDecimal("90.00"))
+                .rejectedQty(new BigDecimal("10.00"))
+                .status("COMPLETED")
+                .build();
+
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder()
+                .id(50L)
+                .orderQty(new BigDecimal("100.00"))
+                .status("PARTIALLY_FULFILLED")
+                .build();
+
+        when(grnRepository.findById(101L)).thenReturn(Optional.of(grn));
+        when(purchaseOrderRepository.findById(50L)).thenReturn(Optional.of(po));
+        when(grnRepository.findByPoId(50L)).thenReturn(List.of(grn)); // After setting to VOID, filter excludes it
+
+        procurementService.deleteGrn(101L);
+
+        assertEquals("VOID", grn.getStatus());
+        verify(stockLedgerService).recordTransaction(argThat(dto ->
+                dto.getTransactionType() == com.example.BuildTwin._0.domain.materials.enums.StockTransactionType.ISSUE
+                        && dto.getQuantity().compareTo(new BigDecimal("90.00")) == 0
+        ));
+        verify(grnRepository).save(grn);
+        verify(purchaseOrderRepository).save(po);
+    }
+
+    @Test
+    @DisplayName("Should update GRN details successfully")
+    void testUpdateGrn_Success() {
+        Grn existing = Grn.builder()
+                .id(101L)
+                .poId(50L)
+                .dcNumber("DC-001")
+                .vehicleNumber("TN-01-AA-1234")
+                .status("COMPLETED")
+                .build();
+
+        Grn updateRequest = Grn.builder()
+                .dcNumber("DC-001-UPDATED")
+                .vehicleNumber("TN-01-BB-5678")
+                .gateEntryNumber("GATE-99")
+                .damageReason("Updated note")
+                .build();
+
+        when(grnRepository.findById(101L)).thenReturn(Optional.of(existing));
+        when(grnRepository.save(any(Grn.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Grn result = procurementService.updateGrn(101L, updateRequest);
+
+        assertNotNull(result);
+        assertEquals("DC-001-UPDATED", result.getDcNumber());
+        assertEquals("TN-01-BB-5678", result.getVehicleNumber());
+        assertEquals("GATE-99", result.getGateEntryNumber());
+        assertEquals("Updated note", result.getDamageReason());
+        verify(grnRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Should retrieve GRNs by project ID")
+    void testGetGrnsByProject() {
+        Grn grn = Grn.builder().id(101L).projectId(100L).status("COMPLETED").build();
+        when(grnRepository.findByProjectId(100L)).thenReturn(List.of(grn));
+
+        List<Grn> result = procurementService.getGrnsByProject(100L);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(101L, result.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("Should retrieve all material requests, POs, and GRNs")
+    void testGetAllMethods() {
+        when(materialRequestRepository.findAll()).thenReturn(List.of(sampleRequest));
+        com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder po = com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder.builder().id(50L).build();
+        when(purchaseOrderRepository.findAll()).thenReturn(List.of(po));
+        Grn grn = Grn.builder().id(101L).build();
+        when(grnRepository.findAll()).thenReturn(List.of(grn));
+
+        List<MaterialRequest> mrs = procurementService.getAllMaterialRequests();
+        assertNotNull(mrs);
+        assertEquals(1, mrs.size());
+
+        List<com.example.BuildTwin._0.domain.procurement.model.PurchaseOrder> pos = procurementService.getAllPurchaseOrders();
+        assertNotNull(pos);
+        assertEquals(1, pos.size());
+
+        List<Grn> grns = procurementService.getAllGrns();
+        assertNotNull(grns);
+        assertEquals(1, grns.size());
     }
 }

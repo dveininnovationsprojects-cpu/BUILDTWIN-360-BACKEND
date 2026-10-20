@@ -1,0 +1,695 @@
+{
+  "info": {
+    "_postman_id": "b360-activity-dependency-module-v1",
+    "name": "BuildTwin 360 - Activity Dependency & CPM Module",
+    "description": "Comprehensive Postman test collection for Activity Dependency API in BuildTwin 360.\nBase URL: http://localhost:8080/api/v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "work_package_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_1_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_2_id",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "activity_3_id",
+      "value": "3",
+      "type": "string"
+    },
+    {
+      "key": "dependency_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Set Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.collectionVariables.set('token', response.data.accessToken);",
+                  "    console.log('JWT Token successfully set to collection variable: token');",
+                  "} else {",
+                  "    console.error('Failed to extract accessToken from response');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"admin\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates the user and automatically extracts the accessToken into the {{token}} variable."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Activity Dependency CRUD",
+      "item": [
+        {
+          "name": "1.1 Create Precedence Dependency (FS with 3d lag)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response indicates success', function () {",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});",
+                  "if (res.data && res.data.id) {",
+                  "    pm.collectionVariables.set('dependency_id', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"predecessorId\": {{activity_1_id}},\n  \"successorId\": {{activity_2_id}},\n  \"dependencyType\": \"FS\",\n  \"lagDays\": 3,\n  \"remarks\": \"3 days concrete curing lag before formwork stripping\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies"]
+            },
+            "description": "Creates a Finish-to-Start (FS) precedence dependency between two activities."
+          }
+        },
+        {
+          "name": "1.2 Batch Create Multiple Dependencies",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dependencies\": [\n    {\n      \"predecessorId\": {{activity_2_id}},\n      \"successorId\": {{activity_3_id}},\n      \"dependencyType\": \"FS\",\n      \"lagDays\": 0,\n      \"remarks\": \"Column concreting precedes beam shuttering\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies/batch",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies", "batch"]
+            },
+            "description": "Bulk creates multiple activity precedence relationships in a single atomic request."
+          }
+        },
+        {
+          "name": "1.3 Get Activity Dependency by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies/{{dependency_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies", "{{dependency_id}}"]
+            },
+            "description": "Fetches details of a specific dependency including schedule conflict diagnostics."
+          }
+        },
+        {
+          "name": "1.4 Update Activity Dependency",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dependencyType\": \"FS\",\n  \"lagDays\": 5,\n  \"remarks\": \"Extended curing lag to 5 days per structural consultant recommendation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies/{{dependency_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies", "{{dependency_id}}"]
+            },
+            "description": "Updates the dependency type, lag days, or remarks of an existing dependency link."
+          }
+        },
+        {
+          "name": "1.5 Delete Activity Dependency by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies/{{dependency_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies", "{{dependency_id}}"]
+            },
+            "description": "Deletes the precedence constraint without deleting the activities."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Contextual Lookups & Filtering",
+      "item": [
+        {
+          "name": "2.1 List All Activity Dependencies in Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/activity-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "activity-dependencies"]
+            },
+            "description": "Lists all dependency links defined across the entire project."
+          }
+        },
+        {
+          "name": "2.2 List Activity Dependencies in Work Package",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/work-packages/{{work_package_id}}/activity-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["work-packages", "{{work_package_id}}", "activity-dependencies"]
+            },
+            "description": "Lists all precedence links involving activities inside a specific work package."
+          }
+        },
+        {
+          "name": "2.3 Get Activity Predecessors (Incoming)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_2_id}}/predecessors",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_2_id}}", "predecessors"]
+            },
+            "description": "Retrieves all predecessor activities that this activity depends on."
+          }
+        },
+        {
+          "name": "2.4 Get Activity Successors (Outgoing)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_2_id}}/successors",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_2_id}}", "successors"]
+            },
+            "description": "Retrieves all successor activities that depend on this activity."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Dependency Chain, CPM Network & Cleanup",
+      "item": [
+        {
+          "name": "3.1 Get Activity Dependency Chain & Execution Readiness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var res = pm.response.json();",
+                  "pm.test('Contains readiness flag isReadyToStart', function () {",
+                  "    pm.expect(res.data).to.have.property('isReadyToStart');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_2_id}}/dependency-chain",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_2_id}}", "dependency-chain"]
+            },
+            "description": "Provides full diagnostic view of predecessors, successors, blockers, and whether activity is ready to start (isReadyToStart)."
+          }
+        },
+        {
+          "name": "3.2 Get Full Project CPM Dependency Network (Gantt Graph)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var res = pm.response.json();",
+                  "pm.test('Contains nodes and edges arrays', function () {",
+                  "    pm.expect(res.data).to.have.property('nodes');",
+                  "    pm.expect(res.data).to.have.property('edges');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/activity-dependencies/network",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "activity-dependencies", "network"]
+            },
+            "description": "Returns full network graph (nodes and edges) for Gantt chart, CPM analysis, and interactive flow diagrams."
+          }
+        },
+        {
+          "name": "3.3 Delete All Dependencies for an Activity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_2_id}}/dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_2_id}}", "dependencies"]
+            },
+            "description": "Deletes all incoming and outgoing dependencies for a specific activity."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Negative Testing & Business Rules Validation",
+      "item": [
+        {
+          "name": "4.1 Negative: Self-Dependency Validation (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var res = pm.response.json();",
+                  "pm.test('Error message mentions self-referencing', function () {",
+                  "    pm.expect(res.message).to.include('cannot depend on itself');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"predecessorId\": {{activity_1_id}},\n  \"successorId\": {{activity_1_id}},\n  \"dependencyType\": \"FS\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies"]
+            },
+            "description": "Tests validation preventing an activity from depending on itself."
+          }
+        },
+        {
+          "name": "4.2 Negative: Circular Loop Cycle Detection (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var res = pm.response.json();",
+                  "pm.test('Error message mentions Circular dependency', function () {",
+                  "    pm.expect(res.message).to.include('Circular dependency detected');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"predecessorId\": {{activity_3_id}},\n  \"successorId\": {{activity_1_id}},\n  \"dependencyType\": \"FS\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies"]
+            },
+            "description": "Tests cycle detection BFS algorithm preventing circular loops (A -> B -> C -> A)."
+          }
+        },
+        {
+          "name": "4.3 Negative: Duplicate Dependency Link (Expect 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"predecessorId\": {{activity_1_id}},\n  \"successorId\": {{activity_2_id}},\n  \"dependencyType\": \"FS\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies"]
+            },
+            "description": "Tests duplicate prevention constraint between the same predecessor and successor activities."
+          }
+        },
+        {
+          "name": "4.4 Negative: Non-Existent Activity (Expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"predecessorId\": 99999,\n  \"successorId\": {{activity_2_id}},\n  \"dependencyType\": \"FS\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activity-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["activity-dependencies"]
+            },
+            "description": "Tests 404 handler when predecessor activity ID does not exist."
+          }
+        }
+      ]
+    }
+  ]
+}
