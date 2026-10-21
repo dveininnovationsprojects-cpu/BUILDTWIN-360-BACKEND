@@ -676,7 +676,18 @@ public class DataInitializer implements CommandLineRunner {
                     .description("Batching plant pumpable concrete mix with flyash retarder")
                     .build();
 
-            materialRepository.saveAll(List.of(m1, m2, m3, m4));
+            Material m5 = Material.builder()
+                    .materialCode("MAT-BRK-01")
+                    .name("Country Red Clay Bricks")
+                    .category("BRICKS")
+                    .unit(MaterialUnit.BRICKS)
+                    .standardRate(BigDecimal.valueOf(12.50))
+                    .reorderLevel(BigDecimal.valueOf(2000.00))
+                    .currentStock(BigDecimal.valueOf(10010.00))
+                    .description("First-class table molded red clay building bricks for masonry")
+                    .build();
+
+            materialRepository.saveAll(List.of(m1, m2, m3, m4, m5));
             log.info("Initialized core material master items and inventory stocks.");
         }
     }

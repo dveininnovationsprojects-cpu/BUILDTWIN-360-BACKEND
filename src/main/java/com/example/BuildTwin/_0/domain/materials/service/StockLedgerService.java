@@ -127,17 +127,25 @@ public class StockLedgerService {
         material.setCurrentStock(physicalStock);
         materialRepository.save(material);
 
+        String auditor = dto.getAuditedBy() != null ? dto.getAuditedBy() : "Auditor";
+        String statusStr = variance.compareTo(BigDecimal.ZERO) == 0 ? "MATCHED" :
+                (variance.compareTo(BigDecimal.ZERO) > 0 ? "SURPLUS" : "SHORTAGE");
+
         // Create adjustment entry in stock ledger
-        String remarkText = "Stock Reconciliation Audit by " + (dto.getAuditedBy() != null ? dto.getAuditedBy() : "Auditor")
+        String remarkText = "Stock Reconciliation Audit by " + auditor
+                + ". Status: " + statusStr
                 + ". Variance: " + variance
                 + (dto.getRemarks() != null ? " - " + dto.getRemarks() : "");
+
+        BigDecimal txnQuantity = physicalStock.compareTo(BigDecimal.ZERO) > 0 ? physicalStock :
+                (variance.abs().compareTo(BigDecimal.ZERO) > 0 ? variance.abs() : BigDecimal.ONE);
 
         StockLedger ledgerEntry = StockLedger.builder()
                 .projectId(dto.getProjectId())
                 .siteId(dto.getSiteId())
                 .material(material)
                 .transactionType(StockTransactionType.ADJUSTMENT)
-                .quantity(physicalStock)
+                .quantity(txnQuantity)
                 .unitPrice(material.getStandardRate())
                 .referenceId("RECON-" + System.currentTimeMillis())
                 .remarks(remarkText)
@@ -149,11 +157,14 @@ public class StockLedgerService {
                 .materialId(material.getId())
                 .materialCode(material.getMaterialCode())
                 .materialName(material.getName())
+                .unit(material.getUnit() != null ? material.getUnit().name() : null)
                 .systemStock(systemStock)
                 .physicalStock(physicalStock)
                 .variance(variance)
+                .status(statusStr)
+                .remarks(dto.getRemarks())
                 .adjustmentTransactionId(savedEntry.getId())
-                .auditedBy(dto.getAuditedBy())
+                .auditedBy(auditor)
                 .reconciledAt(LocalDateTime.now())
                 .build();
     }
