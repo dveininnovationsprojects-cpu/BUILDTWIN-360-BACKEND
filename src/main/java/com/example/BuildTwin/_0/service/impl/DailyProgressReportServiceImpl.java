@@ -1136,12 +1136,18 @@ public class DailyProgressReportServiceImpl implements DailyProgressReportServic
     }
 
     // =========================================================================
-    // 5. WORKFLOW TRANSITIONS (SUBMIT, APPROVE, REJECT)
+    // 5. WORKFLOW TRANSITIONS (DRAFT, SUBMIT, WITHDRAW, APPROVE, REJECT)
     // =========================================================================
 
     @Override
     @Transactional
     public DailyProgressReportResponse submitDpr(Long dprId, String submitter) {
+        return submitDpr(dprId, null, submitter);
+    }
+
+    @Override
+    @Transactional
+    public DailyProgressReportResponse submitDpr(Long dprId, SubmitDprRequest request, String submitter) {
         DailyProgressReport dpr = dprRepository.findById(dprId)
                 .orElseThrow(() -> new ResourceNotFoundException("DailyProgressReport", "id", dprId));
 
@@ -1153,8 +1159,17 @@ public class DailyProgressReportServiceImpl implements DailyProgressReportServic
         }
 
         dpr.setStatus(DprStatus.SUBMITTED);
+        dpr.setSubmittedBy(submitter != null && !submitter.isBlank() ? submitter : (dpr.getSiteEngineer() != null ? dpr.getSiteEngineer() : "SITE_ENGINEER"));
+        dpr.setSubmissionDate(LocalDateTime.now());
+        if (request != null && request.getSubmissionNotes() != null) {
+            dpr.setSubmissionNotes(request.getSubmissionNotes());
+        }
+        // Clear prior rejection status upon fresh re-submission
         dpr.setRejectionReason(null);
-        if (submitter != null && !submitter.isBlank()) {
+        dpr.setRejectedBy(null);
+        dpr.setRejectionDate(null);
+
+        if (submitter != null && !submitter.isBlank() && dpr.getSiteEngineer() == null) {
             dpr.setSiteEngineer(submitter);
         }
         dpr.recalculateTotals();
@@ -1180,18 +1195,74 @@ public class DailyProgressReportServiceImpl implements DailyProgressReportServic
 
     @Override
     @Transactional
+    public DailyProgressReportResponse withdrawDpr(Long dprId, String user) {
+        return withdrawDpr(dprId, null, user);
+    }
+
+    @Override
+    @Transactional
+    public DailyProgressReportResponse withdrawDpr(Long dprId, WithdrawDprRequest request, String user) {
+        DailyProgressReport dpr = dprRepository.findById(dprId)
+                .orElseThrow(() -> new ResourceNotFoundException("DailyProgressReport", "id", dprId));
+
+        if (dpr.getStatus() != DprStatus.SUBMITTED) {
+            throw new BadRequestException("Only SUBMITTED DPRs can be withdrawn back to DRAFT. Current status: " + dpr.getStatus());
+        }
+
+        dpr.setStatus(DprStatus.DRAFT);
+        if (request != null && request.getWithdrawalReason() != null) {
+            String note = " [Withdrawn on " + LocalDate.now() + " by " + user + ": " + request.getWithdrawalReason() + "]";
+            dpr.setGeneralNotes(dpr.getGeneralNotes() != null ? dpr.getGeneralNotes() + note : note);
+        }
+        dpr.recalculateTotals();
+
+        DailyProgressReport saved = dprRepository.save(dpr);
+
+        try {
+            auditService.logAction(
+                    user != null ? user : "SYSTEM",
+                    "WITHDRAW_DPR",
+                    "DailyProgressReport",
+                    String.valueOf(saved.getId()),
+                    "Withdrew DPR " + saved.getReportCode() + " back to DRAFT",
+                    null
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to log audit for DPR withdraw: {}", ex.getMessage());
+        }
+
+        log.info("DPR {} (ID: {}) withdrawn back to DRAFT by {}", saved.getReportCode(), saved.getId(), user);
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
     public DailyProgressReportResponse approveDpr(Long dprId, String approver) {
+        return approveDpr(dprId, null, approver);
+    }
+
+    @Override
+    @Transactional
+    public DailyProgressReportResponse approveDpr(Long dprId, ApproveDprRequest request, String approver) {
         DailyProgressReport dpr = dprRepository.findById(dprId)
                 .orElseThrow(() -> new ResourceNotFoundException("DailyProgressReport", "id", dprId));
 
         if (dpr.getStatus() == DprStatus.APPROVED) {
             throw new BadRequestException("DPR is already approved.");
         }
+        if (dpr.getStatus() == DprStatus.REJECTED) {
+            throw new BadRequestException("Cannot approve a REJECTED DPR. Please resubmit the DPR for review first.");
+        }
 
         dpr.setStatus(DprStatus.APPROVED);
         dpr.setApprovedBy(approver != null ? approver : "PROJECT_MANAGER");
         dpr.setApprovalDate(LocalDateTime.now());
+        if (request != null && request.getApprovalNotes() != null) {
+            dpr.setApprovalNotes(request.getApprovalNotes());
+        }
         dpr.setRejectionReason(null);
+        dpr.setRejectedBy(null);
+        dpr.setRejectionDate(null);
         dpr.recalculateTotals();
 
         // CASCADE PROGRESS TO WBS ACTIVITIES & GENERATE ACTIVITY PROGRESS LOGS
@@ -1287,9 +1358,17 @@ public class DailyProgressReportServiceImpl implements DailyProgressReportServic
         if (dpr.getStatus() == DprStatus.APPROVED) {
             throw new BadRequestException("Approved DPR cannot be rejected. Please reverse through change management.");
         }
+        if (dpr.getStatus() == DprStatus.DRAFT) {
+            throw new BadRequestException("Draft DPR has not been submitted yet and cannot be rejected.");
+        }
+        if (dpr.getStatus() == DprStatus.REJECTED) {
+            throw new BadRequestException("DPR is already in REJECTED status.");
+        }
 
         dpr.setStatus(DprStatus.REJECTED);
         dpr.setRejectionReason(request.getRejectionReason());
+        dpr.setRejectedBy(reviewer != null ? reviewer : "PROJECT_MANAGER");
+        dpr.setRejectionDate(LocalDateTime.now());
 
         DailyProgressReport saved = dprRepository.save(dpr);
 
@@ -1396,8 +1475,14 @@ public class DailyProgressReportServiceImpl implements DailyProgressReportServic
                 .temperatureCelsius(dpr.getTemperatureCelsius())
                 .status(dpr.getStatus())
                 .siteEngineer(dpr.getSiteEngineer())
+                .submittedBy(dpr.getSubmittedBy())
+                .submissionDate(dpr.getSubmissionDate())
+                .submissionNotes(dpr.getSubmissionNotes())
                 .approvedBy(dpr.getApprovedBy())
                 .approvalDate(dpr.getApprovalDate())
+                .approvalNotes(dpr.getApprovalNotes())
+                .rejectedBy(dpr.getRejectedBy())
+                .rejectionDate(dpr.getRejectionDate())
                 .rejectionReason(dpr.getRejectionReason())
                 .generalNotes(dpr.getGeneralNotes())
                 .safetyIncidentsCount(dpr.getSafetyIncidentsCount())

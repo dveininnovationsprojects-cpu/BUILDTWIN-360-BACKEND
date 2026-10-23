@@ -462,6 +462,10 @@ class DailyProgressReportServiceImplTest {
         assertEquals(0, afterRemove.getPhotoAttachments().size());
     }
 
+    // =========================================================================
+    // WORKFLOW TRANSITION TESTS (DRAFT, SUBMIT, WITHDRAW, APPROVE, REJECT)
+    // =========================================================================
+
     @Test
     @DisplayName("Submit DPR - Success Transitions to SUBMITTED")
     void submitDpr_Success() {
@@ -471,7 +475,80 @@ class DailyProgressReportServiceImplTest {
         DailyProgressReportResponse response = dprService.submitDpr(10L, "Engr. Rajesh");
 
         assertEquals(DprStatus.SUBMITTED, response.getStatus());
+        assertEquals("Engr. Rajesh", response.getSubmittedBy());
+        assertNotNull(response.getSubmissionDate());
         verify(dprRepository).save(testDpr);
+    }
+
+    @Test
+    @DisplayName("Submit DPR - With Notes Success and Clears Rejection Status")
+    void submitDpr_WithNotes_Success() {
+        testDpr.setStatus(DprStatus.REJECTED);
+        testDpr.setRejectionReason("Incorrect concrete batch slips");
+        testDpr.setRejectedBy("PM Senthil");
+        testDpr.setRejectionDate(LocalDateTime.now());
+
+        SubmitDprRequest submitReq = SubmitDprRequest.builder()
+                .submissionNotes("Revised batch slips attached")
+                .build();
+
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+        when(dprRepository.save(any(DailyProgressReport.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DailyProgressReportResponse response = dprService.submitDpr(10L, submitReq, "Engr. Rajesh");
+
+        assertEquals(DprStatus.SUBMITTED, response.getStatus());
+        assertEquals("Engr. Rajesh", response.getSubmittedBy());
+        assertEquals("Revised batch slips attached", response.getSubmissionNotes());
+        assertNull(response.getRejectionReason());
+        assertNull(response.getRejectedBy());
+        assertNull(response.getRejectionDate());
+    }
+
+    @Test
+    @DisplayName("Submit DPR - Already Approved Throws BadRequestException")
+    void submitDpr_AlreadyApproved_ThrowsBadRequest() {
+        testDpr.setStatus(DprStatus.APPROVED);
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+
+        assertThrows(BadRequestException.class, () -> dprService.submitDpr(10L, "Engr. Rajesh"));
+    }
+
+    @Test
+    @DisplayName("Submit DPR - Already Submitted Throws BadRequestException")
+    void submitDpr_AlreadySubmitted_ThrowsBadRequest() {
+        testDpr.setStatus(DprStatus.SUBMITTED);
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+
+        assertThrows(BadRequestException.class, () -> dprService.submitDpr(10L, "Engr. Rajesh"));
+    }
+
+    @Test
+    @DisplayName("Withdraw DPR - Reverts SUBMITTED DPR back to DRAFT")
+    void withdrawDpr_Success() {
+        testDpr.setStatus(DprStatus.SUBMITTED);
+        testDpr.setSubmittedBy("Engr. Rajesh");
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+        when(dprRepository.save(any(DailyProgressReport.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        WithdrawDprRequest withdrawReq = WithdrawDprRequest.builder()
+                .withdrawalReason("Need to append evening shift concrete cubes")
+                .build();
+
+        DailyProgressReportResponse response = dprService.withdrawDpr(10L, withdrawReq, "Engr. Rajesh");
+
+        assertEquals(DprStatus.DRAFT, response.getStatus());
+        assertTrue(response.getGeneralNotes().contains("Need to append evening shift concrete cubes"));
+        verify(dprRepository).save(testDpr);
+    }
+
+    @Test
+    @DisplayName("Withdraw DPR - Non-Submitted Status Throws BadRequestException")
+    void withdrawDpr_DraftOrApproved_ThrowsBadRequest() {
+        testDpr.setStatus(DprStatus.DRAFT);
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+
+        assertThrows(BadRequestException.class, () -> dprService.withdrawDpr(10L, "Engr. Rajesh"));
     }
 
     @Test
@@ -508,6 +585,42 @@ class DailyProgressReportServiceImplTest {
     }
 
     @Test
+    @DisplayName("Approve DPR - With Approval Notes Success")
+    void approveDpr_WithNotes_Success() {
+        testDpr.setStatus(DprStatus.SUBMITTED);
+        ApproveDprRequest approveReq = ApproveDprRequest.builder()
+                .approvalNotes("Verified with QA/QC lab results")
+                .build();
+
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+        when(dprRepository.save(any(DailyProgressReport.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DailyProgressReportResponse response = dprService.approveDpr(10L, approveReq, "PM Senthil");
+
+        assertEquals(DprStatus.APPROVED, response.getStatus());
+        assertEquals("PM Senthil", response.getApprovedBy());
+        assertEquals("Verified with QA/QC lab results", response.getApprovalNotes());
+    }
+
+    @Test
+    @DisplayName("Approve DPR - Already Approved Throws BadRequestException")
+    void approveDpr_AlreadyApproved_ThrowsBadRequest() {
+        testDpr.setStatus(DprStatus.APPROVED);
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+
+        assertThrows(BadRequestException.class, () -> dprService.approveDpr(10L, "PM Senthil"));
+    }
+
+    @Test
+    @DisplayName("Approve DPR - Rejected Without Resubmitting Throws BadRequestException")
+    void approveDpr_RejectedWithoutResubmit_ThrowsBadRequest() {
+        testDpr.setStatus(DprStatus.REJECTED);
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+
+        assertThrows(BadRequestException.class, () -> dprService.approveDpr(10L, "PM Senthil"));
+    }
+
+    @Test
     @DisplayName("Reject DPR - Success with documented reason")
     void rejectDpr_Success() {
         testDpr.setStatus(DprStatus.SUBMITTED);
@@ -522,6 +635,34 @@ class DailyProgressReportServiceImplTest {
 
         assertEquals(DprStatus.REJECTED, response.getStatus());
         assertEquals("Mismatch in concrete batch slips", response.getRejectionReason());
+        assertEquals("PM Senthil", response.getRejectedBy());
+        assertNotNull(response.getRejectionDate());
+    }
+
+    @Test
+    @DisplayName("Reject DPR - Draft DPR Throws BadRequestException")
+    void rejectDpr_Draft_ThrowsBadRequest() {
+        testDpr.setStatus(DprStatus.DRAFT);
+        RejectDprRequest rejectReq = RejectDprRequest.builder()
+                .rejectionReason("Incomplete data")
+                .build();
+
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+
+        assertThrows(BadRequestException.class, () -> dprService.rejectDpr(10L, rejectReq, "PM Senthil"));
+    }
+
+    @Test
+    @DisplayName("Reject DPR - Approved DPR Throws BadRequestException")
+    void rejectDpr_Approved_ThrowsBadRequest() {
+        testDpr.setStatus(DprStatus.APPROVED);
+        RejectDprRequest rejectReq = RejectDprRequest.builder()
+                .rejectionReason("Change of scope")
+                .build();
+
+        when(dprRepository.findById(10L)).thenReturn(Optional.of(testDpr));
+
+        assertThrows(BadRequestException.class, () -> dprService.rejectDpr(10L, rejectReq, "PM Senthil"));
     }
 
     @Test

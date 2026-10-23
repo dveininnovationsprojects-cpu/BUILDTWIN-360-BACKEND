@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Complete Daily Progress Report (DPR) detail representation with Blocker & Remarks Support")
+@Schema(description = "Complete Daily Progress Report (DPR) detail representation with Workflow & Blocker Support")
 public class DailyProgressReportResponse {
 
     @Schema(description = "DPR Report ID", example = "1")
@@ -46,17 +46,36 @@ public class DailyProgressReportResponse {
     @Schema(description = "Ambient site temperature in Celsius", example = "32.5")
     private Double temperatureCelsius;
 
-    @Schema(description = "Report lifecycle status", example = "APPROVED")
+    @Schema(description = "Report lifecycle status: DRAFT, SUBMITTED, APPROVED, REJECTED", example = "APPROVED")
     private DprStatus status;
 
     @Schema(description = "Site engineer author", example = "Engr. Rajesh Kumar")
     private String siteEngineer;
+
+    // Workflow Tracking Fields
+    @Schema(description = "User who submitted the report for review", example = "Engr. Rajesh Kumar")
+    private String submittedBy;
+
+    @Schema(description = "Timestamp when report was submitted", example = "2026-10-10T17:30:00")
+    private LocalDateTime submissionDate;
+
+    @Schema(description = "Submission handover remarks", example = "Slab pour Level 4 completed; ready for sign-off.")
+    private String submissionNotes;
 
     @Schema(description = "Approving Project Manager / Director", example = "PM Senthil Nathan")
     private String approvedBy;
 
     @Schema(description = "Timestamp when report was approved", example = "2026-10-10T18:00:00")
     private LocalDateTime approvalDate;
+
+    @Schema(description = "Managerial approval notes", example = "Approved. Cube tests logged with QA.")
+    private String approvalNotes;
+
+    @Schema(description = "User who rejected the report", example = "PM Senthil Nathan")
+    private String rejectedBy;
+
+    @Schema(description = "Timestamp when report was rejected", example = "2026-10-10T18:30:00")
+    private LocalDateTime rejectionDate;
 
     @Schema(description = "Rejection feedback if returned", example = "null")
     private String rejectionReason;

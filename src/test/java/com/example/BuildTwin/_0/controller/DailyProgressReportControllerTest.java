@@ -416,11 +416,15 @@ class DailyProgressReportControllerTest {
                 .andExpect(status().isOk());
     }
 
+    // =========================================================================
+    // WORKFLOW TRANSITIONS (DRAFT, SUBMIT, WITHDRAW, APPROVE, REJECT)
+    // =========================================================================
+
     @Test
-    @DisplayName("POST /api/v1/dpr/{dprId}/submit - 200 OK")
+    @DisplayName("POST /api/v1/dpr/{dprId}/submit without body - 200 OK")
     void submitDpr_ReturnsOk() throws Exception {
         mockResponse.setStatus(DprStatus.SUBMITTED);
-        when(dprService.submitDpr(eq(10L), any())).thenReturn(mockResponse);
+        when(dprService.submitDpr(eq(10L), any(), any())).thenReturn(mockResponse);
 
         mockMvc.perform(post("/api/v1/dpr/10/submit"))
                 .andExpect(status().isOk())
@@ -428,12 +432,60 @@ class DailyProgressReportControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/dpr/{dprId}/approve - 200 OK")
+    @DisplayName("POST /api/v1/dpr/{dprId}/submit with notes - 200 OK")
+    void submitDpr_WithNotes_ReturnsOk() throws Exception {
+        SubmitDprRequest request = SubmitDprRequest.builder()
+                .submissionNotes("Floor 5 casting completed")
+                .build();
+        mockResponse.setStatus(DprStatus.SUBMITTED);
+        when(dprService.submitDpr(eq(10L), any(SubmitDprRequest.class), any())).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/dpr/10/submit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUBMITTED"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/dpr/{dprId}/withdraw - 200 OK")
+    void withdrawDpr_ReturnsOk() throws Exception {
+        WithdrawDprRequest request = WithdrawDprRequest.builder()
+                .withdrawalReason("Need to attach additional QC test reports")
+                .build();
+        mockResponse.setStatus(DprStatus.DRAFT);
+        when(dprService.withdrawDpr(eq(10L), any(), any())).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/dpr/10/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("DRAFT"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/dpr/{dprId}/approve without body - 200 OK")
     void approveDpr_ReturnsOk() throws Exception {
         mockResponse.setStatus(DprStatus.APPROVED);
-        when(dprService.approveDpr(eq(10L), any())).thenReturn(mockResponse);
+        when(dprService.approveDpr(eq(10L), any(), any())).thenReturn(mockResponse);
 
         mockMvc.perform(post("/api/v1/dpr/10/approve"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("APPROVED"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/dpr/{dprId}/approve with notes - 200 OK")
+    void approveDpr_WithNotes_ReturnsOk() throws Exception {
+        ApproveDprRequest request = ApproveDprRequest.builder()
+                .approvalNotes("Verified with QA/QC site log")
+                .build();
+        mockResponse.setStatus(DprStatus.APPROVED);
+        when(dprService.approveDpr(eq(10L), any(ApproveDprRequest.class), any())).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/dpr/10/approve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("APPROVED"));
     }

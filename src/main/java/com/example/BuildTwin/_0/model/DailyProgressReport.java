@@ -66,11 +66,32 @@ public class DailyProgressReport {
     @Column(name = "site_engineer", length = 150)
     private String siteEngineer;
 
+    // Workflow Submission Details
+    @Column(name = "submitted_by", length = 150)
+    private String submittedBy;
+
+    @Column(name = "submission_date")
+    private LocalDateTime submissionDate;
+
+    @Column(name = "submission_notes", columnDefinition = "TEXT")
+    private String submissionNotes;
+
+    // Workflow Approval Details
     @Column(name = "approved_by", length = 150)
     private String approvedBy;
 
     @Column(name = "approval_date")
     private LocalDateTime approvalDate;
+
+    @Column(name = "approval_notes", columnDefinition = "TEXT")
+    private String approvalNotes;
+
+    // Workflow Rejection Details
+    @Column(name = "rejected_by", length = 150)
+    private String rejectedBy;
+
+    @Column(name = "rejection_date")
+    private LocalDateTime rejectionDate;
 
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;

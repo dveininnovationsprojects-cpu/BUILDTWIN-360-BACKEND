@@ -69,10 +69,18 @@ public interface DailyProgressReportService {
 
     DailyProgressReportResponse removePhotoAttachment(Long dprId, Long attachmentId);
 
-    // --- Workflow Transitions ---
+    // --- Workflow Transitions (Draft, Submit, Withdraw, Approve, Reject) ---
     DailyProgressReportResponse submitDpr(Long dprId, String submitter);
 
+    DailyProgressReportResponse submitDpr(Long dprId, SubmitDprRequest request, String submitter);
+
+    DailyProgressReportResponse withdrawDpr(Long dprId, String user);
+
+    DailyProgressReportResponse withdrawDpr(Long dprId, WithdrawDprRequest request, String user);
+
     DailyProgressReportResponse approveDpr(Long dprId, String approver);
+
+    DailyProgressReportResponse approveDpr(Long dprId, ApproveDprRequest request, String approver);
 
     DailyProgressReportResponse rejectDpr(Long dprId, RejectDprRequest request, String reviewer);
 

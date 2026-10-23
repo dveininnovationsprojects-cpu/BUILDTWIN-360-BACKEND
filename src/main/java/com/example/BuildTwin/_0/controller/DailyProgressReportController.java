@@ -370,34 +370,51 @@ public class DailyProgressReportController {
     }
 
     // =========================================================================
-    // 5. WORKFLOW TRANSITIONS (SUBMIT, APPROVE, REJECT)
+    // 5. WORKFLOW TRANSITIONS (DRAFT, SUBMIT, WITHDRAW, APPROVE, REJECT)
     // =========================================================================
 
     @PostMapping("/api/v1/dpr/{dprId}/submit")
     @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('SITE_ENGINEER') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Submit DPR for Managerial Review",
-            description = "Transitions DPR status from DRAFT or REJECTED to SUBMITTED. Locks draft editing until review is finalized."
+            description = "Transitions DPR status from DRAFT or REJECTED to SUBMITTED. Locks draft editing until review is finalized. Optional submission handover notes can be passed."
     )
     public ResponseEntity<ApiResponse<DailyProgressReportResponse>> submitDpr(
             @PathVariable Long dprId,
+            @RequestBody(required = false) SubmitDprRequest request,
             Authentication authentication) {
         String submitter = authentication != null ? authentication.getName() : "SITE_ENGINEER";
-        DailyProgressReportResponse response = dprService.submitDpr(dprId, submitter);
+        DailyProgressReportResponse response = dprService.submitDpr(dprId, request, submitter);
         return ResponseEntity.ok(ApiResponse.success(response, "DPR submitted for approval successfully"));
+    }
+
+    @PostMapping("/api/v1/dpr/{dprId}/withdraw")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('SITE_ENGINEER') or hasRole('DIRECTOR')")
+    @Operation(
+            summary = "Withdraw Submitted DPR back to DRAFT",
+            description = "Reverts a SUBMITTED DPR back to DRAFT status allowing site engineers to make adjustments or add attachments before review."
+    )
+    public ResponseEntity<ApiResponse<DailyProgressReportResponse>> withdrawDpr(
+            @PathVariable Long dprId,
+            @RequestBody(required = false) WithdrawDprRequest request,
+            Authentication authentication) {
+        String user = authentication != null ? authentication.getName() : "SITE_ENGINEER";
+        DailyProgressReportResponse response = dprService.withdrawDpr(dprId, request, user);
+        return ResponseEntity.ok(ApiResponse.success(response, "DPR withdrawn back to DRAFT successfully"));
     }
 
     @PostMapping("/api/v1/dpr/{dprId}/approve")
     @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Approve Daily Progress Report (Cascades to WBS)",
-            description = "Approves the DPR. Automatically calculates and cascades today's completed physical quantities into active WBS activities, recalculates progress percentages, sets actual start/completion dates, and writes immutable records into ActivityProgressLog."
+            description = "Approves the DPR. Automatically calculates and cascades today's completed physical quantities into active WBS activities, recalculates progress percentages, sets actual start/completion dates, and writes immutable records into ActivityProgressLog. Optional approval comments can be included."
     )
     public ResponseEntity<ApiResponse<DailyProgressReportResponse>> approveDpr(
             @PathVariable Long dprId,
+            @RequestBody(required = false) ApproveDprRequest request,
             Authentication authentication) {
         String approver = authentication != null ? authentication.getName() : "PROJECT_MANAGER";
-        DailyProgressReportResponse response = dprService.approveDpr(dprId, approver);
+        DailyProgressReportResponse response = dprService.approveDpr(dprId, request, approver);
         return ResponseEntity.ok(ApiResponse.success(response, "DPR approved successfully and progress cascaded to WBS activities"));
     }
 
