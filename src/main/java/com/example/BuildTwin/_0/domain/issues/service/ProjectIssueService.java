@@ -34,5 +34,9 @@ public interface ProjectIssueService {
 
     ProjectIssueSummaryDto getIssueSummaryByProject(Long projectId);
 
+    default ProjectIssueSummaryDto getProjectIssueSummary(Long projectId) {
+        return getIssueSummaryByProject(projectId);
+    }
+
     void runDailyOverdueScan();
 }

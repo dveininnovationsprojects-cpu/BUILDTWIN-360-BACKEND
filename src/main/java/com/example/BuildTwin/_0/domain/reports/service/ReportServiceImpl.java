@@ -10,6 +10,7 @@ import com.example.BuildTwin._0.domain.labour.dto.LabourHourSummaryDto;
 import com.example.BuildTwin._0.domain.labour.repository.ContractorRepository;
 import com.example.BuildTwin._0.domain.labour.service.LabourService;
 import com.example.BuildTwin._0.domain.materials.model.Material;
+import com.example.BuildTwin._0.domain.materials.model.StockLedger;
 import com.example.BuildTwin._0.domain.materials.repository.MaterialRepository;
 import com.example.BuildTwin._0.domain.materials.repository.StockLedgerRepository;
 import com.example.BuildTwin._0.domain.materials.service.MaterialService;
@@ -76,11 +77,19 @@ public class ReportServiceImpl implements ReportService {
         BigDecimal materialConsumptionCost = stockLedgerRepository.getTotalMaterialConsumptionCostByProjectId(projectId);
         if (materialConsumptionCost == null) materialConsumptionCost = BigDecimal.ZERO;
 
+        List<StockLedger> projectLedgers = stockLedgerRepository.findByProjectId(projectId);
+        java.util.Set<Long> projectMaterialIds = projectLedgers.stream()
+                .filter(sl -> sl.getMaterial() != null)
+                .map(sl -> sl.getMaterial().getId())
+                .collect(java.util.stream.Collectors.toSet());
+        List<Material> projectMaterials = projectMaterialIds.isEmpty() ? allMaterials :
+                allMaterials.stream().filter(m -> projectMaterialIds.contains(m.getId())).toList();
+
         // 4. Procurement
         ProcurementExpenditureTrailDto procurement = costService.getProcurementExpenditureTrail(projectId);
 
         // 5. Quality & Issues
-        ProjectIssueSummaryDto quality = projectIssueService.getIssueSummaryByProject(projectId);
+        ProjectIssueSummaryDto quality = projectIssueService.getProjectIssueSummary(projectId);
         int totalDelayDays = issueBlockerRepository.findByProjectId(projectId).stream()
                 .mapToInt(b -> b.getDaysDelayed() != null ? b.getDaysDelayed() : 0)
                 .sum();
@@ -108,7 +117,7 @@ public class ReportServiceImpl implements ReportService {
                 .totalStandardHours(labour.getTotalStandardHours())
                 .totalOvertimeHours(labour.getTotalOvertimeHours())
                 .totalLabourCost(labourCost.getTotalLabourCost())
-                .materialsTrackedCount(allMaterials.size())
+                .materialsTrackedCount(projectMaterials.size())
                 .lowStockAlertsCount(lowStockList.size())
                 .totalMaterialConsumptionCost(materialConsumptionCost)
                 .totalPurchaseOrdersCount(procurement.getTotalPoCount())
@@ -137,8 +146,17 @@ public class ReportServiceImpl implements ReportService {
         List<Material> allMaterials = materialRepository.findAll();
         List<Material> lowStockList = materialService.getLowStockMaterials(projectId);
 
+        // Project isolation: filter materials relevant to this project if project has specific ledger activity
+        List<StockLedger> projectLedgers = stockLedgerRepository.findByProjectId(projectId);
+        java.util.Set<Long> projectMaterialIds = projectLedgers.stream()
+                .filter(sl -> sl.getMaterial() != null)
+                .map(sl -> sl.getMaterial().getId())
+                .collect(java.util.stream.Collectors.toSet());
+        List<Material> targetMaterials = projectMaterialIds.isEmpty() ? allMaterials :
+                allMaterials.stream().filter(m -> projectMaterialIds.contains(m.getId())).toList();
+
         BigDecimal totalValuation = BigDecimal.ZERO;
-        for (Material m : allMaterials) {
+        for (Material m : targetMaterials) {
             BigDecimal stock = m.getCurrentStock() != null ? m.getCurrentStock() : BigDecimal.ZERO;
             BigDecimal rate = m.getStandardRate() != null ? m.getStandardRate() : BigDecimal.ZERO;
             totalValuation = totalValuation.add(stock.multiply(rate));
@@ -216,7 +234,7 @@ public class ReportServiceImpl implements ReportService {
         BudgetVarianceReportDto variance = costService.getBudgetVarianceReport(projectId);
         BudgetOverrunReportDto overruns = costService.getBudgetOverruns(projectId);
         EvmMetricsDto evm = costService.calculateEvmMetrics(projectId);
-        ProjectIssueSummaryDto quality = projectIssueService.getIssueSummaryByProject(projectId);
+        ProjectIssueSummaryDto quality = projectIssueService.getProjectIssueSummary(projectId);
 
         int totalDelayDays = issueBlockerRepository.findByProjectId(projectId).stream()
                 .mapToInt(b -> b.getDaysDelayed() != null ? b.getDaysDelayed() : 0)

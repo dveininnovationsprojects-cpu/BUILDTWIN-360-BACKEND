@@ -15,6 +15,7 @@ import com.example.BuildTwin._0.domain.labour.repository.ContractorRepository;
 import com.example.BuildTwin._0.domain.labour.service.LabourService;
 import com.example.BuildTwin._0.domain.materials.enums.MaterialUnit;
 import com.example.BuildTwin._0.domain.materials.model.Material;
+import com.example.BuildTwin._0.domain.materials.model.StockLedger;
 import com.example.BuildTwin._0.domain.materials.repository.MaterialRepository;
 import com.example.BuildTwin._0.domain.materials.repository.StockLedgerRepository;
 import com.example.BuildTwin._0.domain.materials.service.MaterialService;
@@ -146,9 +147,10 @@ class ReportServiceTest {
                 .ncrCount(1L)
                 .blockerCount(0L)
                 .build();
-        when(projectIssueService.getIssueSummaryByProject(1L)).thenReturn(quality);
+        when(projectIssueService.getProjectIssueSummary(1L)).thenReturn(quality);
         when(issueBlockerRepository.findByProjectId(1L)).thenReturn(List.of());
         when(notificationRepository.findByProjectIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
+        when(stockLedgerRepository.findByProjectId(1L)).thenReturn(List.of());
 
         WeeklyProjectReportDto report = reportService.generateWeeklyProjectReport(1L, 10);
 
@@ -178,6 +180,7 @@ class ReportServiceTest {
 
         when(materialRepository.findAll()).thenReturn(List.of(mat));
         when(materialService.getLowStockMaterials(1L)).thenReturn(List.of(mat));
+        when(stockLedgerRepository.findByProjectId(1L)).thenReturn(List.of());
 
         MaterialActualCostSummaryDto matCost = MaterialActualCostSummaryDto.builder()
                 .totalQuantityConsumed(new BigDecimal("150.00"))

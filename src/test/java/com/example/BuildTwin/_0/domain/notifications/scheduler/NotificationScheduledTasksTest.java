@@ -87,7 +87,8 @@ class NotificationScheduledTasksTest {
         assertEquals(1L, captured.getProjectId());
         assertEquals(NotificationType.LOW_STOCK, captured.getNotificationType());
         assertEquals(NotificationPriority.HIGH, captured.getPriority());
-        assertEquals("proc_ramesh", captured.getRecipientUsername());
+        assertEquals("PROCUREMENT_STORE", captured.getTargetRole());
+        assertNull(captured.getRecipientUsername());
         assertTrue(captured.getTitle().contains("UltraTech Cement 53 OPC"));
     }
 
@@ -115,6 +116,7 @@ class NotificationScheduledTasksTest {
         assertEquals(1L, captured.getProjectId());
         assertEquals(NotificationType.OVERDUE_SLA, captured.getNotificationType());
         assertEquals(NotificationPriority.URGENT, captured.getPriority());
+        assertEquals("PROJECT_MANAGER", captured.getTargetRole());
         assertEquals("pm_karthik", captured.getRecipientUsername());
         assertTrue(captured.getTitle().contains("ISS-PADUR-NCR-01"));
     }
@@ -150,7 +152,8 @@ class NotificationScheduledTasksTest {
         assertEquals(1L, captured.getProjectId());
         assertEquals(NotificationType.BUDGET_OVERRUN, captured.getNotificationType());
         assertEquals(NotificationPriority.URGENT, captured.getPriority());
-        assertEquals("pm_karthik", captured.getRecipientUsername());
+        assertEquals("PROJECT_MANAGER", captured.getTargetRole());
+        assertNull(captured.getRecipientUsername());
         assertTrue(captured.getTitle().contains("ACT-PADUR-STR-01"));
     }
 }

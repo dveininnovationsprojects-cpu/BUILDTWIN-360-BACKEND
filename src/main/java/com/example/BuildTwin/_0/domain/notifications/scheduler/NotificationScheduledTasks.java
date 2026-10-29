@@ -50,9 +50,10 @@ public class NotificationScheduledTasks {
                             continue;
                         }
 
+                        // Target role directly - NotificationServiceImpl resolves active users automatically
                         notificationService.dispatchNotification(SendNotificationDto.builder()
                                 .projectId(proj.getId())
-                                .recipientUsername("proc_ramesh")
+                                .recipientUsername(null)
                                 .targetRole("PROCUREMENT_STORE")
                                 .title("Inventory Alert: " + item.getMaterialName() + " (" + item.getStatus() + ")")
                                 .message(String.format("Material '%s' is critical. Current Stock: %s, Required: %s, Shortage: %s",
@@ -86,7 +87,7 @@ public class NotificationScheduledTasks {
 
             notificationService.dispatchNotification(SendNotificationDto.builder()
                     .projectId(issue.getProjectId())
-                    .recipientUsername(issue.getAssignedTo() != null ? issue.getAssignedTo() : "pm_karthik")
+                    .recipientUsername(issue.getAssignedTo() != null ? issue.getAssignedTo() : null)
                     .targetRole("PROJECT_MANAGER")
                     .title("SLA BREACH ALERT: Ticket " + issue.getTicketNumber())
                     .message(String.format("Issue '%s' assigned to %s was due on %s and is OVERDUE!",
@@ -121,7 +122,7 @@ public class NotificationScheduledTasks {
 
                             notificationService.dispatchNotification(SendNotificationDto.builder()
                                     .projectId(proj.getId())
-                                    .recipientUsername("pm_karthik")
+                                    .recipientUsername(null)
                                     .targetRole("PROJECT_MANAGER")
                                     .title("BUDGET OVERRUN ALERT: " + item.getCostCode() + " (" + item.getCostHead() + ")")
                                     .message(item.getAlertMessage())
