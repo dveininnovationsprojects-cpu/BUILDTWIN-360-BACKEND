@@ -93,7 +93,7 @@ Tests run: 456, Failures: 0, Errors: 0, Skipped: 0
    - **Pre-Configured Accounts:** 10 pre-loaded role accounts (`director_rajesh`, `pm_karthik`, `se_suresh`, `proc_ramesh`, etc.) with password `Password@123` (Admin: `Admin@123`).
 2. **Interactive Swagger UI:** `http://localhost:8080/swagger-ui.html`
 3. **OpenAPI 3.0 Documentation:** `http://localhost:8080/v3/api-docs`
-4. **Postman Collection:** `BuildTwin_360_Complete_Postman_Collection.json` with **20 complete folder suites containing 179 requests** covering every endpoint from Week 1 to Week 12.
+4. **Postman Collection:** `BuildTwin_360_Complete_Postman_Collection.json` with **25 complete folder suites containing 208 requests** covering every endpoint from Week 1 to Week 12.
 
 ---
 *Report certified and approved for sprint handover.*
