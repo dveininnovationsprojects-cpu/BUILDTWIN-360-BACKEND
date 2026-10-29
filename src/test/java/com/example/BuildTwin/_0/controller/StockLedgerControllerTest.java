@@ -139,6 +139,34 @@ class StockLedgerControllerTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/stock-ledger/transfer - Success")
+    void testTransferMaterial() throws Exception {
+        StockTransactionDto dto = new StockTransactionDto();
+        dto.setProjectId(1L);
+        dto.setSiteId(1L);
+        dto.setMaterialId(10L);
+        dto.setQuantity(new BigDecimal("15.00"));
+
+        StockLedger ledger = StockLedger.builder()
+                .id(99L)
+                .projectId(1L)
+                .siteId(1L)
+                .transactionType(StockTransactionType.TRANSFER)
+                .quantity(new BigDecimal("15.00"))
+                .material(Material.builder().id(10L).name("Cement").build())
+                .build();
+
+        when(stockLedgerService.transferMaterial(any(StockTransactionDto.class))).thenReturn(ledger);
+
+        mockMvc.perform(post("/api/v1/stock-ledger/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.transactionType").value("TRANSFER"));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/stock-ledger/return - Success")
     void testReturnMaterial() throws Exception {
         StockTransactionDto dto = new StockTransactionDto();

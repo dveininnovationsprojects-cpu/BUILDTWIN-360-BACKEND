@@ -50,6 +50,14 @@ public class StockLedgerController {
         return new ResponseEntity<>(ApiResponse.created(entry, "Material issued successfully"), HttpStatus.CREATED);
     }
 
+    @PostMapping("/transfer")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
+    @Operation(summary = "Transfer Material Between Stores/Zones", description = "Transfers material from one site/store/zone to another, reducing source inventory with strict negative-stock lock.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<StockLedger>> transferMaterial(@Valid @RequestBody StockTransactionDto request) {
+        StockLedger entry = stockLedgerService.transferMaterial(request);
+        return new ResponseEntity<>(ApiResponse.created(entry, "Material transfer recorded successfully"), HttpStatus.CREATED);
+    }
+
     @PostMapping("/return")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_STORE')")
     @Operation(summary = "Return Surplus Material to Store", description = "Returns surplus material from site/contractor back to inventory ledger and increments stock balance.", security = @SecurityRequirement(name = "BearerAuth"))

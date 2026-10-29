@@ -467,7 +467,7 @@
       "name": "1. Step 1: Project Cost Structure Setup (CBS & WBS)",
       "item": [
         {
-          "name": "Set Baseline Budget (Material - ₹5 Lakhs)",
+          "name": "Set Baseline Budget (Material - \u20b95 Lakhs)",
           "request": {
             "auth": {
               "type": "bearer",
@@ -505,7 +505,7 @@
           }
         },
         {
-          "name": "Set Baseline Budget (Labour - ₹2 Lakhs)",
+          "name": "Set Baseline Budget (Labour - \u20b92 Lakhs)",
           "request": {
             "auth": {
               "type": "bearer",
@@ -5047,6 +5047,755 @@
                 "reports",
                 "analytics",
                 "{{project_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "22. Material Master Catalog (Week 3 - FR-050)",
+      "item": [
+        {
+          "name": "22.1 Create Material Catalog Item (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materialCode\": \"MAT-CEM-53\",\n  \"name\": \"OPC 53 Grade Cement\",\n  \"category\": \"CEMENT\",\n  \"unit\": \"BAGS\",\n  \"standardRate\": 380.0,\n  \"reorderLevel\": 500.0,\n  \"specification\": \"IS 12269 certified OPC 53 grade cement for structural columns and beams\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.2 Get All Materials Catalog (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.3 Get Material By ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/{{material_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials",
+                "{{material_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.4 Get Material By SKU Code (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/code/MAT-CEM-53",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials",
+                "code",
+                "MAT-CEM-53"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.5 Get Materials By Category (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/category/CEMENT",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials",
+                "category",
+                "CEMENT"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.6 Update Material Catalog Details (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"CEMENT\",\n  \"unit\": \"BAGS\",\n  \"standardRate\": 395.0,\n  \"reorderLevel\": 600.0,\n  \"specification\": \"Updated IS 12269 specification with batch test report\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/{{material_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials",
+                "{{material_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.7 Get Dynamic Material Stock Balance (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/{{material_id}}/balance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials",
+                "{{material_id}}",
+                "balance"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.8 Detect Low Stock Materials (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/low-stock?projectId={{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "22.9 Get Reorder Threshold Alerts (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/reorder-alerts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "materials",
+                "reorder-alerts"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "23. Double-Entry Immutable Stock Ledger (Weeks 4 & 5 - FR-054 to FR-057)",
+      "item": [
+        {
+          "name": "23.1 Record Stock Inward / Receipt (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"materialId\": 1,\n  \"quantity\": 500.0,\n  \"unitPrice\": 380.0,\n  \"referenceId\": \"DC-RECEIPT-8841\",\n  \"remarks\": \"Inward receipt from UltraTech supply\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/receipt",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "receipt"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.2 Issue Material to Site / Contractor (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"activityId\": 1,\n  \"zone\": \"ZONE-A\",\n  \"contractorId\": 1,\n  \"materialId\": 1,\n  \"quantity\": 100.0,\n  \"referenceId\": \"ISSUE-SLAB-CAST-01\",\n  \"remarks\": \"Cement issued for 3rd floor slab casting\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/issue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "issue"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.3 Transfer Material Between Zones (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"zone\": \"ZONE-B\",\n  \"materialId\": 1,\n  \"quantity\": 50.0,\n  \"referenceId\": \"TRANSFER-ZONA-TO-ZONB\",\n  \"remarks\": \"Inter-zone stock re-balancing from Main Yard to Tower B\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/transfer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "transfer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.4 Return Surplus Material to Store (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"contractorId\": 1,\n  \"materialId\": 1,\n  \"quantity\": 20.0,\n  \"referenceId\": \"RETURN-EXCESS-01\",\n  \"remarks\": \"Surplus cement returned after slab curing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/return",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "return"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.5 Record Material Site Consumption (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"activityId\": 1,\n  \"zone\": \"ZONE-A\",\n  \"materialId\": 1,\n  \"quantity\": 80.0,\n  \"referenceId\": \"CONSUME-ACT-01\",\n  \"remarks\": \"Actual site consumption logged by Site Supervisor\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/consumption",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "consumption"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.6 Record Material Site Wastage (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"zone\": \"ZONE-A\",\n  \"materialId\": 1,\n  \"quantity\": 5.0,\n  \"referenceId\": \"WASTE-RAIN-DAMAGE-01\",\n  \"remarks\": \"Cement bag torn in heavy rain\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/wastage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "wastage"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.7 Perform Stock Physical Reconciliation Audit (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"siteId\": 1,\n  \"materialId\": 1,\n  \"physicalQty\": 345.0,\n  \"auditedBy\": \"auditor_priya\",\n  \"remarks\": \"Quarterly physical stock verification count\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/reconcile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "reconcile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.8 Get Chronological Audit Trail By Material (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/material/{{material_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "material",
+                "{{material_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.9 Get Immutable Audit Trail By Project (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/project/{{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "project",
+                "{{project_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23.10 Get Stock Audit Trail By WBS Activity (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock-ledger/activity/{{activity_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stock-ledger",
+                "activity",
+                "{{activity_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "24. Approved Supplier Directory (Week 5 - FR-060)",
+      "item": [
+        {
+          "name": "24.1 Register Approved Supplier (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierCode\": \"SUP-ULTRATECH-01\",\n  \"name\": \"UltraTech Cement Limited\",\n  \"category\": \"CEMENT\",\n  \"contactPerson\": \"R. Sundararajan\",\n  \"contactEmail\": \"sundar@ultratech.com\",\n  \"contactPhone\": \"+91 98401 23456\",\n  \"address\": \"Guindy Industrial Estate, Chennai 600032\",\n  \"gstin\": \"33AAACU1234F1Z8\",\n  \"panNumber\": \"AAACU1234F\",\n  \"bankName\": \"HDFC Bank Ltd\",\n  \"bankAccountNumber\": \"50200012345678\",\n  \"bankIfsc\": \"HDFC0001234\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "suppliers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "24.2 Get All Approved Suppliers (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "suppliers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "24.3 Get Supplier By ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/{{supplier_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "suppliers",
+                "{{supplier_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "24.4 Get Supplier By Code (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/code/SUP-ULTRATECH-01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "suppliers",
+                "code",
+                "SUP-ULTRATECH-01"
+              ]
+            }
+          }
+        },
+        {
+          "name": "24.5 Filter Suppliers By Status (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/status/ACTIVE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "suppliers",
+                "status",
+                "ACTIVE"
+              ]
+            }
+          }
+        },
+        {
+          "name": "24.6 Update Supplier Profile (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"UltraTech Cement Limited - Chennai South\",\n  \"category\": \"CEMENT\",\n  \"contactPerson\": \"R. Sundararajan\",\n  \"contactEmail\": \"south_sales@ultratech.com\",\n  \"contactPhone\": \"+91 98401 23456\",\n  \"address\": \"Guindy Industrial Estate, Chennai 600032\",\n  \"gstin\": \"33AAACU1234F1Z8\",\n  \"panNumber\": \"AAACU1234F\",\n  \"bankName\": \"HDFC Bank Ltd\",\n  \"bankAccountNumber\": \"50200012345678\",\n  \"bankIfsc\": \"HDFC0001234\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/{{supplier_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "suppliers",
+                "{{supplier_id}}"
               ]
             }
           }

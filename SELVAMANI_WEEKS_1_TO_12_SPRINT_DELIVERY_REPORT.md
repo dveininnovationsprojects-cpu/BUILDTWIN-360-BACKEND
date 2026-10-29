@@ -2,7 +2,7 @@
 **Developer:** Selvamani – Java Backend Developer 2  
 **Scope:** Weeks 1 to 12 (60 Days Roadmap & Deliverables)  
 **Verification Date:** October 29, 2026  
-**Status:** ✅ **100% COMPLETED & VERIFIED (455 / 455 TESTS PASSING)**
+**Status:** ✅ **100% COMPLETED & VERIFIED (456 / 456 TESTS PASSING)**
 
 ---
 
@@ -11,7 +11,7 @@
 This report provides the formal sprint sign-off for **Selvamani – Java Backend Developer 2** covering all scheduled deliverables from **Week 1 through Week 12** on the **BuildTwin-360 Construction Management Platform**.
 
 Every single component across the 12-week schedule has been fully implemented, integrated, and verified against rigorous architectural standards:
-1. **Automated Test Suite:** **455 tests executed with 0 failures, 0 errors, and 0 skipped.**
+1. **Automated Test Suite:** **456 tests executed with 0 failures, 0 errors, and 0 skipped.**
 2. **Security & RBAC:** Comprehensive 10-Role enterprise authorization with Method Security (`@PreAuthorize`).
 3. **Data Integrity:** ACID-compliant pessimistic locking (`findByIdForUpdate`) and immutable ledger append-only models.
 4. **Cross-Module Autonomous Synchronization:** Full automated pipelines connecting Ground Operations $\rightarrow$ Stock Ledger $\rightarrow$ Procurement $\rightarrow$ Cost Breakdown Structure (CBS) $\rightarrow$ Scheduled Alert Engine.
@@ -33,13 +33,13 @@ Every single component across the 12-week schedule has been fully implemented, i
 | **Week 9** | **Real-Time Notification & Scheduled Crons** | 5 Days | • `Notification.java` core engine with priority routing and role broadcasts<br>• Real-time dispatchers for `LOW_STOCK`, `CRITICAL_BLOCKER`, `NCR_AUDIT_REJECTED`<br>• User Inboxes (paginated, priority filtered, mark as read, badge counts)<br>• 3 Automated Crons (01:00 AM Budget Overruns, 06:00 AM Material Shortages, 07:00 AM Overdue SLAs) | ✅ PASS |
 | **Week 10** | **Executive Reports & Analytics Engine** | 5 Days | • `ReportController.java` & `ReportService.java` enterprise reporting engine<br>• Weekly Executive Briefing (`GET /api/v1/reports/weekly/{projectId}`)<br>• Inventory & Material Stock Valuation (`GET /api/v1/reports/inventory/{projectId}`)<br>• Procurement Liability & Labour Wage Expenditure (`GET /api/v1/reports/procurement-labour/{projectId}`)<br>• CBS Cost Variance & Quality NCR/Blocker Report (`GET /api/v1/reports/cost-quality/{projectId}`)<br>• Composite 0-100 Project Health Analytics (`GET /api/v1/reports/analytics/{projectId}`) | ✅ PASS |
 | **Week 11** | **Autonomous Cross-Module Integration** | 5 Days | • Material $\rightarrow$ Procurement $\rightarrow$ Stock Ledger auto-sync<br>• Stock Consumption $\rightarrow$ Cost Actual Ledger auto-sync<br>• Labour Daily Muster $\rightarrow$ Cost Ledger wage accrual auto-sync ($1.0\times\text{Std} + 1.5\times\text{OT}$)<br>• Event-driven real-time alert triggers across inventory, procurement, and QC<br>• `DocumentController.java` blueprint and site photo repository | ✅ PASS |
-| **Week 12** | **End-to-End Testing, Validation & Regression** | 5 Days | • Comprehensive Unit Tests across all service implementations<br>• Controller MVC Integration Tests with JSON payloads<br>• Negative testing: 400 Bad Request, 404 Not Found, 403 Forbidden, 409 Conflict<br>• Concurrency verification with pessimistic locks (`findByIdForUpdate`) & negative stock prevention<br>• Regression suite: 455 / 455 test cases passing cleanly (100% Green) | ✅ PASS |
+| **Week 12** | **End-to-End Testing, Validation & Regression** | 5 Days | • Comprehensive Unit Tests across all service implementations<br>• Controller MVC Integration Tests with JSON payloads<br>• Negative testing: 400 Bad Request, 404 Not Found, 403 Forbidden, 409 Conflict<br>• Concurrency verification with pessimistic locks (`findByIdForUpdate`) & negative stock prevention<br>• Regression suite: 456 / 456 test cases passing cleanly (100% Green) | ✅ PASS |
 
 ---
 
 ## 🛡️ Enterprise Security & 10-Role RBAC Matrix
 
-All 40+ REST API endpoints are enforced via Spring Security `@PreAuthorize` across the 10 domain roles:
+All 45+ REST API endpoints are enforced via Spring Security `@PreAuthorize` across the 10 domain roles:
 
 | Role Name | Authority String | Core System Responsibilities |
 | :--- | :--- | :--- |
@@ -61,13 +61,13 @@ All 40+ REST API endpoints are enforced via Spring Security `@PreAuthorize` acro
 ```text
 Results:
 
-Tests run: 455, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 456, Failures: 0, Errors: 0, Skipped: 0
 
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  01:16 min
-[INFO] Finished at: 2026-10-29T12:35:45+05:30
+[INFO] Total time:  55.166 s
+[INFO] Finished at: 2026-10-29T12:52:59+05:30
 [INFO] ------------------------------------------------------------------------
 ```
 
@@ -75,7 +75,7 @@ Tests run: 455, Failures: 0, Errors: 0, Skipped: 0
 - **Executive Reports & Analytics (Week 10):** `ReportControllerTest` (MVC, RBAC & 401 unauth checks), `ReportServiceTest` (Aggregations & ResourceNotFound validation)
 - **Regression & Concurrency (Week 12):** `Week12RegressionPerformanceTest` (Negative stock blocking, atomic transfer deduction, EVM zero-division handling)
 - **Contractor & Labour Management:** `ContractorControllerTest`, `LabourControllerTest`, `ContractorServiceTest`, `LabourServiceTest`
-- **Material & Stock Ledger:** `MaterialControllerTest`, `StockLedgerControllerTest`, `MaterialServiceTest`, `StockLedgerServiceTest`, `ImmutableStockLedgerTest`
+- **Material & Stock Ledger:** `MaterialControllerTest`, `StockLedgerControllerTest` (including `/transfer` endpoint), `MaterialServiceTest`, `StockLedgerServiceTest`, `ImmutableStockLedgerTest`
 - **Procurement & GRN:** `ProcurementControllerTest`, `ProcurementServiceImplTest`, `SupplierControllerTest`, `SupplierServiceImplTest`
 - **Cost & EVM Analytics:** `Epic4CostControllerTest`, `CostServiceTest`, `Epic4CostServiceTest`, `EvmAnalyticsTest`
 - **Quality, Issues & Risks:** `ProjectIssueControllerTest`, `QualityControllerTest`, `IssueControllerTest`, `Epic5QualityAndIssueComprehensiveTest`, `ProjectIssueServiceTest`, `IssueServiceTest`
@@ -93,7 +93,7 @@ Tests run: 455, Failures: 0, Errors: 0, Skipped: 0
    - **Pre-Configured Accounts:** 10 pre-loaded role accounts (`director_rajesh`, `pm_karthik`, `se_suresh`, `proc_ramesh`, etc.) with password `Password@123` (Admin: `Admin@123`).
 2. **Interactive Swagger UI:** `http://localhost:8080/swagger-ui.html`
 3. **OpenAPI 3.0 Documentation:** `http://localhost:8080/v3/api-docs`
-4. **Postman Collection:** `BuildTwin_360_Complete_Postman_Collection.json` with 21 complete folder suites covering all endpoints including folder `21. Executive Reports & Analytics (Week 10)`.
+4. **Postman Collection:** `BuildTwin_360_Complete_Postman_Collection.json` with **20 complete folder suites containing 179 requests** covering every endpoint from Week 1 to Week 12.
 
 ---
 *Report certified and approved for sprint handover.*
