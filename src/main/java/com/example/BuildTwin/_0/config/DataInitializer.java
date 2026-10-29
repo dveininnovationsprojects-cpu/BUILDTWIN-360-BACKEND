@@ -47,6 +47,9 @@ import com.example.BuildTwin._0.domain.procurement.model.Grn;
 import com.example.BuildTwin._0.domain.procurement.repository.MaterialRequestRepository;
 import com.example.BuildTwin._0.domain.procurement.repository.PurchaseOrderRepository;
 import com.example.BuildTwin._0.domain.procurement.repository.GrnRepository;
+import com.example.BuildTwin._0.domain.notifications.model.Notification;
+import com.example.BuildTwin._0.domain.notifications.repository.NotificationRepository;
+import com.example.BuildTwin._0.domain.notifications.enums.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -98,6 +101,7 @@ public class DataInitializer implements CommandLineRunner {
     private final MaterialRequestRepository materialRequestRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final GrnRepository grnRepository;
+    private final NotificationRepository notificationRepository;
 
     @org.springframework.beans.factory.annotation.Value("${app.seed.enabled:true}")
     private boolean seedEnabled = true;
@@ -146,6 +150,7 @@ public class DataInitializer implements CommandLineRunner {
             seedAllSpecificationUsers();
             seedDefaultProjectAndSites();
             seedDefaultWbsActivities();
+            seedDefaultNotifications();
         } else {
             log.info("Application demo data seeding is disabled via 'app.seed.enabled=false'.");
         }
@@ -1378,5 +1383,106 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("Initialized default hierarchical WBS Activities (Summary tasks & child activities) for Padur project.");
             });
         }
+    }
+
+    /**
+     * Seeds initial real-world notifications and system alerts for Epic 6.
+     */
+    private void seedDefaultNotifications() {
+        if (notificationRepository.count() > 0) {
+            log.info("Notifications table already seeded ({} records). Skipping notification seed.", notificationRepository.count());
+            return;
+        }
+
+        Project project = projectRepository.findByCode(seedProjectCode).orElse(null);
+        if (project == null) {
+            return;
+        }
+
+        List<Notification> demoNotifications = List.of(
+                Notification.builder()
+                        .projectId(project.getId())
+                        .recipientUsername("pm_karthik")
+                        .targetRole("PROJECT_MANAGER")
+                        .title("BUDGET OVERRUN ALERT: ACT-PADUR-STR-01 (CIVIL)")
+                        .message("Tower A Structural Concrete expenditure reached 92.5% of allocated budget (INR 41,62,500 of INR 45,00,000).")
+                        .notificationType(NotificationType.BUDGET_OVERRUN)
+                        .priority(NotificationPriority.URGENT)
+                        .status(NotificationStatus.UNREAD)
+                        .channel(NotificationChannel.IN_APP)
+                        .referenceModule("COST_BUDGET")
+                        .referenceId(101L)
+                        .build(),
+                Notification.builder()
+                        .projectId(project.getId())
+                        .recipientUsername("pm_karthik")
+                        .targetRole("PROJECT_MANAGER")
+                        .title("SLA BREACH ALERT: Ticket ISS-PADUR-NCR-01")
+                        .message("Issue 'Concrete 7-day cube test compressive strength fail' assigned to Contractor is past SLA target resolution date.")
+                        .notificationType(NotificationType.OVERDUE_SLA)
+                        .priority(NotificationPriority.URGENT)
+                        .status(NotificationStatus.UNREAD)
+                        .channel(NotificationChannel.IN_APP)
+                        .referenceModule("QUALITY_ISSUE")
+                        .referenceId(1L)
+                        .build(),
+                Notification.builder()
+                        .projectId(project.getId())
+                        .recipientUsername("PM_Selvamani")
+                        .targetRole("PROJECT_MANAGER")
+                        .title("CRITICAL BLOCKER ALERT: Feeder Trip Halting Crane")
+                        .message("Local 33kV high tension transformer feeder shutdown halting Tower Crane operations on Tower A.")
+                        .notificationType(NotificationType.CRITICAL_BLOCKER)
+                        .priority(NotificationPriority.URGENT)
+                        .status(NotificationStatus.UNREAD)
+                        .channel(NotificationChannel.IN_APP)
+                        .referenceModule("QUALITY_ISSUE")
+                        .referenceId(2L)
+                        .build(),
+                Notification.builder()
+                        .projectId(project.getId())
+                        .recipientUsername("proc_ramesh")
+                        .targetRole("PROCUREMENT_STORE")
+                        .title("Inventory Alert: UltraTech Cement 53 OPC (LOW_STOCK)")
+                        .message("Material 'UltraTech Cement 53 Grade' stock is 45 bags (below safety threshold of 200 bags). Shortage projected: 155 bags.")
+                        .notificationType(NotificationType.LOW_STOCK)
+                        .priority(NotificationPriority.HIGH)
+                        .status(NotificationStatus.UNREAD)
+                        .channel(NotificationChannel.IN_APP)
+                        .referenceModule("MATERIALS")
+                        .referenceId(1L)
+                        .build(),
+                Notification.builder()
+                        .projectId(project.getId())
+                        .recipientUsername("PM_Selvamani")
+                        .targetRole("PROJECT_MANAGER")
+                        .title("Quality Defect: NCR-PADUR-01 Raised")
+                        .message("Substandard rebar reinforcement tensile strength (460 MPa vs 500 MPa specification) on Tower A Raft.")
+                        .notificationType(NotificationType.NCR_RAISED)
+                        .priority(NotificationPriority.HIGH)
+                        .status(NotificationStatus.READ)
+                        .channel(NotificationChannel.IN_APP)
+                        .referenceModule("QUALITY")
+                        .referenceId(1L)
+                        .readAt(LocalDateTime.now().minusHours(4))
+                        .build(),
+                Notification.builder()
+                        .projectId(project.getId())
+                        .recipientUsername("admin")
+                        .targetRole("ADMIN")
+                        .title("Daily Site EVM Variance Summary")
+                        .message("Ashok Grandeur - Padur, Chennai EVM Snapshot: Cost Performance Index (CPI) = 1.065, Schedule Index (SPI) = 0.917.")
+                        .notificationType(NotificationType.PO_APPROVED)
+                        .priority(NotificationPriority.LOW)
+                        .status(NotificationStatus.READ)
+                        .channel(NotificationChannel.IN_APP)
+                        .referenceModule("EVM_ANALYTICS")
+                        .referenceId(project.getId())
+                        .readAt(LocalDateTime.now().minusHours(2))
+                        .build()
+        );
+
+        notificationRepository.saveAll(demoNotifications);
+        log.info("Initialized {} default demonstration alerts & notifications for Epic 6.", demoNotifications.size());
     }
 }

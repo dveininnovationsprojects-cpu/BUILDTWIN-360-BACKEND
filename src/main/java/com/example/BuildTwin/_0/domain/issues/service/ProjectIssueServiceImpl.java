@@ -6,9 +6,13 @@ import com.example.BuildTwin._0.domain.issues.enums.IssueStatus;
 import com.example.BuildTwin._0.domain.issues.enums.IssueType;
 import com.example.BuildTwin._0.domain.issues.model.ProjectIssue;
 import com.example.BuildTwin._0.domain.issues.repository.ProjectIssueRepository;
+import com.example.BuildTwin._0.domain.notifications.dto.SendNotificationDto;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationPriority;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationType;
+import com.example.BuildTwin._0.domain.notifications.service.NotificationService;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,13 +20,24 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ProjectIssueServiceImpl implements ProjectIssueService {
 
     private final ProjectIssueRepository projectIssueRepository;
+    private final Optional<NotificationService> notificationService;
+
+    public ProjectIssueServiceImpl(ProjectIssueRepository projectIssueRepository) {
+        this(projectIssueRepository, Optional.empty());
+    }
+
+    @Autowired
+    public ProjectIssueServiceImpl(ProjectIssueRepository projectIssueRepository, Optional<NotificationService> notificationService) {
+        this.projectIssueRepository = projectIssueRepository;
+        this.notificationService = notificationService != null ? notificationService : Optional.empty();
+    }
 
     @Override
     @Transactional
@@ -46,6 +61,41 @@ public class ProjectIssueServiceImpl implements ProjectIssueService {
         ProjectIssue saved = projectIssueRepository.save(issue);
         log.info("[Step 1: Capture] Raised new issue Ticket: {} for Project: {} | Type: {} | Severity: {}",
                 saved.getTicketNumber(), saved.getProjectId(), saved.getIssueType(), saved.getSeverity());
+
+        // Module 3: Critical Blocker Alert (issueType = BLOCKER or severity = CRITICAL)
+        if (saved.getIssueType() == IssueType.BLOCKER || saved.getSeverity() == IssueSeverity.CRITICAL) {
+            notificationService.ifPresent(ns -> {
+                // Primary: PROJECT_MANAGER
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(saved.getProjectId())
+                        .recipientUsername("pm_karthik")
+                        .targetRole("PROJECT_MANAGER")
+                        .title("CRITICAL BLOCKER ALERT: Ticket " + saved.getTicketNumber())
+                        .message(String.format("Critical impediment reported: '%s' [%s]. Site work halted, immediate PM intervention required.",
+                                saved.getTitle(), saved.getSeverity()))
+                        .notificationType(NotificationType.CRITICAL_BLOCKER)
+                        .priority(NotificationPriority.URGENT)
+                        .referenceModule("QUALITY_ISSUE")
+                        .referenceId(saved.getId())
+                        .build());
+
+                // Primary: DIRECTOR
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(saved.getProjectId())
+                        .recipientUsername("director_rajesh")
+                        .targetRole("DIRECTOR")
+                        .title("CRITICAL BLOCKER ESCALATION: Ticket " + saved.getTicketNumber())
+                        .message(String.format("Executive escalation: Critical blocker on Project ID %s: '%s'. Immediate oversight recommended.",
+                                saved.getProjectId(), saved.getTitle()))
+                        .notificationType(NotificationType.CRITICAL_BLOCKER)
+                        .priority(NotificationPriority.URGENT)
+                        .referenceModule("QUALITY_ISSUE")
+                        .referenceId(saved.getId())
+                        .build());
+
+                log.info("Dispatched URGENT CRITICAL_BLOCKER alerts to PROJECT_MANAGER & DIRECTOR for ticket {}", saved.getTicketNumber());
+            });
+        }
 
         return mapToDto(saved);
     }
@@ -117,6 +167,42 @@ public class ProjectIssueServiceImpl implements ProjectIssueService {
             issue.setStatus(IssueStatus.OPEN);
             log.warn("[Step 4: Audit FAIL] QA Inspector: {} REJECTED Issue: {} - Reverting status to OPEN. Reason: '{}'",
                     dto.getVerifiedBy(), issue.getTicketNumber(), dto.getVerificationRemarks());
+
+            // Module 3: Quality Audit Rejection Alarm (Step 4 audit fails -> reverts to OPEN)
+            notificationService.ifPresent(ns -> {
+                String targetEngineer = issue.getReportedBy() != null ? issue.getReportedBy() : "se_suresh";
+                String targetContractor = issue.getAssignedTo() != null ? issue.getAssignedTo() : "contractor_lnt";
+
+                // Notify Assigned SITE_ENGINEER (Primary)
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(issue.getProjectId())
+                        .recipientUsername(targetEngineer)
+                        .targetRole("SITE_ENGINEER")
+                        .title("NCR AUDIT REJECTED: Ticket " + issue.getTicketNumber())
+                        .message(String.format("QA audit failed for ticket '%s'. Reverted to OPEN. Inspector Remarks: '%s'. Re-execute rectification.",
+                                issue.getTicketNumber(), dto.getVerificationRemarks()))
+                        .notificationType(NotificationType.NCR_AUDIT_REJECTED)
+                        .priority(NotificationPriority.HIGH)
+                        .referenceModule("QUALITY_ISSUE")
+                        .referenceId(issue.getId())
+                        .build());
+
+                // Notify Assigned Contractor (Primary)
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(issue.getProjectId())
+                        .recipientUsername(targetContractor)
+                        .targetRole("SITE_SUPERVISOR")
+                        .title("RECTIFICATION REJECTED: Ticket " + issue.getTicketNumber())
+                        .message(String.format("Work rectification rejected by QA Inspector %s. Reason: '%s'. Rework immediately.",
+                                dto.getVerifiedBy(), dto.getVerificationRemarks()))
+                        .notificationType(NotificationType.NCR_AUDIT_REJECTED)
+                        .priority(NotificationPriority.HIGH)
+                        .referenceModule("QUALITY_ISSUE")
+                        .referenceId(issue.getId())
+                        .build());
+
+                log.info("Dispatched NCR_AUDIT_REJECTED alerts to SITE_ENGINEER ({}) & Contractor ({})", targetEngineer, targetContractor);
+            });
         }
 
         ProjectIssue saved = projectIssueRepository.save(issue);

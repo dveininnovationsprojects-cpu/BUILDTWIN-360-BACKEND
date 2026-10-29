@@ -149,3 +149,25 @@ SELECT p.id, 'Delay in CMDA municipal heavy vehicle transit movement permit', 'B
 FROM projects p WHERE p.code = 'PADUR-AG-01'
 ON CONFLICT DO NOTHING;
 
+-- 13. Epic 6: Real-time Notifications & System Escalations
+INSERT INTO notifications (project_id, recipient_username, target_role, title, message, notification_type, priority, status, channel, reference_module, reference_id, created_at)
+SELECT p.id, 'pm_karthik', 'PROJECT_MANAGER', 'BUDGET OVERRUN ALERT: ACT-PADUR-STR-01 (CIVIL)', 'Tower A Structural Concrete expenditure reached 92.5% of allocated budget (INR 41,62,500 of INR 45,00,000).', 'BUDGET_OVERRUN', 'URGENT', 'UNREAD', 'IN_APP', 'COST_BUDGET', 101, CURRENT_TIMESTAMP
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notifications (project_id, recipient_username, target_role, title, message, notification_type, priority, status, channel, reference_module, reference_id, created_at)
+SELECT p.id, 'pm_karthik', 'PROJECT_MANAGER', 'SLA BREACH ALERT: Ticket ISS-PADUR-NCR-01', 'Issue ''Concrete 7-day cube test compressive strength fail'' assigned to Contractor is past SLA target resolution date.', 'OVERDUE_SLA', 'URGENT', 'UNREAD', 'IN_APP', 'QUALITY_ISSUE', 1, CURRENT_TIMESTAMP
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notifications (project_id, recipient_username, target_role, title, message, notification_type, priority, status, channel, reference_module, reference_id, created_at)
+SELECT p.id, 'PM_Selvamani', 'PROJECT_MANAGER', 'CRITICAL BLOCKER ALERT: Feeder Trip Halting Crane', 'Local 33kV high tension transformer feeder shutdown halting Tower Crane operations on Tower A.', 'CRITICAL_BLOCKER', 'URGENT', 'UNREAD', 'IN_APP', 'QUALITY_ISSUE', 2, CURRENT_TIMESTAMP
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notifications (project_id, recipient_username, target_role, title, message, notification_type, priority, status, channel, reference_module, reference_id, created_at)
+SELECT p.id, 'proc_ramesh', 'PROCUREMENT_STORE', 'Inventory Alert: UltraTech Cement 53 OPC (LOW_STOCK)', 'Material ''UltraTech Cement 53 Grade'' stock is 45 bags (below safety threshold of 200 bags). Shortage projected: 155 bags.', 'LOW_STOCK', 'HIGH', 'UNREAD', 'IN_APP', 'MATERIALS', 1, CURRENT_TIMESTAMP
+FROM projects p WHERE p.code = 'PADUR-AG-01'
+ON CONFLICT DO NOTHING;
+
+

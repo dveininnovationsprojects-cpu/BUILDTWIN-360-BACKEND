@@ -6,5 +6,6 @@ public enum StockTransactionType {
     CONSUMPTION, // Material consumed on site work
     WASTAGE,     // Material wastage on site
     RETURN,      // Material returned to store/supplier
-    ADJUSTMENT   // Inventory stock audit reconciliation adjustment
+    ADJUSTMENT,  // Inventory stock audit reconciliation adjustment
+    TRANSFER     // Inter-site / inter-warehouse store transfer
 }

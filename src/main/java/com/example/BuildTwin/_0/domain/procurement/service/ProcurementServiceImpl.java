@@ -19,14 +19,20 @@ import com.example.BuildTwin._0.domain.procurement.dto.MaterialRequestApprovalDt
 import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 
+import com.example.BuildTwin._0.domain.notifications.dto.SendNotificationDto;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationPriority;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationType;
+import com.example.BuildTwin._0.domain.notifications.service.NotificationService;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class ProcurementServiceImpl implements ProcurementService {
 
@@ -35,6 +41,32 @@ public class ProcurementServiceImpl implements ProcurementService {
     private final GrnRepository grnRepository;
     private final MaterialRepository materialRepository;
     private final StockLedgerService stockLedgerService;
+    private final Optional<NotificationService> notificationService;
+
+    public ProcurementServiceImpl(
+            MaterialRequestRepository materialRequestRepository,
+            PurchaseOrderRepository purchaseOrderRepository,
+            GrnRepository grnRepository,
+            MaterialRepository materialRepository,
+            StockLedgerService stockLedgerService) {
+        this(materialRequestRepository, purchaseOrderRepository, grnRepository, materialRepository, stockLedgerService, Optional.empty());
+    }
+
+    @Autowired
+    public ProcurementServiceImpl(
+            MaterialRequestRepository materialRequestRepository,
+            PurchaseOrderRepository purchaseOrderRepository,
+            GrnRepository grnRepository,
+            MaterialRepository materialRepository,
+            StockLedgerService stockLedgerService,
+            Optional<NotificationService> notificationService) {
+        this.materialRequestRepository = materialRequestRepository;
+        this.purchaseOrderRepository = purchaseOrderRepository;
+        this.grnRepository = grnRepository;
+        this.materialRepository = materialRepository;
+        this.stockLedgerService = stockLedgerService;
+        this.notificationService = notificationService != null ? notificationService : Optional.empty();
+    }
 
     @Override
     public MaterialRequest createMaterialRequest(MaterialRequest request) {
@@ -240,6 +272,42 @@ public class ProcurementServiceImpl implements ProcurementService {
         PurchaseOrder saved = purchaseOrderRepository.save(existing);
         log.info("Purchase Order ID: {} Financial Approval Status updated to {} by {} | Remarks: '{}'",
                 id, newStatus, approvalDto.getApprovedBy(), approvalDto.getRemarks());
+
+        // 10 RBAC Alert Matrix: PO_APPROVED / ISSUED (Priority: MEDIUM)
+        if ("APPROVED".equals(newStatus) || "ISSUED".equals(newStatus)) {
+            notificationService.ifPresent(ns -> {
+                // Primary: PROCUREMENT_STORE
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(saved.getProjectId())
+                        .recipientUsername("proc_ramesh")
+                        .targetRole("PROCUREMENT_STORE")
+                        .title("PO APPROVED: " + saved.getPoNumber())
+                        .message(String.format("Purchase Order %s for material ID %s has been APPROVED. Qty: %s. Awaiting supplier dispatch.",
+                                saved.getPoNumber(), saved.getMaterialId(), saved.getOrderQty()))
+                        .notificationType(NotificationType.PO_APPROVED)
+                        .priority(NotificationPriority.MEDIUM)
+                        .referenceModule("PROCUREMENT")
+                        .referenceId(saved.getId())
+                        .build());
+
+                // Primary: SITE_SUPERVISOR
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(saved.getProjectId())
+                        .recipientUsername("sup_manoj")
+                        .targetRole("SITE_SUPERVISOR")
+                        .title("PO ISSUED: " + saved.getPoNumber())
+                        .message(String.format("PO %s issued for delivery on %s. Plan site unloading and gate entry.",
+                                saved.getPoNumber(), saved.getDeliveryDate()))
+                        .notificationType(NotificationType.PO_APPROVED)
+                        .priority(NotificationPriority.MEDIUM)
+                        .referenceModule("PROCUREMENT")
+                        .referenceId(saved.getId())
+                        .build());
+
+                log.info("Dispatched PO_APPROVED alerts to PROCUREMENT_STORE & SITE_SUPERVISOR for PO {}", saved.getPoNumber());
+            });
+        }
+
         return saved;
     }
 
@@ -382,6 +450,43 @@ public class ProcurementServiceImpl implements ProcurementService {
         Grn savedGrn = grnRepository.save(grn);
         log.info("Recorded Goods Receipt Note {} (ID: {}) | PO: {}, Material: {} | DC: {}, Vehicle: {}, Gate: {} | Received: {}, Accepted: {}, Rejected: {} | Damage: '{}'",
                 savedGrn.getGrnNumber(), savedGrn.getId(), grn.getPoId(), grn.getMaterialId(), grn.getDcNumber(), grn.getVehicleNumber(), grn.getGateEntryNumber(), grn.getReceivedQty(), accepted, rejected, grn.getDamageReason());
+
+        // 10 RBAC Alert Matrix: GRN_DEFECT_ALERT (Priority: HIGH)
+        if (rejected.compareTo(BigDecimal.ZERO) > 0) {
+            notificationService.ifPresent(ns -> {
+                Long projId = grn.getProjectId() != null ? grn.getProjectId() : 1L;
+
+                // Primary: PROCUREMENT_STORE
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(projId)
+                        .recipientUsername("proc_ramesh")
+                        .targetRole("PROCUREMENT_STORE")
+                        .title("GRN DEFECT ALERT: " + savedGrn.getGrnNumber())
+                        .message(String.format("Gate entry %s rejected %s units of material ID %s due to defects/damage: '%s'. Replacement indent needed.",
+                                savedGrn.getGrnNumber(), rejected, grn.getMaterialId(), grn.getDamageReason()))
+                        .notificationType(NotificationType.GRN_DEFECT_ALERT)
+                        .priority(NotificationPriority.HIGH)
+                        .referenceModule("PROCUREMENT")
+                        .referenceId(savedGrn.getId())
+                        .build());
+
+                // Primary: QUALITY_ENGINEER
+                ns.dispatchNotification(SendNotificationDto.builder()
+                        .projectId(projId)
+                        .recipientUsername("qc_anand")
+                        .targetRole("QUALITY_ENGINEER")
+                        .title("GRN MATERIAL REJECTION: " + savedGrn.getGrnNumber())
+                        .message(String.format("Damaged shipment flagged on arrival at gate (GRN %s). Rejected Qty: %s. Reason: '%s'.",
+                                savedGrn.getGrnNumber(), rejected, grn.getDamageReason()))
+                        .notificationType(NotificationType.GRN_DEFECT_ALERT)
+                        .priority(NotificationPriority.HIGH)
+                        .referenceModule("PROCUREMENT")
+                        .referenceId(savedGrn.getId())
+                        .build());
+
+                log.info("Dispatched GRN_DEFECT_ALERT to PROCUREMENT_STORE & QUALITY_ENGINEER for GRN {}", savedGrn.getGrnNumber());
+            });
+        }
 
         // Transactionally update inventory stock & record immutable ledger receipt for accepted quantity
         if (accepted.compareTo(BigDecimal.ZERO) > 0) {

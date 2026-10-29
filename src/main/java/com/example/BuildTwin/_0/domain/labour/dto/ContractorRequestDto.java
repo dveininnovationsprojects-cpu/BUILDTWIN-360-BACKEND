@@ -42,6 +42,15 @@ public class ContractorRequestDto {
     @Schema(description = "Office/permanent address", example = "Padur, OMR, Chennai")
     private String address;
 
+    @Schema(description = "GSTIN registration number", example = "33AAAAA0000A1Z5")
+    private String gstin;
+
+    @Schema(description = "PAN card number", example = "ABCDE1234F")
+    private String panNumber;
+
+    @Schema(description = "Trade or commercial contractor license number", example = "LIC-CIV-2026-089")
+    private String licenseNumber;
+
     @Schema(description = "Contractor type: MAIN_CONTRACTOR or SUBCONTRACTOR", example = "MAIN_CONTRACTOR")
     private com.example.BuildTwin._0.domain.labour.enums.ContractorType contractorType;
 

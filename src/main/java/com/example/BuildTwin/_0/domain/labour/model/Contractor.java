@@ -54,6 +54,15 @@ public class Contractor {
     @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 
+    @Column(name = "gstin", length = 15)
+    private String gstin;
+
+    @Column(name = "pan_number", length = 20)
+    private String panNumber;
+
+    @Column(name = "license_number", length = 50)
+    private String licenseNumber;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "contractor_type", nullable = false, length = 30)

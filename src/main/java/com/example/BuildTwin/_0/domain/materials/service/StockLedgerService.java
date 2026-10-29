@@ -7,26 +7,44 @@ import com.example.BuildTwin._0.domain.materials.repository.MaterialRepository;
 import com.example.BuildTwin._0.domain.materials.repository.StockLedgerRepository;
 import com.example.BuildTwin._0.domain.materials.dto.StockTransactionDto;
 import com.example.BuildTwin._0.domain.materials.exception.InsufficientStockException;
+import com.example.BuildTwin._0.domain.notifications.dto.SendNotificationDto;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationPriority;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationType;
+import com.example.BuildTwin._0.domain.notifications.service.NotificationService;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import com.example.BuildTwin._0.domain.materials.dto.StockReconciliationDto;
 import com.example.BuildTwin._0.domain.materials.dto.StockReconciliationResultDto;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class StockLedgerService {
 
     private final StockLedgerRepository stockLedgerRepository;
     private final MaterialRepository materialRepository;
+    private final Optional<NotificationService> notificationService;
+
+    public StockLedgerService(StockLedgerRepository stockLedgerRepository, MaterialRepository materialRepository) {
+        this(stockLedgerRepository, materialRepository, Optional.empty());
+    }
+
+    @Autowired
+    public StockLedgerService(StockLedgerRepository stockLedgerRepository, MaterialRepository materialRepository, Optional<NotificationService> notificationService) {
+        this.stockLedgerRepository = stockLedgerRepository;
+        this.materialRepository = materialRepository;
+        this.notificationService = notificationService != null ? notificationService : Optional.empty();
+    }
 
     /**
      * Process stock transaction with ACID compliance and pessimistic locking.
@@ -46,7 +64,7 @@ public class StockLedgerService {
         BigDecimal currentStock = material.getCurrentStock() != null ? material.getCurrentStock() : BigDecimal.ZERO;
 
         // Stock ledger calculation logic
-        if (txnType == StockTransactionType.ISSUE || txnType == StockTransactionType.CONSUMPTION || txnType == StockTransactionType.WASTAGE) {
+        if (txnType == StockTransactionType.ISSUE || txnType == StockTransactionType.CONSUMPTION || txnType == StockTransactionType.WASTAGE || txnType == StockTransactionType.TRANSFER) {
             if (currentStock.compareTo(quantity) < 0) {
                 throw new InsufficientStockException(
                         material.getId(),
@@ -65,6 +83,48 @@ public class StockLedgerService {
 
         // Update Material master with new stock level
         materialRepository.save(material);
+
+        // Module 2 Trigger 1: Stock Ledger CONSUMPTION/ISSUE Reorder Level Breach
+        if (txnType == StockTransactionType.CONSUMPTION || txnType == StockTransactionType.ISSUE) {
+            if (material.getReorderLevel() != null && material.getCurrentStock().compareTo(material.getReorderLevel()) <= 0) {
+                notificationService.ifPresent(ns -> {
+                    Long projId = dto.getProjectId() != null ? dto.getProjectId() : 1L;
+                    if (!ns.isDuplicateActiveAlert(projId, NotificationType.LOW_STOCK, material.getId())) {
+                        // Dispatch to PROCUREMENT_STORE (Primary)
+                        ns.dispatchNotification(SendNotificationDto.builder()
+                                .projectId(projId)
+                                .recipientUsername("proc_ramesh")
+                                .targetRole("PROCUREMENT_STORE")
+                                .title("LOW STOCK ALERT: " + material.getName())
+                                .message(String.format("Material '%s' (%s) stock is down to %s %s (Reorder Level: %s). Initiate purchase replenishment.",
+                                        material.getName(), material.getMaterialCode(), material.getCurrentStock(), material.getUnit(), material.getReorderLevel()))
+                                .notificationType(NotificationType.LOW_STOCK)
+                                .priority(NotificationPriority.HIGH)
+                                .referenceModule("MATERIALS")
+                                .referenceId(material.getId())
+                                .build());
+
+                        // Dispatch to SITE_SUPERVISOR (Primary)
+                        ns.dispatchNotification(SendNotificationDto.builder()
+                                .projectId(projId)
+                                .recipientUsername("sup_manoj")
+                                .targetRole("SITE_SUPERVISOR")
+                                .title("LOW STOCK ALERT: " + material.getName())
+                                .message(String.format("Store stock for '%s' is critical at %s %s. Plan upcoming site indents accordingly.",
+                                        material.getName(), material.getCurrentStock(), material.getUnit()))
+                                .notificationType(NotificationType.LOW_STOCK)
+                                .priority(NotificationPriority.HIGH)
+                                .referenceModule("MATERIALS")
+                                .referenceId(material.getId())
+                                .build());
+
+                        log.info("Dispatched LOW_STOCK alerts to PROCUREMENT_STORE & SITE_SUPERVISOR for material '{}'", material.getName());
+                    } else {
+                        log.debug("Active unread LOW_STOCK alert already exists within 24 hours for material ID: {}. Deduplication suppressed duplicate alert.", material.getId());
+                    }
+                });
+            }
+        }
 
         // Create immutable stock ledger audit entry
         StockLedger entry = StockLedger.builder()
@@ -111,6 +171,12 @@ public class StockLedgerService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public StockLedger recordWastage(StockTransactionDto dto) {
         dto.setTransactionType(StockTransactionType.WASTAGE);
+        return recordTransaction(dto);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public StockLedger transferMaterial(StockTransactionDto dto) {
+        dto.setTransactionType(StockTransactionType.TRANSFER);
         return recordTransaction(dto);
     }
 
