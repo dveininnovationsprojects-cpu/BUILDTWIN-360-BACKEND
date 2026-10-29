@@ -1658,7 +1658,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/projects/1/metrics",
+              "raw": "{{base_url}}/api/v1/projects/metrics",
               "host": [
                 "{{base_url}}"
               ],
@@ -1666,7 +1666,6 @@
                 "api",
                 "v1",
                 "projects",
-                "1",
                 "metrics"
               ]
             },
@@ -1688,13 +1687,15 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/sites",
+              "raw": "{{base_url}}/api/v1/projects/1/sites",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
+                "projects",
+                "1",
                 "sites"
               ]
             },
@@ -1725,16 +1726,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/sites/project/1",
+              "raw": "{{base_url}}/api/v1/projects/1/sites",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "sites",
-                "project",
-                "1"
+                "projects",
+                "1",
+                "sites"
               ]
             },
             "description": "Retrieves all construction sites in a project"
@@ -1755,13 +1756,15 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/buildings",
+              "raw": "{{base_url}}/api/v1/sites/1/buildings",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
+                "sites",
+                "1",
                 "buildings"
               ]
             },
@@ -1792,13 +1795,15 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/floors",
+              "raw": "{{base_url}}/api/v1/buildings/1/floors",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
+                "buildings",
+                "1",
                 "floors"
               ]
             },
@@ -1829,13 +1834,15 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/zones",
+              "raw": "{{base_url}}/api/v1/floors/1/zones",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
+                "floors",
+                "1",
                 "zones"
               ]
             },
@@ -1871,13 +1878,15 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/work-packages",
+              "raw": "{{base_url}}/api/v1/projects/1/work-packages",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
+                "projects",
+                "1",
                 "work-packages"
               ]
             },
@@ -1908,16 +1917,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/work-packages/project/1",
+              "raw": "{{base_url}}/api/v1/projects/1/work-packages",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "work-packages",
-                "project",
-                "1"
+                "projects",
+                "1",
+                "work-packages"
               ]
             },
             "description": "Lists work packages for project"
@@ -1938,16 +1947,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/wbs-activities/work-package/1",
+              "raw": "{{base_url}}/api/v1/work-packages/1/activities",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "wbs-activities",
-                "work-package",
-                "1"
+                "work-packages",
+                "1",
+                "activities"
               ]
             },
             "description": "Creates leaf WBS Activity with discipline and weightage (FR-021)",
@@ -1977,16 +1986,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/wbs-activities/work-package/1",
+              "raw": "{{base_url}}/api/v1/work-packages/1/activities",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "wbs-activities",
-                "work-package",
-                "1"
+                "work-packages",
+                "1",
+                "activities"
               ]
             },
             "description": "Fetches activities in work package"
@@ -2083,16 +2092,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/activity-dependencies/activity/1",
+              "raw": "{{base_url}}/api/v1/projects/1/activity-dependencies",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "activity-dependencies",
-                "activity",
-                "1"
+                "projects",
+                "1",
+                "activity-dependencies"
               ]
             },
             "description": "Retrieves CPM predecessors and successors"
@@ -2113,20 +2122,22 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/baseline-schedules",
+              "raw": "{{base_url}}/api/v1/projects/1/baselines",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "baseline-schedules"
+                "projects",
+                "1",
+                "baselines"
               ]
             },
             "description": "Freezes schedule baseline for Earned Value schedule variance tracking (FR-030)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"projectId\": 1,\n  \"baselineName\": \"Approved Baseline Target v1.0\",\n  \"description\": \"Initial target schedule approved by Client and PM\"\n}",
+              "raw": "{\n  \"baselineName\": \"Approved Baseline Target v1.0\",\n  \"description\": \"Initial target schedule approved by Client and PM\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2136,7 +2147,7 @@
           }
         },
         {
-          "name": "7.9 Get Project Schedule Variance (GET)",
+          "name": "7.9 Get Project Schedule Variance Report (GET)",
           "request": {
             "method": "GET",
             "header": [
@@ -2150,17 +2161,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/baseline-schedules/project/1/variance",
+              "raw": "{{base_url}}/api/v1/projects/1/schedule-variance-report",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "baseline-schedules",
-                "project",
+                "projects",
                 "1",
-                "variance"
+                "schedule-variance-report"
               ]
             },
             "description": "Calculates schedule slippage and delay days against baseline"
@@ -2384,16 +2394,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/user-project-roles/pm_karthik",
+              "raw": "{{base_url}}/api/v1/project-roles/user/1",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "auth",
-                "user-project-roles",
-                "pm_karthik"
+                "project-roles",
+                "user",
+                "1"
               ]
             },
             "description": "Lists projects and roles assigned to user"
@@ -2502,7 +2512,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/hierarchy/project/1",
+              "raw": "{{base_url}}/api/v1/hierarchy/tree/1",
               "host": [
                 "{{base_url}}"
               ],
@@ -2510,7 +2520,7 @@
                 "api",
                 "v1",
                 "hierarchy",
-                "project",
+                "tree",
                 "1"
               ]
             },
@@ -4473,7 +4483,7 @@
           }
         },
         {
-          "name": "Get Equipment By Project",
+          "name": "Get Equipment Usage By Project (FR-101)",
           "request": {
             "method": "GET",
             "header": [
@@ -4483,7 +4493,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/equipment/project/{{project_id}}",
+              "raw": "{{base_url}}/api/v1/equipment/usage/project/1",
               "host": [
                 "{{base_url}}"
               ],
@@ -4491,14 +4501,15 @@
                 "api",
                 "v1",
                 "equipment",
+                "usage",
                 "project",
-                "{{project_id}}"
+                "1"
               ]
             }
           }
         },
         {
-          "name": "Get Equipment By Status",
+          "name": "Get All Equipment Assets Directory (FR-100)",
           "request": {
             "method": "GET",
             "header": [
@@ -4508,16 +4519,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/equipment/status/AVAILABLE",
+              "raw": "{{base_url}}/api/v1/equipment",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "equipment",
-                "status",
-                "AVAILABLE"
+                "equipment"
               ]
             }
           }
@@ -4555,7 +4564,7 @@
           }
         },
         {
-          "name": "Get Usage Records By Equipment",
+          "name": "Get Equipment Usage Record by ID",
           "request": {
             "method": "GET",
             "header": [
@@ -4565,7 +4574,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/equipment/usage/equipment/1",
+              "raw": "{{base_url}}/api/v1/equipment/usage/1",
               "host": [
                 "{{base_url}}"
               ],
@@ -4574,7 +4583,6 @@
                 "v1",
                 "equipment",
                 "usage",
-                "equipment",
                 "1"
               ]
             }
@@ -4607,7 +4615,7 @@
           }
         },
         {
-          "name": "Log Equipment Downtime / Breakdown",
+          "name": "Record Equipment Usage & Downtime (FR-102)",
           "request": {
             "method": "POST",
             "header": [
@@ -4622,10 +4630,15 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"equipmentId\": 1,\n  \"projectId\": 1,\n  \"downtimeDate\": \"2026-10-13\",\n  \"hoursDown\": 4,\n  \"reason\": \"Hydraulic oil leak & seal replacement\"\n}"
+              "raw": "{\n  \"equipmentId\": 1,\n  \"projectId\": 1,\n  \"date\": \"2026-10-29\",\n  \"operatingHours\": 6.5,\n  \"idleHours\": 1.5,\n  \"downtimeHours\": 2.0,\n  \"remarks\": \"Hydraulic hose maintenance downtime\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/equipment/downtime",
+              "raw": "{{base_url}}/api/v1/equipment/usage",
               "host": [
                 "{{base_url}}"
               ],
@@ -4633,13 +4646,13 @@
                 "api",
                 "v1",
                 "equipment",
-                "downtime"
+                "usage"
               ]
             }
           }
         },
         {
-          "name": "Get Downtime Records By Project",
+          "name": "Get Project Equipment Usage & Downtime Logs (FR-102)",
           "request": {
             "method": "GET",
             "header": [
@@ -4649,7 +4662,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/equipment/downtime/project/{{project_id}}",
+              "raw": "{{base_url}}/api/v1/equipment/usage/project/1",
               "host": [
                 "{{base_url}}"
               ],
@@ -4657,9 +4670,9 @@
                 "api",
                 "v1",
                 "equipment",
-                "downtime",
+                "usage",
                 "project",
-                "{{project_id}}"
+                "1"
               ]
             }
           }
