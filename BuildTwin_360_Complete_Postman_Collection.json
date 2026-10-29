@@ -1498,6 +1498,1028 @@
       ]
     },
     {
+      "name": "6. Project & Geo-Spatial Hierarchy Master (FR-010 - FR-015)",
+      "item": [
+        {
+          "name": "6.1 Create Project Master (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects"
+              ]
+            },
+            "description": "Creates master construction project (FR-010)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PRJ-PADUR-01\",\n  \"name\": \"Ashok Grandeur - Padur, Chennai\",\n  \"description\": \"High-rise residential tower with 25 floors & clubhouse\",\n  \"budget\": 45000000.0,\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2027-12-31\",\n  \"client\": \"Ashok Builders & Developers\",\n  \"status\": \"PLANNING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6.2 List All Projects (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects?page=0&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieves paginated construction projects"
+          }
+        },
+        {
+          "name": "6.3 Get Project Details by ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "1"
+              ]
+            },
+            "description": "Fetches single project detailed profile"
+          }
+        },
+        {
+          "name": "6.4 Update Project Status (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/1/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "1",
+                "status"
+              ]
+            },
+            "description": "Updates project lifecycle status (FR-011)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"comments\": \"Substructure foundation works commenced\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6.5 Get Project Portfolio Metrics (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/1/metrics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "1",
+                "metrics"
+              ]
+            },
+            "description": "Fetches overall project progress and budget metrics"
+          }
+        },
+        {
+          "name": "6.6 Create Construction Site (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sites",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sites"
+              ]
+            },
+            "description": "Creates geographical site within project (FR-012)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"code\": \"SITE-A\",\n  \"name\": \"Tower Block Site Alpha\",\n  \"location\": \"Old Mahabalipuram Road, Padur\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6.7 List Sites by Project (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sites/project/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sites",
+                "project",
+                "1"
+              ]
+            },
+            "description": "Retrieves all construction sites in a project"
+          }
+        },
+        {
+          "name": "6.8 Create Building Structure (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings"
+              ]
+            },
+            "description": "Creates building asset under site (FR-013)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"siteId\": 1,\n  \"code\": \"BLD-T1\",\n  \"name\": \"Tower 1 - Residential\",\n  \"description\": \"Basement + Stilt + 24 Floors\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6.9 Create Floor Level (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/floors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "floors"
+              ]
+            },
+            "description": "Creates floor vertical slice (FR-014)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buildingId\": 1,\n  \"name\": \"Level 4 Typical Slab\",\n  \"floorNumber\": 4,\n  \"description\": \"4th floor 2BHK and 3BHK residential units\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6.10 Create Functional Zone (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/zones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zones"
+              ]
+            },
+            "description": "Creates micro work zone on floor (FR-015)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"floorId\": 1,\n  \"code\": \"ZN-4-EAST\",\n  \"name\": \"Zone East - Flats 401 to 404\",\n  \"description\": \"East quadrant MEP and finishing zone\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Work Breakdown Structure (WBS) & Scheduling Engine (FR-020 - FR-035)",
+      "item": [
+        {
+          "name": "7.1 Create Work Package (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/work-packages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-packages"
+              ]
+            },
+            "description": "Creates WBS Level-2 Work Package (FR-020)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"code\": \"WP-SUBSTR-01\",\n  \"name\": \"Substructure & Foundation Works\",\n  \"description\": \"Excavation, PCC, RCC Raft and Retaining Wall\",\n  \"budget\": 12000000.0,\n  \"plannedStartDate\": \"2026-01-15\",\n  \"plannedEndDate\": \"2026-04-30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "7.2 List Work Packages by Project (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/work-packages/project/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-packages",
+                "project",
+                "1"
+              ]
+            },
+            "description": "Lists work packages for project"
+          }
+        },
+        {
+          "name": "7.3 Create WBS Activity (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/wbs-activities/work-package/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "wbs-activities",
+                "work-package",
+                "1"
+              ]
+            },
+            "description": "Creates leaf WBS Activity with discipline and weightage (FR-021)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ACT-RAFT-01\",\n  \"name\": \"Raft Foundation Concreting M35\",\n  \"description\": \"Pouring 350 cu.m of M35 ready mix concrete\",\n  \"discipline\": \"CIVIL\",\n  \"plannedStartDate\": \"2026-02-01\",\n  \"plannedEndDate\": \"2026-03-15\",\n  \"weightage\": 15.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "7.4 List Activities by Work Package (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/wbs-activities/work-package/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "wbs-activities",
+                "work-package",
+                "1"
+              ]
+            },
+            "description": "Fetches activities in work package"
+          }
+        },
+        {
+          "name": "7.5 Update Activity Progress & Completion (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/wbs-activities/1/progress",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "wbs-activities",
+                "1",
+                "progress"
+              ]
+            },
+            "description": "Updates actual progress percentage and recalculates parent rollups",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progressPercentage\": 65.0,\n  \"actualStartDate\": \"2026-02-05\",\n  \"status\": \"IN_PROGRESS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "7.6 Define Activity Dependency CPM (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/activity-dependencies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "activity-dependencies"
+              ]
+            },
+            "description": "Creates Critical Path Method (CPM) precedence constraint (FR-025)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"predecessorActivityId\": 1,\n  \"successorActivityId\": 2,\n  \"dependencyType\": \"FINISH_TO_START\",\n  \"lagDays\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "7.7 List Activity Dependencies (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/activity-dependencies/activity/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "activity-dependencies",
+                "activity",
+                "1"
+              ]
+            },
+            "description": "Retrieves CPM predecessors and successors"
+          }
+        },
+        {
+          "name": "7.8 Create Baseline Schedule (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/baseline-schedules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "baseline-schedules"
+              ]
+            },
+            "description": "Freezes schedule baseline for Earned Value schedule variance tracking (FR-030)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"baselineName\": \"Approved Baseline Target v1.0\",\n  \"description\": \"Initial target schedule approved by Client and PM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "7.9 Get Project Schedule Variance (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/baseline-schedules/project/1/variance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "baseline-schedules",
+                "project",
+                "1",
+                "variance"
+              ]
+            },
+            "description": "Calculates schedule slippage and delay days against baseline"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. User Administration & 10-Tier Project Role Bindings (FR-001 - FR-008)",
+      "item": [
+        {
+          "name": "8.1 List All 10 Standard System Roles (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles"
+              ]
+            },
+            "description": "Lists standard system roles (ADMIN, DIRECTOR, PM, SITE_ENGINEER, etc.)"
+          }
+        },
+        {
+          "name": "8.2 Get Role Details by ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "1"
+              ]
+            },
+            "description": "Fetches role details"
+          }
+        },
+        {
+          "name": "8.3 List Paginated Users (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lists all registered enterprise users"
+          }
+        },
+        {
+          "name": "8.4 Get User Profile by Username (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "admin"
+              ]
+            },
+            "description": "Fetches user details by username"
+          }
+        },
+        {
+          "name": "8.5 Update User Account Status (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/1/status?active=True",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "1",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "True"
+                }
+              ]
+            },
+            "description": "Enables or disables user login status"
+          }
+        },
+        {
+          "name": "8.6 Assign Project-Specific RBAC Role (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/assign-project-role",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "assign-project-role"
+              ]
+            },
+            "description": "Binds user to a specific project with dedicated operational role (FR-005)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"pm_karthik\",\n  \"projectId\": 1,\n  \"roleName\": \"PROJECT_MANAGER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "8.7 Get User Assigned Project Roles (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/user-project-roles/pm_karthik",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "user-project-roles",
+                "pm_karthik"
+              ]
+            },
+            "description": "Lists projects and roles assigned to user"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. System Audit Trail & Security Logs (FR-120 - FR-122)",
+      "item": [
+        {
+          "name": "9.1 List System Audit Logs (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/audit-logs?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Retrieves tamper-evident system activity and financial audit logs"
+          }
+        },
+        {
+          "name": "9.2 Filter Audit Logs by Username (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/audit-logs/user/admin?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "audit-logs",
+                "user",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Fetches audit trail for a specific actor/user"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Spatial Hierarchy Visualizer (FR-015)",
+      "item": [
+        {
+          "name": "10.1 Get Full Project Spatial Hierarchy Tree (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hierarchy/project/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hierarchy",
+                "project",
+                "1"
+              ]
+            },
+            "description": "Generates recursive multi-level spatial hierarchy (Project -> Site -> Building -> Floor -> Zone)"
+          }
+        }
+      ]
+    },
+    {
       "name": "11. Procurement & Goods Receipt Notes (Epic 3)",
       "item": [
         {
