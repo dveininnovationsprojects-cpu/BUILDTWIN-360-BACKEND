@@ -66,6 +66,10 @@ public class LabourDaily {
     private String remarks;
 
     @Builder.Default
+    @Column(name = "status", nullable = false, length = 30)
+    private String status = "APPROVED"; // DRAFT, SUBMITTED, APPROVED, REJECTED
+
+    @Builder.Default
     @OneToMany(mappedBy = "labourDaily", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<LabourAllocation> allocations = new ArrayList<>();
 

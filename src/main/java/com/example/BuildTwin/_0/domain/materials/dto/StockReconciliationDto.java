@@ -1,5 +1,6 @@
 package com.example.BuildTwin._0.domain.materials.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -29,12 +30,15 @@ public class StockReconciliationDto {
 
     @NotNull(message = "Physical stock quantity is required")
     @PositiveOrZero(message = "Physical stock quantity cannot be negative")
-    @Schema(description = "Actual physical stock counted on site", example = "180.00")
+    @JsonAlias({"physicalStockCount", "physicalStock", "actualPhysicalStock", "physicalCount"})
+    @Schema(description = "Actual physical stock counted on site", example = "10000.00")
     private BigDecimal physicalQty;
 
-    @Schema(description = "User / Stock Auditor name performing reconciliation", example = "Auditor_Ramesh")
+    @JsonAlias({"auditorName", "auditor"})
+    @Schema(description = "User / Stock Auditor name performing reconciliation", example = "admin")
     private String auditedBy;
 
-    @Schema(description = "Audit observations or variance remarks", example = "Physical audit found 20 damaged bags due to water seepage")
+    @Schema(description = "Audit observations or variance remarks", example = "Physical audit found 10 broken bricks")
     private String remarks;
 }
+

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
+@Repository("wbsActivityDependencyRepository")
 public interface ActivityDependencyRepository extends JpaRepository<ActivityDependency, Long> {
     List<ActivityDependency> findByPredecessorId(Long predecessorId);
     List<ActivityDependency> findBySuccessorId(Long successorId);

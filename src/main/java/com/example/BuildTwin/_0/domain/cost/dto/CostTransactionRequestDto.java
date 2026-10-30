@@ -1,5 +1,6 @@
 package com.example.BuildTwin._0.domain.cost.dto;
 
+import com.example.BuildTwin._0.domain.cost.enums.CostHead;
 import com.example.BuildTwin._0.domain.cost.enums.CostSourceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,10 +8,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import com.example.BuildTwin._0.domain.cost.enums.CostHead;
-import com.example.BuildTwin._0.domain.cost.enums.CostSourceType;
-import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Getter
 @Setter
@@ -21,6 +18,7 @@ public class CostTransactionRequestDto {
 
     @NotNull(message = "Project ID is required")
     private Long projectId;
+    
 
     private Long activityId;
 
@@ -39,4 +37,8 @@ public class CostTransactionRequestDto {
     private LocalDate transactionDate;
 
     private String referenceNumber;
+
+    private String vendorOrPayee;
+
+    private String remarks;
 }

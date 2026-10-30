@@ -26,7 +26,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.BuildTwin._0.domain.notifications.dto.SendNotificationDto;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationPriority;
+import com.example.BuildTwin._0.domain.notifications.enums.NotificationType;
+import com.example.BuildTwin._0.domain.notifications.service.NotificationService;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -51,6 +57,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final UserProjectRoleRepository userProjectRoleRepository;
     private final RoleRepository roleRepository;
     private final AuditService auditService;
+    private final Optional<NotificationService> notificationService;
 
     @Override
     @Transactional
@@ -230,6 +237,13 @@ public class ProjectServiceImpl implements ProjectService {
         String oldStatus = project.getStatus();
         String validatedStatus = validateAndNormalizeStatus(request.getStatus());
 
+        // Automatically manage project lifecycle actual execution dates
+        if ("ACTIVE".equalsIgnoreCase(validatedStatus) && project.getActualStartDate() == null) {
+            project.setActualStartDate(LocalDate.now());
+        } else if ("COMPLETED".equalsIgnoreCase(validatedStatus) && project.getActualEndDate() == null) {
+            project.setActualEndDate(LocalDate.now());
+        }
+
         project.setStatus(validatedStatus);
         Project updated = projectRepository.save(project);
 
@@ -241,6 +255,35 @@ public class ProjectServiceImpl implements ProjectService {
                 "Changed status of project '" + project.getName() + "' from " + oldStatus + " to " + updated.getStatus(),
                 null
         );
+
+        if (notificationService.isPresent() && !oldStatus.equalsIgnoreCase(validatedStatus)) {
+            try {
+                String pmUsername = "ALL";
+                if (updated.getProjectManagerId() != null) {
+                    pmUsername = userRepository.findById(updated.getProjectManagerId())
+                            .map(User::getUsername)
+                            .orElse("ALL");
+                }
+                NotificationPriority priority = "ON_HOLD".equalsIgnoreCase(validatedStatus)
+                        ? NotificationPriority.HIGH
+                        : NotificationPriority.MEDIUM;
+
+                notificationService.get().dispatchNotification(SendNotificationDto.builder()
+                        .projectId(updated.getId())
+                        .recipientUsername(pmUsername)
+                        .targetRole("PROJECT_MANAGER")
+                        .title("Project Status Update: " + updated.getName())
+                        .message(String.format("Project '%s' status transitioned from %s to %s by %s.",
+                                updated.getName(), oldStatus, updated.getStatus(), performedBy))
+                        .notificationType(NotificationType.PROJECT_STATUS_UPDATE)
+                        .priority(priority)
+                        .referenceModule("PROJECT")
+                        .referenceId(updated.getId())
+                        .build());
+            } catch (Exception e) {
+                log.warn("Could not dispatch project status change notification: {}", e.getMessage());
+            }
+        }
 
         return mapToProjectResponse(updated);
     }

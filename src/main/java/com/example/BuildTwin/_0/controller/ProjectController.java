@@ -2,7 +2,12 @@ package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.dto.ApiResponse;
 import com.example.BuildTwin._0.dto.common.PageResponse;
-import com.example.BuildTwin._0.dto.project.*;
+import com.example.BuildTwin._0.dto.project.CreateProjectRequest;
+import com.example.BuildTwin._0.dto.project.ProjectDetailResponse;
+import com.example.BuildTwin._0.dto.project.ProjectMetricsResponse;
+import com.example.BuildTwin._0.dto.project.ProjectResponse;
+import com.example.BuildTwin._0.dto.project.UpdateProjectRequest;
+import com.example.BuildTwin._0.dto.project.UpdateProjectStatusRequest;
 import com.example.BuildTwin._0.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,16 +28,16 @@ import com.example.BuildTwin._0.domain.projects.model.Project;
 @RestController
 @RequestMapping("/api/v1/projects")
 @RequiredArgsConstructor
-@Tag(name = "2. Project & Site Master Setup", description = "Project Master Registry, Construction Sites, Geo-Locations, Budgets & Portfolio Metrics")
+@Tag(name = "2. Project & Site Master Setup", description = "Project Master Registry, Construction Sites, Geo-Locations, Budgets & Portfolio Metrics (FR-010 - FR-012)")
 @SecurityRequirement(name = "BearerAuth")
 public class ProjectController {
 
     private final ProjectService projectService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR') or hasRole('PROJECT_MANAGER')")
     @Operation(
-            summary = "Create construction project",
+            summary = "Create construction project (FR-010)",
             description = "Creates a new construction project master record with code, client details, budget, and timeline."
     )
     @ApiResponses(value = {
@@ -42,7 +47,7 @@ public class ProjectController {
                     content = @Content(schema = @Schema(implementation = ProjectResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Requires ADMIN or DIRECTOR role"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Requires ADMIN, DIRECTOR, or PROJECT_MANAGER role"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Project code already exists")
     })
     public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
@@ -56,20 +61,20 @@ public class ProjectController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(
-            summary = "List projects with search, filter, and pagination",
+            summary = "List projects with search, filter, and pagination (FR-011)",
             description = "Retrieves projects list with optional search query (name/code/location), status filter, project type filter, and pagination."
     )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Projects retrieved successfully")
     })
     public ResponseEntity<ApiResponse<PageResponse<ProjectResponse>>> getAllProjects(
-            @Parameter(description = "Search in project name, code, or location") @RequestParam(required = false) String search,
-            @Parameter(description = "Filter by status: PLANNED, ACTIVE, ON_HOLD, COMPLETED, ARCHIVED") @RequestParam(required = false) String status,
-            @Parameter(description = "Filter by project type: RESIDENTIAL, COMMERCIAL, INFRASTRUCTURE") @RequestParam(required = false) String projectType,
-            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Sort field") @RequestParam(defaultValue = "id") String sortBy,
-            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(defaultValue = "asc") String sortDir) {
+            @Parameter(description = "Search in project name, code, or location") @RequestParam(name = "search", required = false) String search,
+            @Parameter(description = "Filter by status: PLANNED, ACTIVE, ON_HOLD, COMPLETED, ARCHIVED") @RequestParam(name = "status", required = false) String status,
+            @Parameter(description = "Filter by project type: RESIDENTIAL, COMMERCIAL, INFRASTRUCTURE") @RequestParam(name = "projectType", required = false) String projectType,
+            @Parameter(description = "Page number (0-based)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(name = "size", defaultValue = "10") int size,
+            @Parameter(description = "Sort field") @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(name = "sortDir", defaultValue = "asc") String sortDir) {
         PageResponse<ProjectResponse> projects = projectService.getAllProjects(search, status, projectType, page, size, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(projects, "Projects retrieved successfully"));
     }
@@ -77,7 +82,7 @@ public class ProjectController {
     @GetMapping("/metrics")
     @PreAuthorize("isAuthenticated()")
     @Operation(
-            summary = "Get project portfolio metrics",
+            summary = "Get project portfolio metrics (FR-012)",
             description = "Provides high-level executive counts of total projects, active projects, status breakdown, total budget, and sites."
     )
     @ApiResponses(value = {
@@ -106,7 +111,7 @@ public class ProjectController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public ResponseEntity<ApiResponse<ProjectDetailResponse>> getProjectById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProjectDetailResponse>> getProjectById(@PathVariable("id") Long id) {
         ProjectDetailResponse project = projectService.getProjectById(id);
         return ResponseEntity.ok(ApiResponse.success(project, "Project details retrieved successfully"));
     }
@@ -125,7 +130,7 @@ public class ProjectController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Project not found")
     })
-    public ResponseEntity<ApiResponse<ProjectDetailResponse>> getProjectByCode(@PathVariable String code) {
+    public ResponseEntity<ApiResponse<ProjectDetailResponse>> getProjectByCode(@PathVariable("code") String code) {
         ProjectDetailResponse project = projectService.getProjectByCode(code);
         return ResponseEntity.ok(ApiResponse.success(project, "Project details retrieved successfully"));
     }
@@ -147,7 +152,7 @@ public class ProjectController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Project code in use by another project")
     })
     public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateProjectRequest request,
             @Parameter(hidden = true) Authentication authentication) {
         String username = authentication != null ? authentication.getName() : "system";
@@ -171,7 +176,7 @@ public class ProjectController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Project not found")
     })
     public ResponseEntity<ApiResponse<ProjectResponse>> updateProjectStatus(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateProjectStatusRequest request,
             @Parameter(hidden = true) Authentication authentication) {
         String username = authentication != null ? authentication.getName() : "system";
@@ -190,11 +195,10 @@ public class ProjectController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Project not found")
     })
     public ResponseEntity<ApiResponse<Void>> deleteProject(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Parameter(hidden = true) Authentication authentication) {
         String username = authentication != null ? authentication.getName() : "system";
         projectService.deleteProject(id, username);
         return ResponseEntity.ok(ApiResponse.success(null, "Project deleted successfully"));
     }
 }
-

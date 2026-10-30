@@ -53,7 +53,8 @@ public class ZoneController {
             @PathVariable Long floorId,
             @Valid @RequestBody CreateZoneRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        ZoneResponse created = zoneService.createZone(floorId, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        ZoneResponse created = zoneService.createZone(floorId, request, username);
         return new ResponseEntity<>(ApiResponse.created(created, "Zone created successfully"), HttpStatus.CREATED);
     }
 
@@ -103,7 +104,8 @@ public class ZoneController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateZoneRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        ZoneResponse updated = zoneService.updateZone(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        ZoneResponse updated = zoneService.updateZone(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Zone updated successfully"));
     }
 
@@ -117,7 +119,8 @@ public class ZoneController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateZoneStatusRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        ZoneResponse updated = zoneService.updateZoneStatus(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        ZoneResponse updated = zoneService.updateZoneStatus(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Zone status updated successfully"));
     }
 
@@ -130,7 +133,8 @@ public class ZoneController {
     public ResponseEntity<ApiResponse<Void>> deleteZone(
             @PathVariable Long id,
             @Parameter(hidden = true) Authentication authentication) {
-        zoneService.deleteZone(id, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        zoneService.deleteZone(id, username);
         return ResponseEntity.ok(ApiResponse.success(null, "Zone deleted successfully"));
     }
 }

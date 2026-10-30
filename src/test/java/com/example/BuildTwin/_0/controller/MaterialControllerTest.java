@@ -1,6 +1,7 @@
 package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.domain.materials.dto.MaterialRequestDto;
+import com.example.BuildTwin._0.domain.materials.dto.MaterialStockBalanceDto;
 import com.example.BuildTwin._0.domain.materials.enums.MaterialUnit;
 import com.example.BuildTwin._0.domain.materials.model.Material;
 import com.example.BuildTwin._0.domain.materials.service.MaterialService;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -93,5 +95,51 @@ class MaterialControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].materialCode").value("MAT-STL-12"));
+    }
+
+    @Test
+    void testGetStockBalance() throws Exception {
+        MaterialStockBalanceDto balanceDto = MaterialStockBalanceDto.builder()
+                .materialId(1L)
+                .materialCode("MAT-CEM-53")
+                .name("OPC 53 Grade Cement")
+                .category("CEMENT")
+                .unit(MaterialUnit.BAGS)
+                .currentStock(new BigDecimal("150.00"))
+                .reorderLevel(new BigDecimal("50.00"))
+                .standardRate(new BigDecimal("380.00"))
+                .totalStockValue(new BigDecimal("57000.00"))
+                .lowStock(false)
+                .build();
+
+        when(materialService.getStockBalance(1L)).thenReturn(balanceDto);
+
+        mockMvc.perform(get("/api/v1/materials/1/balance"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.materialId").value(1L))
+                .andExpect(jsonPath("$.data.currentStock").value(150.00))
+                .andExpect(jsonPath("$.data.totalStockValue").value(57000.00))
+                .andExpect(jsonPath("$.data.lowStock").value(false));
+    }
+
+    @Test
+    void testGetLowStockMaterialsWithProjectFilter() throws Exception {
+        Material lowStockMat = Material.builder()
+                .id(3L)
+                .materialCode("MAT-AGG-20")
+                .name("20mm Aggregate")
+                .category("AGGREGATE")
+                .unit(MaterialUnit.CU_M)
+                .currentStock(new BigDecimal("10.00"))
+                .reorderLevel(new BigDecimal("25.00"))
+                .build();
+
+        when(materialService.getLowStockMaterials(eq(101L))).thenReturn(List.of(lowStockMat));
+
+        mockMvc.perform(get("/api/v1/materials/low-stock").param("projectId", "101"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].materialCode").value("MAT-AGG-20"));
     }
 }

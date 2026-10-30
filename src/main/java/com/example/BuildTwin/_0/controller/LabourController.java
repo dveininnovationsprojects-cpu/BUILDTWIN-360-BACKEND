@@ -62,10 +62,24 @@ public class LabourController {
 
     @GetMapping("/daily/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
-    @Operation(summary = "Get Daily Labour Logs By Project", description = "Retrieves all daily labour records for a specific project.", security = @SecurityRequirement(name = "BearerAuth"))
-    public ResponseEntity<ApiResponse<List<LabourDaily>>> getLabourByProject(@PathVariable Long projectId) {
-        List<LabourDaily> records = labourService.getLabourRecordsByProject(projectId);
+    @Operation(summary = "Get Daily Labour Logs By Project", description = "Retrieves all daily labour records for a specific project, optionally filtered by date.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<LabourDaily>>> getLabourByProject(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<LabourDaily> records = (date != null)
+                ? labourService.getDailyRecordsByProjectAndDate(projectId, date)
+                : labourService.getLabourRecordsByProject(projectId);
         return ResponseEntity.ok(ApiResponse.success(records, "Labour logs fetched successfully"));
+    }
+
+    @GetMapping("/daily/project/{projectId}/headcount")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Total Labour Headcount", description = "Retrieves aggregated daily headcount for a specific project on a date.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<Integer>> getTotalHeadcount(
+            @PathVariable Long projectId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        Integer total = labourService.getTotalHeadcount(projectId, date);
+        return ResponseEntity.ok(ApiResponse.success(total, "Total labour headcount fetched successfully"));
     }
 
     @GetMapping("/daily/contractor/{contractorId}")
@@ -97,7 +111,7 @@ public class LabourController {
     }
 
     @GetMapping("/productivity/activity/{activityId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'QUANTITY_COST_COORDINATOR', 'DATA_ANALYST', 'AUDITOR')")
     @Operation(summary = "Implement Productivity Calculation API", description = "Calculates productivity based on configured activity unit and labour hours for a WBS activity.", security = @SecurityRequirement(name = "BearerAuth"))
     public ResponseEntity<ApiResponse<ProductivityResponseDto>> getProductivityForActivity(
             @PathVariable Long activityId,

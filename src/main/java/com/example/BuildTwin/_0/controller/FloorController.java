@@ -53,7 +53,8 @@ public class FloorController {
             @PathVariable Long buildingId,
             @Valid @RequestBody CreateFloorRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        FloorResponse created = floorService.createFloor(buildingId, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        FloorResponse created = floorService.createFloor(buildingId, request, username);
         return new ResponseEntity<>(ApiResponse.created(created, "Floor created successfully"), HttpStatus.CREATED);
     }
 
@@ -103,7 +104,8 @@ public class FloorController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateFloorRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        FloorResponse updated = floorService.updateFloor(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        FloorResponse updated = floorService.updateFloor(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Floor updated successfully"));
     }
 
@@ -117,7 +119,8 @@ public class FloorController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateFloorStatusRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        FloorResponse updated = floorService.updateFloorStatus(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        FloorResponse updated = floorService.updateFloorStatus(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Floor status updated successfully"));
     }
 
@@ -130,7 +133,8 @@ public class FloorController {
     public ResponseEntity<ApiResponse<Void>> deleteFloor(
             @PathVariable Long id,
             @Parameter(hidden = true) Authentication authentication) {
-        floorService.deleteFloor(id, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        floorService.deleteFloor(id, username);
         return ResponseEntity.ok(ApiResponse.success(null, "Floor deleted successfully"));
     }
 }

@@ -2,10 +2,10 @@ package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.dto.ApiResponse;
 import com.example.BuildTwin._0.dto.common.PageResponse;
-import com.example.BuildTwin._0.dto.wbs.CreateWorkPackageRequest;
-import com.example.BuildTwin._0.dto.wbs.UpdateWorkPackageRequest;
-import com.example.BuildTwin._0.dto.wbs.UpdateWorkPackageStatusRequest;
-import com.example.BuildTwin._0.dto.wbs.WorkPackageResponse;
+import com.example.BuildTwin._0.dto.workpackage.CreateWorkPackageRequest;
+import com.example.BuildTwin._0.dto.workpackage.UpdateWorkPackageRequest;
+import com.example.BuildTwin._0.dto.workpackage.UpdateWorkPackageStatusRequest;
+import com.example.BuildTwin._0.dto.workpackage.WorkPackageResponse;
 import com.example.BuildTwin._0.service.WorkPackageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,7 +51,8 @@ public class WorkPackageController {
             @PathVariable Long projectId,
             @Valid @RequestBody CreateWorkPackageRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        WorkPackageResponse created = workPackageService.createWorkPackage(projectId, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        WorkPackageResponse created = workPackageService.createWorkPackage(projectId, request, username);
         return new ResponseEntity<>(ApiResponse.created(created, "Work package created successfully"), HttpStatus.CREATED);
     }
 
@@ -95,7 +96,8 @@ public class WorkPackageController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateWorkPackageRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        WorkPackageResponse updated = workPackageService.updateWorkPackage(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        WorkPackageResponse updated = workPackageService.updateWorkPackage(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Work package updated successfully"));
     }
 
@@ -109,7 +111,8 @@ public class WorkPackageController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateWorkPackageStatusRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        WorkPackageResponse updated = workPackageService.updateWorkPackageStatus(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        WorkPackageResponse updated = workPackageService.updateWorkPackageStatus(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Work package status updated successfully"));
     }
 
@@ -122,7 +125,8 @@ public class WorkPackageController {
     public ResponseEntity<ApiResponse<Void>> deleteWorkPackage(
             @PathVariable Long id,
             @Parameter(hidden = true) Authentication authentication) {
-        workPackageService.deleteWorkPackage(id, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        workPackageService.deleteWorkPackage(id, username);
         return ResponseEntity.ok(ApiResponse.success(null, "Work package deleted successfully"));
     }
 }

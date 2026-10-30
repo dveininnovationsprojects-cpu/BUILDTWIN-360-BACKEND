@@ -1,4 +1,4 @@
-package com.example.BuildTwin._0.dto.wbs;
+package com.example.BuildTwin._0.dto.workpackage;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -15,7 +15,7 @@ import com.example.BuildTwin._0.domain.projects.model.Project;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Response representation of a construction Work Package (WBS)")
+@Schema(description = "Response representation of a construction Work Package")
 public class WorkPackageResponse {
 
     @Schema(description = "Work Package ID", example = "1")

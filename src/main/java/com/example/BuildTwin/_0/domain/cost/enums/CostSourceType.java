@@ -3,5 +3,8 @@ package com.example.BuildTwin._0.domain.cost.enums;
 public enum CostSourceType {
     PO_COMMITMENT,
     ACTUAL_EXPENSE,
-    SUBCONTRACT_BILL
+    SUBCONTRACT_BILL,
+    LABOUR_WAGES,
+    MATERIAL_INVOICE,
+    EQUIPMENT_HIRE
 }

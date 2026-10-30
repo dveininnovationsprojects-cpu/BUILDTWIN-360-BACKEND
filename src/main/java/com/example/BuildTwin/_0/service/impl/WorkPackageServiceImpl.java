@@ -4,10 +4,10 @@
 package com.example.BuildTwin._0.service.impl;
 
 import com.example.BuildTwin._0.dto.common.PageResponse;
-import com.example.BuildTwin._0.dto.wbs.CreateWorkPackageRequest;
-import com.example.BuildTwin._0.dto.wbs.UpdateWorkPackageRequest;
-import com.example.BuildTwin._0.dto.wbs.UpdateWorkPackageStatusRequest;
-import com.example.BuildTwin._0.dto.wbs.WorkPackageResponse;
+import com.example.BuildTwin._0.dto.workpackage.CreateWorkPackageRequest;
+import com.example.BuildTwin._0.dto.workpackage.UpdateWorkPackageRequest;
+import com.example.BuildTwin._0.dto.workpackage.UpdateWorkPackageStatusRequest;
+import com.example.BuildTwin._0.dto.workpackage.WorkPackageResponse;
 import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;

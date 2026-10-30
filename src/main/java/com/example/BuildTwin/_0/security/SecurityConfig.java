@@ -68,8 +68,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 2. Public Authentication & Registration Endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        // 3. Public Swagger UI & OpenAPI 3.0 Documentation
+                        // 3. Public Swagger UI & OpenAPI 3.0 Documentation & Root Redirect
                         .requestMatchers(
+                                "/",
+                                "/error",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",

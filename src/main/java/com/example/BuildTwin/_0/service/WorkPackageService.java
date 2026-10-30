@@ -1,10 +1,10 @@
 package com.example.BuildTwin._0.service;
 
 import com.example.BuildTwin._0.dto.common.PageResponse;
-import com.example.BuildTwin._0.dto.wbs.CreateWorkPackageRequest;
-import com.example.BuildTwin._0.dto.wbs.UpdateWorkPackageRequest;
-import com.example.BuildTwin._0.dto.wbs.UpdateWorkPackageStatusRequest;
-import com.example.BuildTwin._0.dto.wbs.WorkPackageResponse;
+import com.example.BuildTwin._0.dto.workpackage.CreateWorkPackageRequest;
+import com.example.BuildTwin._0.dto.workpackage.UpdateWorkPackageRequest;
+import com.example.BuildTwin._0.dto.workpackage.UpdateWorkPackageStatusRequest;
+import com.example.BuildTwin._0.dto.workpackage.WorkPackageResponse;
 
 public interface WorkPackageService {
 

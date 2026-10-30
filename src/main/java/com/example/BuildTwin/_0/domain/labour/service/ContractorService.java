@@ -48,6 +48,9 @@ public class ContractorService {
                 .contactNumber(requestDto.getContactNumber())
                 .email(requestDto.getEmail())
                 .address(requestDto.getAddress())
+                .gstin(requestDto.getGstin())
+                .panNumber(requestDto.getPanNumber())
+                .licenseNumber(requestDto.getLicenseNumber())
                 .contractorType(type)
                 .parentContractorId(requestDto.getParentContractorId())
                 .status(requestDto.getStatus() != null ? requestDto.getStatus() : "ACTIVE")
@@ -108,6 +111,15 @@ public class ContractorService {
         existing.setContactNumber(requestDto.getContactNumber());
         existing.setEmail(requestDto.getEmail());
         existing.setAddress(requestDto.getAddress());
+        if (requestDto.getGstin() != null) {
+            existing.setGstin(requestDto.getGstin());
+        }
+        if (requestDto.getPanNumber() != null) {
+            existing.setPanNumber(requestDto.getPanNumber());
+        }
+        if (requestDto.getLicenseNumber() != null) {
+            existing.setLicenseNumber(requestDto.getLicenseNumber());
+        }
         if (requestDto.getContractorType() != null) {
             existing.setContractorType(requestDto.getContractorType());
         }

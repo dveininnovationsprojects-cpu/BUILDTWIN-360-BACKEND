@@ -22,4 +22,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findByStatusAndUsernameContainingIgnoreCaseOrStatusAndEmailContainingIgnoreCase(
             String status1, String username, String status2, String email, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u JOIN u.roles r WHERE (r.name = :roleName OR r.name = :prefixedRoleName) AND u.status = 'ACTIVE'")
+    java.util.List<User> findActiveUsersByRole(
+            @org.springframework.data.repository.query.Param("roleName") String roleName,
+            @org.springframework.data.repository.query.Param("prefixedRoleName") String prefixedRoleName);
 }

@@ -30,6 +30,13 @@ public class UserController {
 
     private final UserService userService;
 
+    private String resolveUsername(Authentication authentication) {
+        if (authentication != null && authentication.getName() != null && !authentication.getName().isBlank()) {
+            return authentication.getName();
+        }
+        return "system";
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('DIRECTOR')")
     @Operation(
@@ -49,7 +56,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserDetailResponse>> createUser(
             @Valid @RequestBody CreateUserRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        UserDetailResponse created = userService.createUser(request, authentication.getName());
+        UserDetailResponse created = userService.createUser(request, resolveUsername(authentication));
         return new ResponseEntity<>(ApiResponse.created(created, "User created successfully"), HttpStatus.CREATED);
     }
 
@@ -116,7 +123,7 @@ public class UserController {
             @PathVariable Long id,
             @RequestBody(required = false) ApproveUserRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        UserDetailResponse approved = userService.approveUser(id, request, authentication.getName());
+        UserDetailResponse approved = userService.approveUser(id, request, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(approved, "User registration approved successfully. Account is now ACTIVE."));
     }
 
@@ -139,7 +146,7 @@ public class UserController {
             @PathVariable Long id,
             @Valid @RequestBody RejectUserRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        UserDetailResponse rejected = userService.rejectUser(id, request, authentication.getName());
+        UserDetailResponse rejected = userService.rejectUser(id, request, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(rejected, "User registration rejected successfully"));
     }
 
@@ -182,7 +189,7 @@ public class UserController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        UserDetailResponse updated = userService.updateUser(id, request, authentication.getName());
+        UserDetailResponse updated = userService.updateUser(id, request, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(updated, "User updated successfully"));
     }
 
@@ -200,7 +207,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable Long id,
             @Parameter(hidden = true) Authentication authentication) {
-        userService.deleteUser(id, authentication.getName());
+        userService.deleteUser(id, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(null, "User deleted successfully"));
     }
 
@@ -219,7 +226,7 @@ public class UserController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserStatusRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        UserDetailResponse updated = userService.updateUserStatus(id, request, authentication.getName());
+        UserDetailResponse updated = userService.updateUserStatus(id, request, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(updated, "User status updated successfully"));
     }
 
@@ -237,7 +244,7 @@ public class UserController {
             @PathVariable Long id,
             @Valid @RequestBody ResetPasswordRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        userService.resetPassword(id, request, authentication.getName());
+        userService.resetPassword(id, request, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(null, "User password reset successfully"));
     }
 
@@ -255,7 +262,7 @@ public class UserController {
             @PathVariable Long id,
             @RequestBody Set<String> roles,
             @Parameter(hidden = true) Authentication authentication) {
-        UserDetailResponse updated = userService.addRolesToUser(id, roles, authentication.getName());
+        UserDetailResponse updated = userService.addRolesToUser(id, roles, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(updated, "Roles added successfully"));
     }
 
@@ -273,7 +280,7 @@ public class UserController {
             @PathVariable Long id,
             @PathVariable String roleName,
             @Parameter(hidden = true) Authentication authentication) {
-        UserDetailResponse updated = userService.removeRoleFromUser(id, roleName, authentication.getName());
+        UserDetailResponse updated = userService.removeRoleFromUser(id, roleName, resolveUsername(authentication));
         return ResponseEntity.ok(ApiResponse.success(updated, "Role removed successfully"));
     }
 }

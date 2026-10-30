@@ -63,6 +63,9 @@ public class MaterialRequest {
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
 
+    @Column(name = "justification", length = 500)
+    private String justification;
+
     @Column(name = "remarks", length = 500)
     private String remarks;
 

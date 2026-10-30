@@ -1,6 +1,7 @@
 package com.example.BuildTwin._0.controller;
 
 import com.example.BuildTwin._0.domain.materials.dto.MaterialRequestDto;
+import com.example.BuildTwin._0.domain.materials.dto.MaterialStockBalanceDto;
 import com.example.BuildTwin._0.domain.materials.model.Material;
 import com.example.BuildTwin._0.domain.materials.service.MaterialService;
 import com.example.BuildTwin._0.dto.ApiResponse;
@@ -72,11 +73,19 @@ public class MaterialController {
         return ResponseEntity.ok(ApiResponse.success(material, "Material fetched successfully"));
     }
 
+    @GetMapping("/{id}/balance")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
+    @Operation(summary = "Get Dynamic Material Stock Balance", description = "Returns dynamically computed current stock balance, valuation, and threshold alerts for a material.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<MaterialStockBalanceDto>> getStockBalance(@PathVariable Long id) {
+        MaterialStockBalanceDto balance = materialService.getStockBalance(id);
+        return ResponseEntity.ok(ApiResponse.success(balance, "Current stock balance computed successfully"));
+    }
+
     @GetMapping("/low-stock")
     @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PROJECT_MANAGER', 'SITE_ENGINEER', 'SITE_SUPERVISOR', 'PROCUREMENT_STORE', 'QUANTITY_COST_COORDINATOR', 'QUALITY_ENGINEER', 'DATA_ANALYST', 'AUDITOR')")
-    @Operation(summary = "Detect Low Stock Materials", description = "Identifies all materials where current stock balance is less than or equal to reorder level.", security = @SecurityRequirement(name = "BearerAuth"))
-    public ResponseEntity<ApiResponse<List<Material>>> getLowStockMaterials() {
-        List<Material> materials = materialService.getLowStockMaterials();
+    @Operation(summary = "Detect Low Stock Materials", description = "Identifies all materials where current stock balance is less than or equal to reorder level, optionally filtered by project.", security = @SecurityRequirement(name = "BearerAuth"))
+    public ResponseEntity<ApiResponse<List<Material>>> getLowStockMaterials(@RequestParam(required = false) Long projectId) {
+        List<Material> materials = materialService.getLowStockMaterials(projectId);
         return ResponseEntity.ok(ApiResponse.success(materials, "Low stock materials fetched successfully"));
     }
 

@@ -29,6 +29,15 @@ public class Grn {
     @Column(name = "material_id", nullable = false)
     private Long materialId;
 
+    @Column(name = "dc_number", length = 50)
+    private String dcNumber; // Delivery Challan (DC) number
+
+    @Column(name = "vehicle_number", length = 50)
+    private String vehicleNumber; // Vehicle registration details
+
+    @Column(name = "gate_entry_number", length = 50)
+    private String gateEntryNumber; // Gate entry tracking number
+
     @Column(name = "received_qty", precision = 12, scale = 2)
     private BigDecimal receivedQty;
 
@@ -37,6 +46,9 @@ public class Grn {
 
     @Column(name = "rejected_qty", precision = 12, scale = 2)
     private BigDecimal rejectedQty;
+
+    @Column(name = "damage_reason", length = 500)
+    private String damageReason; // Damage / rejection reason
 
     @Column(name = "project_id")
     private Long projectId;
@@ -55,6 +67,10 @@ public class Grn {
 
     @Column(name = "delivery_evidence_url", length = 255)
     private String deliveryEvidenceUrl;
+
+    @Builder.Default
+    @Column(name = "status", nullable = false, length = 30)
+    private String status = "COMPLETED"; // COMPLETED, VOID
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

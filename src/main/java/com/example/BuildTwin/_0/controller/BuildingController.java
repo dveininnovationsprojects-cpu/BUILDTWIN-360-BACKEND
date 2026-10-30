@@ -53,7 +53,8 @@ public class BuildingController {
             @PathVariable Long siteId,
             @Valid @RequestBody CreateBuildingRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        BuildingResponse created = buildingService.createBuilding(siteId, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        BuildingResponse created = buildingService.createBuilding(siteId, request, username);
         return new ResponseEntity<>(ApiResponse.created(created, "Building created successfully"), HttpStatus.CREATED);
     }
 
@@ -103,7 +104,8 @@ public class BuildingController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateBuildingRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        BuildingResponse updated = buildingService.updateBuilding(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        BuildingResponse updated = buildingService.updateBuilding(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Building updated successfully"));
     }
 
@@ -117,7 +119,8 @@ public class BuildingController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateBuildingStatusRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        BuildingResponse updated = buildingService.updateBuildingStatus(id, request, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        BuildingResponse updated = buildingService.updateBuildingStatus(id, request, username);
         return ResponseEntity.ok(ApiResponse.success(updated, "Building status updated successfully"));
     }
 
@@ -130,7 +133,8 @@ public class BuildingController {
     public ResponseEntity<ApiResponse<Void>> deleteBuilding(
             @PathVariable Long id,
             @Parameter(hidden = true) Authentication authentication) {
-        buildingService.deleteBuilding(id, authentication.getName());
+        String username = authentication != null ? authentication.getName() : "system";
+        buildingService.deleteBuilding(id, username);
         return ResponseEntity.ok(ApiResponse.success(null, "Building deleted successfully"));
     }
 }

@@ -35,9 +35,27 @@ public class SupplierCreateDto {
     @Schema(description = "GSTIN registration number", example = "33AAAAA0000A1Z5")
     private String gstin;
 
+    @Schema(description = "PAN card number", example = "ABCDE1234F")
+    private String panNumber;
+
+    @Schema(description = "Bank account number", example = "50200012345678")
+    private String bankAccountNumber;
+
+    @Schema(description = "Bank name", example = "HDFC Bank")
+    private String bankName;
+
+    @Schema(description = "Bank IFSC code", example = "HDFC0001234")
+    private String bankIfscCode;
+
+    @Schema(description = "Bank branch name", example = "Sholinganallur, Chennai")
+    private String bankBranch;
+
+    @Schema(description = "Category specialization mapping (e.g. CEMENT, STEEL, AGGREGATES, RMC)", example = "CEMENT, RMC")
+    private String categorySpecialization;
+
     @Schema(description = "Registered business address", example = "OMR Road, Sholinganallur, Chennai")
     private String address;
 
-    @Schema(description = "Status of supplier", example = "ACTIVE")
+    @Schema(description = "Status of supplier (ACTIVE, PENDING_VERIFICATION, BLACKLISTED)", example = "ACTIVE")
     private String status;
 }
