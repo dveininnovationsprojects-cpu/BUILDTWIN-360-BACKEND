@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 @Table(name = "activity_progress_logs",
         indexes = {
                 @Index(name = "idx_prog_log_act", columnList = "activity_id"),
-                @Index(name = "idx_prog_log_date", columnList = "log_date")
+                @Index(name = "idx_prog_log_date", columnList = "log_date"),
+                @Index(name = "idx_prog_log_source", columnList = "source")
         }
 )
 @Getter
@@ -71,6 +72,17 @@ public class ActivityProgressLog {
 
     @Column(name = "remarks", columnDefinition = "TEXT")
     private String remarks;
+
+    // Source tracking: "DPR" or "MANUAL_LOG"
+    @Column(name = "source", length = 30)
+    @Builder.Default
+    private String source = "MANUAL_LOG";
+
+    @Column(name = "dpr_id")
+    private Long dprId;
+
+    @Column(name = "dpr_report_code", length = 100)
+    private String dprReportCode;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

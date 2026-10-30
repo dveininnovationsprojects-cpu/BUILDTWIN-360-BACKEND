@@ -166,7 +166,10 @@ public class ScheduleDelayAlertController {
     // 7. MITIGATE / RECORD CATCH-UP PLAN (PUT)
     // =========================================================================
 
-    @PutMapping("/api/v1/schedule-alerts/{id}/mitigate")
+        @PutMapping({
+            "/api/v1/schedule-alerts/{id}/mitigate",
+            "/api/v1/schedule-alerts/{id}/delay-cause"
+    })
     @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('SITE_ENGINEER') or hasRole('SITE_SUPERVISOR') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Record Delay Mitigation & Catch-Up Plan",

@@ -36,4 +36,16 @@ public class LogDailyProgressRequest {
 
     @Schema(description = "Site weather condition", example = "RAINY")
     private String weatherCondition;
+
+    @Schema(description = "Whether this log flags a site hindrance or blocker", example = "false")
+    private Boolean isBlocker;
+
+    @Schema(description = "Blocker category (e.g. MATERIAL_SHORTAGE, WEATHER, DESIGN_CLARIFICATION)", example = "WEATHER")
+    private String blockerCategory;
+
+    @Schema(description = "Blocker reason or root cause", example = "Heavy monsoon downpour flooded work area")
+    private String blockerReason;
+
+    @Schema(description = "Operational remarks or site notes", example = "Excavation completed for grid A-1 to A-5")
+    private String remarks;
 }

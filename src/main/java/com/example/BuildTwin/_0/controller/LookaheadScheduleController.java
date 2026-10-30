@@ -81,7 +81,12 @@ public class LookaheadScheduleController {
         return ResponseEntity.ok(ApiResponse.success(summary, "Overdue activity executive summary retrieved successfully"));
     }
 
-    @PostMapping("/api/v1/projects/{projectId}/lookahead/overdue/{activityId}/mitigation")
+        @PostMapping({
+            "/api/v1/projects/{projectId}/lookahead/overdue/{activityId}/mitigation",
+            "/api/v1/projects/{projectId}/lookahead/overdue/{activityId}/delay-cause",
+            "/api/v1/projects/{projectId}/overdue-activities/{activityId}/delay-cause",
+            "/api/v1/projects/{projectId}/overdue-activities/{activityId}/mitigate"
+    })
     @PreAuthorize("hasRole('ADMIN') or hasRole('PROJECT_MANAGER') or hasRole('SITE_ENGINEER') or hasRole('SITE_SUPERVISOR') or hasRole('DIRECTOR')")
     @Operation(
             summary = "Record Delay Root Cause & Catch-Up Mitigation Plan",

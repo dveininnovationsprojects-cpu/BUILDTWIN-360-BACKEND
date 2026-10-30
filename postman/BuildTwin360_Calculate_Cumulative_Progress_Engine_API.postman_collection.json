@@ -1,0 +1,593 @@
+{
+  "info": {
+    "_postman_id": "b360-calculate-cumulative-progress-engine-v1",
+    "name": "BuildTwin 360 - Calculate Cumulative Progress Engine API Module",
+    "description": "Enterprise Postman Collection for the Calculate Cumulative Progress Engine in BuildTwin 360.\n\nCovers:\n1. Authentication & Bearer Token extraction\n2. Multi-Model Project Cumulative Progress Dashboard (Weightage Factor, Budget/Cost, Duration, Equal)\n3. Work Package Cumulative Progress with Activity Weightage Rollup\n4. Activity Cumulative Progress with Recursive Sub-Tree Aggregation\n5. Point-in-Time As-Of-Date Historical Reconstruction Engine (Project & Activity level)\n6. Cumulative S-Curve Time-Series Analytics (Planned BCWS vs Actual BCWP, EVM, SPI)\n7. On-Demand Hierarchical Recalculation & Auto-Sync (Project, Work Package, Activity)\n8. Data Integrity Audit & Discrepancy Reconciliation Engine\n\nBase URL: {{base_url}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "work_package_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "cutoff_date",
+      "value": "2026-10-27",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Save Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.token);",
+                  "    console.log('JWT Token successfully set: ' + jsonData.data.token);",
+                  "} else if (jsonData.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "    console.log('JWT Token successfully set: ' + jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates with credentials and automatically extracts Bearer JWT token into collection variables."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Project Cumulative Progress Dashboard",
+      "item": [
+        {
+          "name": "Get Project Cumulative Progress (Default: Weightage Factor)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress"]
+            },
+            "description": "Calculates overall cumulative progress using Weightage Factor model, EVM (Planned Value, Earned Value, SPI), and multi-dimensional breakdowns."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Project Cumulative Progress (Budget / Cost Weighted)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress?weightingModel=BUDGET_WEIGHTED",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress"],
+              "query": [
+                {
+                  "key": "weightingModel",
+                  "value": "BUDGET_WEIGHTED",
+                  "description": "WEIGHTAGE_FACTOR, BUDGET_WEIGHTED, DURATION_WEIGHTED, EQUAL_WEIGHTED"
+                }
+              ]
+            },
+            "description": "Calculates overall cumulative progress weighted strictly by activity allocated budgets."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Project Cumulative Progress (Duration Weighted & Filter by Discipline)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress?weightingModel=DURATION_WEIGHTED&discipline=CIVIL",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress"],
+              "query": [
+                {
+                  "key": "weightingModel",
+                  "value": "DURATION_WEIGHTED"
+                },
+                {
+                  "key": "discipline",
+                  "value": "CIVIL"
+                }
+              ]
+            },
+            "description": "Calculates cumulative progress weighted by duration and filtered by the specified discipline (e.g. CIVIL, MEP, STRUCTURAL)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Work Package & Activity Cumulative Progress",
+      "item": [
+        {
+          "name": "Get Work Package Cumulative Progress",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/work-packages/{{workPackage_id}}/cumulative-progress?weightingModel=WEIGHTAGE_FACTOR",
+              "host": ["{{base_url}}"],
+              "path": ["work-packages", "{{workPackage_id}}", "cumulative-progress"],
+              "query": [
+                {
+                  "key": "weightingModel",
+                  "value": "WEIGHTAGE_FACTOR"
+                }
+              ]
+            },
+            "description": "Calculates cumulative actual vs planned progress %, EVM metrics, and activity contributions for a work package."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Activity Cumulative Progress (with Child Task Rollup)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/cumulative-progress",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_id}}", "cumulative-progress"]
+            },
+            "description": "Retrieves cumulative actual progress %, planned progress %, quantity progress, SPI, and recursive sub-tree rollups."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Point-in-Time As-Of-Date Historical Reconstruction",
+      "item": [
+        {
+          "name": "Get Project As-Of-Date Cumulative Progress",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress/as-of-date?cutoffDate={{cutoff_date}}",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress", "as-of-date"],
+              "query": [
+                {
+                  "key": "cutoffDate",
+                  "value": "{{cutoff_date}}",
+                  "description": "ISO date (yyyy-MM-dd). Omitting defaults to today."
+                }
+              ]
+            },
+            "description": "Point-in-Time Reconstruction: Recomputes completed quantities, earned value, planned progress %, and active/completed activities as of any past cutoff date."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Activity As-Of-Date Cumulative Progress",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/cumulative-progress/as-of-date?cutoffDate={{cutoff_date}}",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_id}}", "cumulative-progress", "as-of-date"],
+              "query": [
+                {
+                  "key": "cutoffDate",
+                  "value": "{{cutoff_date}}"
+                }
+              ]
+            },
+            "description": "Calculates cumulative progress completed on or before the specified historical cutoff date for an individual activity."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Cumulative S-Curve Time-Series Analytics",
+      "item": [
+        {
+          "name": "Get Project Cumulative S-Curve (Weekly)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress/s-curve?interval=WEEKLY",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress", "s-curve"],
+              "query": [
+                {
+                  "key": "interval",
+                  "value": "WEEKLY",
+                  "description": "DAILY, WEEKLY, or MONTHLY"
+                }
+              ]
+            },
+            "description": "Generates periodic time-series S-Curve progression comparing Planned Cumulative % (BCWS) vs Actual Cumulative % (BCWP), PV, EV, and SPI."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Activity Cumulative S-Curve (Daily)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/cumulative-progress/s-curve?interval=DAILY",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_id}}", "cumulative-progress", "s-curve"],
+              "query": [
+                {
+                  "key": "interval",
+                  "value": "DAILY",
+                  "description": "DAILY, WEEKLY, or MONTHLY"
+                }
+              ]
+            },
+            "description": "Generates periodic S-curve time-series progression for an individual activity."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. On-Demand Hierarchical Recalculation & Sync",
+      "item": [
+        {
+          "name": "Recalculate Project Cumulative Progress",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weightingModel\": \"WEIGHTAGE_FACTOR\",\n  \"syncActivityDates\": true,\n  \"syncStatuses\": true,\n  \"discipline\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress/recalculate",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress", "recalculate"]
+            },
+            "description": "Triggers bottom-up recalculation across leaf activities, parent tasks, work packages, and project master. Auto-syncs dates and statuses."
+          },
+          "response": []
+        },
+        {
+          "name": "Recalculate Work Package Cumulative Progress",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weightingModel\": \"WEIGHTAGE_FACTOR\",\n  \"syncStatuses\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/work-packages/{{workPackage_id}}/cumulative-progress/recalculate",
+              "host": ["{{base_url}}"],
+              "path": ["work-packages", "{{workPackage_id}}", "cumulative-progress", "recalculate"]
+            },
+            "description": "Recalculates cumulative progress and syncs status for a specific work package."
+          },
+          "response": []
+        },
+        {
+          "name": "Recalculate Activity Cumulative Progress",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/cumulative-progress/recalculate",
+              "host": ["{{base_url}}"],
+              "path": ["activities", "{{activity_id}}", "cumulative-progress", "recalculate"]
+            },
+            "description": "Recalculates cumulative quantity and progress % for an individual activity and cascades upwards."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Data Integrity Audit & Reconciliation Engine",
+      "item": [
+        {
+          "name": "Audit Cumulative Progress Data Integrity",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress/audit",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress", "audit"]
+            },
+            "description": "Scans all activities, cross-checks stored cumulative quantities against verified progress history logs, verifies calculation formulas, and flags discrepancies."
+          },
+          "response": []
+        },
+        {
+          "name": "Reconcile & Auto-Heal Cumulative Progress Discrepancies",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/cumulative-progress/reconcile",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "cumulative-progress", "reconcile"]
+            },
+            "description": "Auto-heals all detected discrepancies by resetting entity values to match verified journal logs, rolling up to parents, and recording audit entries."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

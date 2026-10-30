@@ -43,6 +43,9 @@ public class ActivityProgressLogResponse {
     @Schema(description = "Cumulative progress percentage to date", example = "44.0")
     private Double cumulativeProgressPercentage;
 
+    @Schema(description = "Progress percentage achieved today", example = "9.0")
+    private Double progressPercentageToday;
+
     @Schema(description = "Manpower count deployed", example = "12")
     private Integer manpowerCount;
 
@@ -57,6 +60,27 @@ public class ActivityProgressLogResponse {
 
     @Schema(description = "Site engineer or user who recorded progress", example = "site_engineer_01")
     private String recordedBy;
+
+    @Schema(description = "Whether this log entry flagged a site hindrance or blocker", example = "false")
+    private Boolean isBlocker;
+
+    @Schema(description = "Blocker category if applicable", example = "WEATHER")
+    private String blockerCategory;
+
+    @Schema(description = "Blocker reason or root cause", example = "Heavy rainfall caused flooding in excavation pit")
+    private String blockerReason;
+
+    @Schema(description = "Operational remarks or handover comments", example = "Excavation pit 2 pumped dry; ready for rebar inspection")
+    private String remarks;
+
+    @Schema(description = "Source origin: DPR or MANUAL_LOG", example = "DPR")
+    private String source;
+
+    @Schema(description = "Linked DPR ID if created via Daily Progress Report approval", example = "10")
+    private Long dprId;
+
+    @Schema(description = "Linked DPR report code", example = "DPR-20260928-S1")
+    private String dprReportCode;
 
     @Schema(description = "Record timestamp")
     private LocalDateTime createdAt;

@@ -1323,6 +1323,9 @@ public class DailyProgressReportServiceImpl implements DailyProgressReportServic
                         .blockerCategory(item.getBlockerCategory() != null ? item.getBlockerCategory().name() : null)
                         .blockerReason(item.getBlockerReason())
                         .remarks(item.getRemarks())
+                        .source("DPR")
+                        .dprId(dpr.getId())
+                        .dprReportCode(dpr.getReportCode())
                         .build();
 
                 activityProgressLogRepository.save(progressLog);

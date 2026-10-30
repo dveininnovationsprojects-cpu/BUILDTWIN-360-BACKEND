@@ -1,0 +1,769 @@
+{
+  "info": {
+    "_postman_id": "b360-progress-history-api-v1",
+    "name": "BuildTwin 360 - Progress History API Module",
+    "description": "Enterprise Postman Collection for the Progress History Module in BuildTwin 360.\n\nCovers:\n1. Complete Activity Progress History with Statistical Summaries\n2. Paginated Activity Progress History Journal\n3. Activity Progress Velocity & S-Curve Time-Series Analytics\n4. Project-Wide Progress History Dashboard & Blocker Register\n5. Work Package Progress History Timeline\n6. Direct Progress Logging, Journal Record Updates & Deletion with Automatic WBS Cascade\n7. DPR Approval Progress History Integration\n\nBase URL: {{base_url}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "work_package_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "log_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "dpr_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Save Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    var token = jsonData.token || (jsonData.data && jsonData.data.token);",
+                  "    if (token) {",
+                  "        pm.collectionVariables.set('token', token);",
+                  "        console.log('Saved JWT Bearer Token');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "User login to acquire Bearer token for authorized requests."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Activity Progress History",
+      "item": [
+        {
+          "name": "1.1 Get Complete Progress History for Activity",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/progress-history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "progress-history"
+              ]
+            },
+            "description": "Retrieves the full chronological progress history and statistical production metrics for an activity."
+          }
+        },
+        {
+          "name": "1.2 Get Activity Progress History with Filters",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/progress-history?startDate=2026-09-01&endDate=2026-10-31&isBlocker=false&source=DPR&sortDir=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "progress-history"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-10-31"
+                },
+                {
+                  "key": "isBlocker",
+                  "value": "false"
+                },
+                {
+                  "key": "source",
+                  "value": "DPR"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Filters activity progress history by date window, hindrance blocker flag, and origin source."
+          }
+        },
+        {
+          "name": "1.3 Get Paginated Activity Progress History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/progress-history/paginated?page=0&size=10&sortDir=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "progress-history",
+                "paginated"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Paginated list of activity progress log entries."
+          }
+        },
+        {
+          "name": "1.4 Get Activity Progress Velocity & S-Curve Analytics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/progress-history/analytics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "progress-history",
+                "analytics"
+              ]
+            },
+            "description": "Computes S-curve timeline data points, actual vs planned progress curves, run rates, and velocity status."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Project-Wide Progress History Dashboard",
+      "item": [
+        {
+          "name": "2.1 Get Project Progress History Register",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/progress-history?page=0&size=15&sortBy=logDate&sortDir=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "progress-history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "15"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "logDate"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Project-wide chronological progress journal and executive rollup metrics."
+          }
+        },
+        {
+          "name": "2.2 Filter Project Progress by Discipline",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/progress-history?discipline=CIVIL&startDate=2026-09-01&endDate=2026-10-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "progress-history"
+              ],
+              "query": [
+                {
+                  "key": "discipline",
+                  "value": "CIVIL"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-09-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-10-31"
+                }
+              ]
+            },
+            "description": "Filters project progress records by trade discipline (CIVIL, STRUCTURAL, MEP, FINISHING)."
+          }
+        },
+        {
+          "name": "2.3 Filter Project Progress by Blocker Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/progress-history?isBlocker=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "progress-history"
+              ],
+              "query": [
+                {
+                  "key": "isBlocker",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Audit entries where site blockers or environmental hindrances were flagged."
+          }
+        },
+        {
+          "name": "2.4 Filter Project Progress by Origin Source",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/progress-history?source=DPR",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "projects",
+                "{{project_id}}",
+                "progress-history"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "DPR"
+                }
+              ]
+            },
+            "description": "Filters progress logs created via approved Daily Progress Reports (DPR)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Work Package Progress History",
+      "item": [
+        {
+          "name": "3.1 Get Work Package Progress History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/work-packages/{{work_package_id}}/progress-history?page=0&size=15&sortDir=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "work-packages",
+                "{{work_package_id}}",
+                "progress-history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "15"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Chronological progress timeline and output metrics for a specific work package."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Direct Site Progress Logging & Journal Management",
+      "item": [
+        {
+          "name": "4.1 Log Daily Progress Entry for Activity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.id) {",
+                  "        pm.collectionVariables.set('log_id', jsonData.data.id);",
+                  "        console.log('Saved log_id: ' + jsonData.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logDate\": \"2026-09-28\",\n  \"quantityCompletedToday\": 45.0,\n  \"manpowerCount\": 14,\n  \"equipmentUsed\": \"1 JCB Excavator, 2 Tipper Trucks\",\n  \"siteHindranceNotes\": \"Minor delay due to afternoon shower\",\n  \"weatherCondition\": \"OVERCAST\",\n  \"isBlocker\": false,\n  \"remarks\": \"Completed excavation for grid A1-A4\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/progress-history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "progress-history"
+              ]
+            },
+            "description": "Records a daily site production progress journal entry. Automatically updates activity cumulative quantities, advances progress %, cascades rollups to work packages, and creates an audit record."
+          }
+        },
+        {
+          "name": "4.2 Get Progress History Log Entry by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/progress-history/{{log_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "progress-history",
+                "{{log_id}}"
+              ]
+            },
+            "description": "Retrieves full details of a specific progress log entry."
+          }
+        },
+        {
+          "name": "4.3 Update Progress History Log Entry",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantityCompletedToday\": 48.0,\n  \"manpowerCount\": 16,\n  \"equipmentUsed\": \"1 JCB Excavator, 2 Tipper Trucks, 1 Water Pump\",\n  \"siteHindranceNotes\": \"Water pumped dry; resumed excavation\",\n  \"weatherCondition\": \"CLEAR\",\n  \"isBlocker\": false,\n  \"remarks\": \"Excavation completed and certified by QC\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/progress-history/{{log_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "progress-history",
+                "{{log_id}}"
+              ]
+            },
+            "description": "Updates remarks, hindrance notes, manpower, or adjusts completed quantity with automatic recalculation."
+          }
+        },
+        {
+          "name": "4.4 Delete Progress History Log Entry",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/progress-history/{{log_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "progress-history",
+                "{{log_id}}"
+              ]
+            },
+            "description": "Permanently deletes a progress journal entry and recalculates the activity cumulative output from remaining logs."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. DPR Approval Integration",
+      "item": [
+        {
+          "name": "5.1 Approve DPR (Cascades to Progress History)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvalNotes\": \"Approved by Project Manager. All batch slips verified; progress cascaded to WBS and progress history journal.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/dpr/{{dpr_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "dpr",
+                "{{dpr_id}}",
+                "approve"
+              ]
+            },
+            "description": "Approves a DPR and automatically creates ActivityProgressLog records linked with source='DPR' and dprId."
+          }
+        },
+        {
+          "name": "5.2 Get WBS Activity DPR History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/activities/{{activity_id}}/dpr-progress",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "activities",
+                "{{activity_id}}",
+                "dpr-progress"
+              ]
+            },
+            "description": "Retrieves historical DPR line item entries recorded for a specific WBS activity."
+          }
+        }
+      ]
+    }
+  ]
+}

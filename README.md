@@ -124,7 +124,34 @@ The API includes the following core modules:
   - **Get Commitment by ID**: GET /api/v1/lookahead/commitments/{id}
   - **Update Commitment & Actual Quantity**: PUT /api/v1/lookahead/commitments/{id}
   - **Delete Weekly Commitment**: DELETE /api/v1/lookahead/commitments/{id}
-- **8. Audit & History Logging** - Entity audits and revision logs
+- **8. Progress History Module (`/api/v1/activities/{id}/progress-history`, `/api/v1/projects/{id}/progress-history`)**:
+  - **Activity Progress History**: GET /api/v1/activities/{activityId}/progress-history
+  - **Paginated Activity Progress History**: GET /api/v1/activities/{activityId}/progress-history/paginated
+  - **Activity Progress Velocity & S-Curve Analytics**: GET /api/v1/activities/{activityId}/progress-history/analytics
+  - **Project-Wide Progress History Dashboard**: GET /api/v1/projects/{projectId}/progress-history
+  - **Work Package Progress History**: GET /api/v1/work-packages/{workPackageId}/progress-history
+  - **Log Site Progress Entry**: POST /api/v1/activities/{activityId}/progress-history
+  - **Get Progress Entry by ID**: GET /api/v1/progress-history/{id}
+  - **Update Progress Entry**: PUT /api/v1/progress-history/{id}
+  - **Delete Progress Entry (Auto-Recalculate)**: DELETE /api/v1/progress-history/{id}
+- **9. Calculate Cumulative Progress Engine (`/api/v1/projects/{id}/cumulative-progress`, `/api/v1/work-packages/{id}/cumulative-progress`, `/api/v1/activities/{id}/cumulative-progress`)**:
+  - **Project Cumulative Progress Dashboard**: GET /api/v1/projects/{projectId}/cumulative-progress (Weightage Factor, Budget, Duration, Equal)
+  - **Work Package Cumulative Progress**: GET /api/v1/work-packages/{workPackageId}/cumulative-progress
+  - **Activity Cumulative Progress**: GET /api/v1/activities/{activityId}/cumulative-progress
+  - **Project Historical As-of-Date Reconstruction**: GET /api/v1/projects/{projectId}/cumulative-progress/as-of-date
+  - **Activity Historical As-of-Date Progress**: GET /api/v1/activities/{activityId}/cumulative-progress/as-of-date
+  - **Project Cumulative S-Curve Timeline**: GET /api/v1/projects/{projectId}/cumulative-progress/s-curve (DAILY, WEEKLY, MONTHLY)
+  - **Activity Cumulative S-Curve Timeline**: GET /api/v1/activities/{activityId}/cumulative-progress/s-curve
+  - **Recalculate Project Cumulative Progress**: POST /api/v1/projects/{projectId}/cumulative-progress/recalculate
+  - **Recalculate Work Package Cumulative Progress**: POST /api/v1/work-packages/{workPackageId}/cumulative-progress/recalculate
+  - **Recalculate Activity Cumulative Progress**: POST /api/v1/activities/{activityId}/cumulative-progress/recalculate
+  - **Audit Cumulative Progress Data Integrity**: GET /api/v1/projects/{projectId}/cumulative-progress/audit
+  - **Reconcile & Auto-Heal Cumulative Progress**: POST /api/v1/projects/{projectId}/cumulative-progress/reconcile
+- **10. Project Progress Summary Module (`/api/v1/projects/{id}/progress-summary`, `/api/v1/projects/progress-summary`, `/api/v1/work-packages/{id}/progress-summary`)**:
+  - **Project Progress Summary**: `GET /api/v1/projects/{projectId}/progress-summary` (Overall %, Health, EVM, activity counts, physical quantities, work package and discipline rollups)
+  - **Portfolio-Wide Progress Summary**: `GET /api/v1/projects/progress-summary`
+  - **Work Package Progress Summary**: `GET /api/v1/work-packages/{workPackageId}/progress-summary`
+- **11. Audit & History Logging** - Entity audits and revision logs
 
 ## ? Key Features
 
@@ -157,8 +184,7 @@ JWT_EXPIRATION_MINUTES=60
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)\n4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 ## ?? License
@@ -172,4 +198,3 @@ For issues or questions, please open an issue on the GitHub repository.
 ---
 
 **Built with ?? for Construction Excellence**
-
