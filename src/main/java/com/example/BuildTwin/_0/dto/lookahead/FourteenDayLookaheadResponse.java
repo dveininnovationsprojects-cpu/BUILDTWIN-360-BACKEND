@@ -1,5 +1,6 @@
 package com.example.BuildTwin._0.dto.lookahead;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,27 +28,33 @@ public class FourteenDayLookaheadResponse {
     @Schema(description = "Project Name", example = "Ashok Grandeur - Padur, Chennai")
     private String projectName;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "14-Day Window Start Date", example = "2026-10-01")
     private LocalDate windowStartDate;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "14-Day Window End Date", example = "2026-10-14")
     private LocalDate windowEndDate;
 
     @Schema(description = "Lookahead Window Duration in Calendar Days", example = "14")
     private Integer lookaheadDays;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "Week 1 Start Date (Days 1 to 7 - Immediate Commitment Window)", example = "2026-10-01")
     private LocalDate week1StartDate;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "Week 1 End Date (Days 1 to 7)", example = "2026-10-07")
     private LocalDate week1EndDate;
 
     @Schema(description = "Week 1 Execution KPIs and Metrics")
     private LookaheadMetricsResponse week1Metrics;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "Week 2 Start Date (Days 8 to 14 - Make-Ready & Constraint Removal Window)", example = "2026-10-08")
     private LocalDate week2StartDate;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "Week 2 End Date (Days 8 to 14)", example = "2026-10-14")
     private LocalDate week2EndDate;
 

@@ -6,6 +6,8 @@ import com.example.BuildTwin._0.exception.DuplicateResourceException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import com.example.BuildTwin._0.model.*;
 import org.mockito.ArgumentCaptor;
+import com.example.BuildTwin._0.domain.projects.model.Project;
+import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
 import com.example.BuildTwin._0.repository.*;
 import com.example.BuildTwin._0.service.impl.DailyProgressReportServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
