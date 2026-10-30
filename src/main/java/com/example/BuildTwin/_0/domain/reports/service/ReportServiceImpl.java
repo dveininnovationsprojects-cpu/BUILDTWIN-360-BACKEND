@@ -101,7 +101,14 @@ public class ReportServiceImpl implements ReportService {
 
         // Progress Calculations
         BigDecimal plannedProgress = new BigDecimal("85.00");
+        if (evm.getBudgetAtCompletion() != null && evm.getBudgetAtCompletion().compareTo(BigDecimal.ZERO) > 0 && evm.getPlannedValue() != null) {
+            plannedProgress = evm.getPlannedValue().multiply(new BigDecimal("100")).divide(evm.getBudgetAtCompletion(), 2, RoundingMode.HALF_UP);
+        }
+
         BigDecimal actualProgress = evm.getCostPerformanceIndex().compareTo(BigDecimal.ONE) >= 0 ? new BigDecimal("82.50") : new BigDecimal("74.00");
+        if (evm.getBudgetAtCompletion() != null && evm.getBudgetAtCompletion().compareTo(BigDecimal.ZERO) > 0 && evm.getEarnedValue() != null) {
+            actualProgress = evm.getEarnedValue().multiply(new BigDecimal("100")).divide(evm.getBudgetAtCompletion(), 2, RoundingMode.HALF_UP);
+        }
         String scheduleStatus = evm.getSchedulePerformanceIndex().compareTo(BigDecimal.ONE) >= 0 ? "ON_SCHEDULE" : "BEHIND_SCHEDULE";
 
         return WeeklyProjectReportDto.builder()
