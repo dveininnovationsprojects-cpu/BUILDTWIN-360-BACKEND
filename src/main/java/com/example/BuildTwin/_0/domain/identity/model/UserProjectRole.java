@@ -35,4 +35,18 @@ public class UserProjectRole {
     @CreationTimestamp
     @Column(name = "assigned_at", updatable = false)
     private LocalDateTime assignedAt;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (assignedAt == null) {
+            assignedAt = LocalDateTime.now();
+        }
+        if (createdAt == null) {
+            createdAt = assignedAt;
+        }
+    }
 }
