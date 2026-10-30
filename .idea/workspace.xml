@@ -113,7 +113,9 @@
   "keyToString": {
     "Application.BuildTwin360Application.executor": "Run",
     "Maven.BuildTwin-360 [clean].executor": "Run",
+    "Maven.BuildTwin-360 [install,--non-recursive].executor": "Run",
     "Maven.BuildTwin-360 [install].executor": "Run",
+    "Maven.BuildTwin360Application.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RequestMappingsPanelOrder0": "0",
     "RequestMappingsPanelOrder1": "1",
