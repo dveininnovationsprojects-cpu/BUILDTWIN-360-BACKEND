@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @RestController
 @RequestMapping("/api/v1/issues")

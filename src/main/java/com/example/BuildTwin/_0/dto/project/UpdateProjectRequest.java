@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Data
 @Builder

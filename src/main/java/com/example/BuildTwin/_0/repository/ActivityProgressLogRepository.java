@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Repository
 public interface ActivityProgressLogRepository extends JpaRepository<ActivityProgressLog, Long> {

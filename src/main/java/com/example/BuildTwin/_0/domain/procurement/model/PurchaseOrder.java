@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Entity
 @Table(name = "purchase_orders")

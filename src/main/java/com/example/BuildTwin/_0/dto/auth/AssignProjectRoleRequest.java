@@ -3,6 +3,7 @@ package com.example.BuildTwin._0.dto.auth;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Getter
 @Setter

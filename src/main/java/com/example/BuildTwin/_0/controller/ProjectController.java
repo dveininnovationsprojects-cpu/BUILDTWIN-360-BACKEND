@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @RestController
 @RequestMapping("/api/v1/projects")

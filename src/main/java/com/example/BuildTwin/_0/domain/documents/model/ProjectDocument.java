@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Entity
 @Table(name = "documents")

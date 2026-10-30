@@ -1,4 +1,5 @@
 package com.example.BuildTwin._0.model;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 /**
  * Standard Construction Precedence Network Dependency Types

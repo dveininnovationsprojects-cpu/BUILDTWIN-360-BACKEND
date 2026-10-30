@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 /**
  * Entity representing an automated or monitored Schedule Delay Alert for construction tasks.

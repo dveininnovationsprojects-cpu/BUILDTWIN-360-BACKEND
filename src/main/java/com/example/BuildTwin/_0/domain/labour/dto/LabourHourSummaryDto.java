@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Getter
 @Setter

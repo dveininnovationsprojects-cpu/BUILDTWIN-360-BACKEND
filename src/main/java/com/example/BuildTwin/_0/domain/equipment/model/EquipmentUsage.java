@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Entity
 @Table(name = "equipment_usage")

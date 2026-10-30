@@ -6,7 +6,7 @@ import com.example.BuildTwin._0.exception.BadRequestException;
 import com.example.BuildTwin._0.exception.ResourceNotFoundException;
 import com.example.BuildTwin._0.model.*;
 import com.example.BuildTwin._0.repository.ActivityProgressLogRepository;
-import com.example.BuildTwin._0.repository.ProjectRepository;
+import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
 import com.example.BuildTwin._0.repository.WbsActivityRepository;
 import com.example.BuildTwin._0.repository.WorkPackageRepository;
 import com.example.BuildTwin._0.service.AuditService;
@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Slf4j
 @Service

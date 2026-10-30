@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Entity
 @Table(name = "daily_progress_reports",
