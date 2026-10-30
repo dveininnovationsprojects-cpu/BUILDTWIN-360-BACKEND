@@ -1,0 +1,436 @@
+{
+  "info": {
+    "_postman_id": "b360-schedule-delay-alert-v1",
+    "name": "BuildTwin 360 - Schedule Delay Alert Support Module",
+    "description": "Enterprise Postman Collection for Schedule Delay Alert Support in BuildTwin 360.\nIncludes Automated Delay Detection Engine, Severity Escalation, Cascading Bottleneck Warnings, Alert Acknowledgment Workflow, Catch-Up Mitigation Plans, Early Warning Horizon Screening, and Executive KPI Dashboards.\nBase URL: http://localhost:8080/api/v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "alert_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Extract Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.collectionVariables.set('token', response.data.accessToken);",
+                  "    console.log('JWT Token successfully stored in {{token}}');",
+                  "}",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"admin\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates user and saves JWT token to collection variable {{token}}."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Automated Delay Alert Scan Engine",
+      "item": [
+        {
+          "name": "1.1 Scan Project & Generate Schedule Delay Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if (res && res.data && res.data.alerts && res.data.alerts.length > 0) {",
+                  "    pm.collectionVariables.set('alert_id', res.data.alerts[0].id);",
+                  "    console.log('Captured first alert_id = ' + res.data.alerts[0].id);",
+                  "}",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asOfDate\": \"2026-10-25\",\n  \"slippageThresholdPercentage\": 20.0,\n  \"upcomingRiskDaysHorizon\": 7,\n  \"includeUpcomingRisks\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/schedule-alerts/scan",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "schedule-alerts", "scan"]
+            },
+            "description": "Triggers automated delay scanning algorithm across all WBS activities. Detects missed finishes, uncommenced starts, slippages >= 20%, and cascading successor bottlenecks. Creates new alerts and updates existing active alerts."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Query & Filter Schedule Delay Alerts",
+      "item": [
+        {
+          "name": "2.1 List All Schedule Delay Alerts for Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/schedule-alerts",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "schedule-alerts"]
+            },
+            "description": "Retrieves all delay alerts recorded for the project."
+          }
+        },
+        {
+          "name": "2.2 Filter Active & Critical Delay Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/schedule-alerts?status=ACTIVE&severity=CRITICAL",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "schedule-alerts"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "description": "Filter by status: ACTIVE, ACKNOWLEDGED, IN_MITIGATION, RESOLVED, DISMISSED"
+                },
+                {
+                  "key": "severity",
+                  "value": "CRITICAL",
+                  "description": "Filter by severity: CRITICAL, HIGH, MEDIUM, LOW"
+                }
+              ]
+            },
+            "description": "Filters for ACTIVE alerts with CRITICAL severity requiring immediate site intervention."
+          }
+        },
+        {
+          "name": "2.3 Filter Alerts by Aging Bucket (DAYS_8_TO_14)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/schedule-alerts?agingBucket=DAYS_8_TO_14",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "schedule-alerts"],
+              "query": [
+                {
+                  "key": "agingBucket",
+                  "value": "DAYS_8_TO_14",
+                  "description": "Filter by aging: DAYS_1_TO_7, DAYS_8_TO_14, DAYS_15_TO_30, OVER_30_DAYS"
+                }
+              ]
+            },
+            "description": "Retrieves alerts with delays between 8 and 14 days."
+          }
+        },
+        {
+          "name": "2.4 Filter Alerts by Alert Type & Discipline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/schedule-alerts?alertType=OVERDUE_FINISH&discipline=CIVIL",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "schedule-alerts"],
+              "query": [
+                {
+                  "key": "alertType",
+                  "value": "OVERDUE_FINISH",
+                  "description": "Filter by alertType: OVERDUE_FINISH, OVERDUE_START, PROGRESS_SLIPPAGE, CRITICAL_PATH_AT_RISK, SUCCESSOR_IMPACT_CASCADE, UPCOMING_DEADLINE_RISK"
+                },
+                {
+                  "key": "discipline",
+                  "value": "CIVIL"
+                }
+              ]
+            },
+            "description": "Retrieves CIVIL activities that missed their planned completion deadline."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Executive KPI Dashboard & Analytics",
+      "item": [
+        {
+          "name": "3.1 Get Schedule Delay Alerts Executive KPI Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/schedule-alerts/summary?asOfDate=2026-10-25",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "schedule-alerts", "summary"],
+              "query": [
+                {
+                  "key": "asOfDate",
+                  "value": "2026-10-25"
+                }
+              ]
+            },
+            "description": "Provides executive management metrics: total alerts, active/unacknowledged counts, severity distribution, delay averages, contractor delay exposure, top critical alerts, and actionable recommendations."
+          }
+        },
+        {
+          "name": "3.2 Get Early Warning Delay Risks (Horizon 7 Days)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/schedule-alerts/early-warnings?asOfDate=2026-10-25&horizonDays=7",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "schedule-alerts", "early-warnings"],
+              "query": [
+                {
+                  "key": "asOfDate",
+                  "value": "2026-10-25"
+                },
+                {
+                  "key": "horizonDays",
+                  "value": "7",
+                  "description": "Lookahead horizon window in days"
+                }
+              ]
+            },
+            "description": "Detects tasks approaching scheduled start/finish within the next 7 days that are in jeopardy due to incomplete predecessors or unresolved material/drawing constraints."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Alert Lifecycle Management (GET, PUT, DELETE)",
+      "item": [
+        {
+          "name": "4.1 Get Single Delay Alert Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-alerts/{{alert_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-alerts", "{{alert_id}}"]
+            },
+            "description": "Retrieves full details of an individual schedule delay alert."
+          }
+        },
+        {
+          "name": "4.2 Acknowledge Delay Alert (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Reviewed in morning site standup. Delay triggered by delay in structural steel consignment.\",\n  \"targetResolutionDate\": \"2026-10-30\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-alerts/{{alert_id}}/acknowledge",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-alerts", "{{alert_id}}", "acknowledge"]
+            },
+            "description": "Transitions alert status from ACTIVE to ACKNOWLEDGED with site engineer review notes and target recovery date."
+          }
+        },
+        {
+          "name": "4.3 Record Delay Mitigation & Catch-Up Plan (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delayReasonCategory\": \"MATERIAL_SHORTAGE\",\n  \"delayReasonDetails\": \"Steel fabricator delayed dispatch of rebar cages due to machinery maintenance.\",\n  \"recoveryPlanAction\": \"Deployed alternate regional steel vendor and mobilized 8 additional rebar tier laborers for overtime shift.\",\n  \"revisedExpectedCompletionDate\": \"2026-10-30\",\n  \"additionalLaborAllocated\": 8,\n  \"notes\": \"Recovery plan reviewed and authorized by Project Manager.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-alerts/{{alert_id}}/mitigate",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-alerts", "{{alert_id}}", "mitigate"]
+            },
+            "description": "Transitions alert status to IN_MITIGATION and syncs catch-up parameters with the lookahead weekly commitment and activity status."
+          }
+        },
+        {
+          "name": "4.4 Resolve Delay Alert (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolutionNotes\": \"Night shift and overtime crews successfully caught up the 20-day schedule backlog. Physical quantity completed 100% on site.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-alerts/{{alert_id}}/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-alerts", "{{alert_id}}", "resolve"]
+            },
+            "description": "Marks the delay alert as RESOLVED once delay is recovered, work completed, or schedule formally revised."
+          }
+        },
+        {
+          "name": "4.5 Dismiss Delay Alert (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dismissalReason\": \"Scope was formally descoped under Change Order CO-03 and replaced by precast methodology.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-alerts/{{alert_id}}/dismiss",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-alerts", "{{alert_id}}", "dismiss"]
+            },
+            "description": "Dismisses or suppresses an alert with documented justification."
+          }
+        },
+        {
+          "name": "4.6 Delete Delay Alert (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-alerts/{{alert_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-alerts", "{{alert_id}}"]
+            },
+            "description": "Permanently deletes a delay alert record. Restricted to Project Managers and Admins."
+          }
+        }
+      ]
+    }
+  ]
+}

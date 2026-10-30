@@ -27,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -1281,4 +1283,379 @@ public class WbsActivityServiceImpl implements WbsActivityService {
                 .updatedAt(act.getUpdatedAt())
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ActivityProgressPercentageResponse getActivityProgressTracking(Long activityId) {
+        WbsActivity act = wbsActivityRepository.findById(activityId)
+                .orElseThrow(() -> new ResourceNotFoundException("WbsActivity", "id", activityId));
+        return buildActivityProgressPercentageResponse(act);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WorkPackageProgressPercentageResponse getWorkPackageProgressTracking(Long workPackageId) {
+        WorkPackage wp = workPackageRepository.findById(workPackageId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkPackage", "id", workPackageId));
+
+        List<WbsActivity> allActivities = wbsActivityRepository.findByWorkPackageIdOrderBySequenceOrderAsc(workPackageId);
+        List<WbsActivity> rootActivities = wbsActivityRepository.findByWorkPackageIdAndParentIsNullOrderBySequenceOrderAsc(workPackageId);
+        List<WbsActivity> baseForRollup = rootActivities.isEmpty() ? allActivities : rootActivities;
+
+        LocalDate today = LocalDate.now();
+        double totalWeight = baseForRollup.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+        double weightedActual = baseForRollup.stream().mapToDouble(a -> calculateActualProgressPercentage(a) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+        double weightedPlanned = baseForRollup.stream().mapToDouble(a -> calculatePlannedProgressPercentage(a.getPlannedStartDate(), a.getPlannedEndDate(), today) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+
+        double overallActual = totalWeight > 0 ? (weightedActual / totalWeight) : 0.0;
+        overallActual = BigDecimal.valueOf(overallActual).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+        double overallPlanned = totalWeight > 0 ? (weightedPlanned / totalWeight) : 0.0;
+        overallPlanned = BigDecimal.valueOf(overallPlanned).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+        double variance = BigDecimal.valueOf(overallActual - overallPlanned).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        String perfStatus = calculatePerformanceStatus(overallActual, overallPlanned, wp.getStatus());
+
+        int completed = (int) allActivities.stream().filter(a -> "COMPLETED".equalsIgnoreCase(a.getStatus())).count();
+        int inProgress = (int) allActivities.stream().filter(a -> "IN_PROGRESS".equalsIgnoreCase(a.getStatus())).count();
+        int planned = (int) allActivities.stream().filter(a -> "PLANNED".equalsIgnoreCase(a.getStatus())).count();
+        int delayed = (int) allActivities.stream().filter(a -> "DELAYED".equalsIgnoreCase(a.getStatus())).count();
+
+        List<ActivityProgressPercentageResponse> actResponses = baseForRollup.stream()
+                .map(this::buildActivityProgressPercentageResponse)
+                .collect(Collectors.toList());
+
+        return WorkPackageProgressPercentageResponse.builder()
+                .workPackageId(wp.getId())
+                .workPackageCode(wp.getCode())
+                .workPackageName(wp.getName())
+                .discipline(wp.getDiscipline())
+                .status(wp.getStatus())
+                .projectId(wp.getProject().getId())
+                .projectName(wp.getProject().getName())
+                .overallActualProgressPercentage(overallActual)
+                .overallPlannedProgressPercentage(overallPlanned)
+                .progressVariance(variance)
+                .performanceStatus(perfStatus)
+                .totalActivities(allActivities.size())
+                .completedActivities(completed)
+                .inProgressActivities(inProgress)
+                .plannedActivities(planned)
+                .delayedActivities(delayed)
+                .activities(actResponses)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectProgressPercentageResponse getProjectProgressTracking(Long projectId, String discipline, Long workPackageId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+
+        List<WorkPackage> workPackages = workPackageRepository.findByProjectId(projectId);
+        if (workPackageId != null) {
+            workPackages = workPackages.stream().filter(wp -> wp.getId().equals(workPackageId)).collect(Collectors.toList());
+        }
+
+        List<WbsActivity> activities = wbsActivityRepository.findByProjectIdOrderBySequenceOrderAsc(projectId);
+        if (workPackageId != null) {
+            activities = activities.stream().filter(a -> a.getWorkPackage().getId().equals(workPackageId)).collect(Collectors.toList());
+        }
+        if (discipline != null && !discipline.trim().isEmpty()) {
+            final String normDisc = discipline.trim().toUpperCase();
+            activities = activities.stream().filter(a -> a.getDiscipline() != null && a.getDiscipline().equalsIgnoreCase(normDisc)).collect(Collectors.toList());
+            workPackages = workPackages.stream().filter(wp -> wp.getDiscipline() != null && wp.getDiscipline().equalsIgnoreCase(normDisc)).collect(Collectors.toList());
+        }
+
+        LocalDate today = LocalDate.now();
+
+        List<WbsActivity> rootActivities = activities.stream()
+                .filter(a -> a.getParent() == null)
+                .collect(Collectors.toList());
+        List<WbsActivity> baseForRollup = rootActivities.isEmpty() ? activities : rootActivities;
+
+        double totalWeight = baseForRollup.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+        double weightedActual = baseForRollup.stream().mapToDouble(a -> calculateActualProgressPercentage(a) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+        double weightedPlanned = baseForRollup.stream().mapToDouble(a -> calculatePlannedProgressPercentage(a.getPlannedStartDate(), a.getPlannedEndDate(), today) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+
+        double overallActual = totalWeight > 0 ? (weightedActual / totalWeight) : 0.0;
+        overallActual = BigDecimal.valueOf(overallActual).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+        double overallPlanned = totalWeight > 0 ? (weightedPlanned / totalWeight) : 0.0;
+        overallPlanned = BigDecimal.valueOf(overallPlanned).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+        double overallVariance = BigDecimal.valueOf(overallActual - overallPlanned).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        String overallPerf = calculatePerformanceStatus(overallActual, overallPlanned, "IN_PROGRESS");
+
+        int plannedCount = (int) activities.stream().filter(a -> "PLANNED".equalsIgnoreCase(a.getStatus())).count();
+        int inProgressCount = (int) activities.stream().filter(a -> "IN_PROGRESS".equalsIgnoreCase(a.getStatus())).count();
+        int completedCount = (int) activities.stream().filter(a -> "COMPLETED".equalsIgnoreCase(a.getStatus())).count();
+        int delayedCount = (int) activities.stream().filter(a -> "DELAYED".equalsIgnoreCase(a.getStatus())).count();
+
+        int aheadCount = 0;
+        int onTrackCount = 0;
+        int behindCount = 0;
+        for (WbsActivity a : activities) {
+            double actP = calculateActualProgressPercentage(a);
+            double plnP = calculatePlannedProgressPercentage(a.getPlannedStartDate(), a.getPlannedEndDate(), today);
+            double v = actP - plnP;
+            if (v >= 5.0) aheadCount++;
+            else if (v <= -5.0) behindCount++;
+            else onTrackCount++;
+        }
+
+        // Discipline Breakdown
+        Map<String, List<WbsActivity>> byDiscipline = activities.stream()
+                .collect(Collectors.groupingBy(a -> a.getDiscipline() != null ? a.getDiscipline().toUpperCase() : "GENERAL"));
+        List<ProjectProgressPercentageResponse.DisciplineProgressSummary> discSummaries = new ArrayList<>();
+        for (Map.Entry<String, List<WbsActivity>> entry : byDiscipline.entrySet()) {
+            String disc = entry.getKey();
+            List<WbsActivity> dActs = entry.getValue();
+            List<WbsActivity> dRoots = dActs.stream().filter(a -> a.getParent() == null).collect(Collectors.toList());
+            List<WbsActivity> dBase = dRoots.isEmpty() ? dActs : dRoots;
+
+            double dWeight = dBase.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+            double dActualSum = dBase.stream().mapToDouble(a -> calculateActualProgressPercentage(a) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+            double dPlannedSum = dBase.stream().mapToDouble(a -> calculatePlannedProgressPercentage(a.getPlannedStartDate(), a.getPlannedEndDate(), today) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+
+            double dActPct = dWeight > 0 ? (dActualSum / dWeight) : 0.0;
+            dActPct = BigDecimal.valueOf(dActPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            double dPlnPct = dWeight > 0 ? (dPlannedSum / dWeight) : 0.0;
+            dPlnPct = BigDecimal.valueOf(dPlnPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            double dVar = BigDecimal.valueOf(dActPct - dPlnPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+            int dComp = (int) dActs.stream().filter(a -> "COMPLETED".equalsIgnoreCase(a.getStatus())).count();
+            int dInProg = (int) dActs.stream().filter(a -> "IN_PROGRESS".equalsIgnoreCase(a.getStatus())).count();
+
+            discSummaries.add(ProjectProgressPercentageResponse.DisciplineProgressSummary.builder()
+                    .discipline(disc)
+                    .totalActivities(dActs.size())
+                    .completedActivities(dComp)
+                    .inProgressActivities(dInProg)
+                    .plannedProgressPercentage(dPlnPct)
+                    .actualProgressPercentage(dActPct)
+                    .progressVariance(dVar)
+                    .performanceStatus(calculatePerformanceStatus(dActPct, dPlnPct, "IN_PROGRESS"))
+                    .build());
+        }
+
+        // Work Package Breakdown
+        List<ProjectProgressPercentageResponse.WorkPackageProgressSummary> wpSummaries = new ArrayList<>();
+        for (WorkPackage wp : workPackages) {
+            List<WbsActivity> wpActs = activities.stream().filter(a -> a.getWorkPackage().getId().equals(wp.getId())).collect(Collectors.toList());
+            List<WbsActivity> wpRoots = wpActs.stream().filter(a -> a.getParent() == null).collect(Collectors.toList());
+            List<WbsActivity> wpBase = wpRoots.isEmpty() ? wpActs : wpRoots;
+
+            double wpWeight = wpBase.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+            double wpActualSum = wpBase.stream().mapToDouble(a -> calculateActualProgressPercentage(a) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+            double wpPlannedSum = wpBase.stream().mapToDouble(a -> calculatePlannedProgressPercentage(a.getPlannedStartDate(), a.getPlannedEndDate(), today) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+
+            double wpActPct = wpWeight > 0 ? (wpActualSum / wpWeight) : 0.0;
+            wpActPct = BigDecimal.valueOf(wpActPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            double wpPlnPct = wpWeight > 0 ? (wpPlannedSum / wpWeight) : 0.0;
+            wpPlnPct = BigDecimal.valueOf(wpPlnPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            double wpVar = BigDecimal.valueOf(wpActPct - wpPlnPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+            wpSummaries.add(ProjectProgressPercentageResponse.WorkPackageProgressSummary.builder()
+                    .workPackageId(wp.getId())
+                    .workPackageCode(wp.getCode())
+                    .workPackageName(wp.getName())
+                    .discipline(wp.getDiscipline())
+                    .status(wp.getStatus())
+                    .weightage(wpWeight)
+                    .totalActivities(wpActs.size())
+                    .plannedProgressPercentage(wpPlnPct)
+                    .actualProgressPercentage(wpActPct)
+                    .progressVariance(wpVar)
+                    .performanceStatus(calculatePerformanceStatus(wpActPct, wpPlnPct, wp.getStatus()))
+                    .build());
+        }
+
+        // Location Breakdown (by Building)
+        Map<Building, List<WbsActivity>> byBuilding = activities.stream()
+                .filter(a -> a.getBuilding() != null)
+                .collect(Collectors.groupingBy(WbsActivity::getBuilding));
+        List<ProjectProgressPercentageResponse.LocationProgressSummary> locSummaries = new ArrayList<>();
+        for (Map.Entry<Building, List<WbsActivity>> entry : byBuilding.entrySet()) {
+            Building bld = entry.getKey();
+            List<WbsActivity> bActs = entry.getValue();
+            List<WbsActivity> bRoots = bActs.stream().filter(a -> a.getParent() == null).collect(Collectors.toList());
+            List<WbsActivity> bBase = bRoots.isEmpty() ? bActs : bRoots;
+
+            double bWeight = bBase.stream().mapToDouble(a -> a.getWeightage() != null ? a.getWeightage() : 1.0).sum();
+            double bActualSum = bBase.stream().mapToDouble(a -> calculateActualProgressPercentage(a) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+            double bPlannedSum = bBase.stream().mapToDouble(a -> calculatePlannedProgressPercentage(a.getPlannedStartDate(), a.getPlannedEndDate(), today) * (a.getWeightage() != null ? a.getWeightage() : 1.0)).sum();
+
+            double bActPct = bWeight > 0 ? (bActualSum / bWeight) : 0.0;
+            bActPct = BigDecimal.valueOf(bActPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            double bPlnPct = bWeight > 0 ? (bPlannedSum / bWeight) : 0.0;
+            bPlnPct = BigDecimal.valueOf(bPlnPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            double bVar = BigDecimal.valueOf(bActPct - bPlnPct).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+            locSummaries.add(ProjectProgressPercentageResponse.LocationProgressSummary.builder()
+                    .buildingId(bld.getId())
+                    .buildingName(bld.getName())
+                    .totalActivities(bActs.size())
+                    .plannedProgressPercentage(bPlnPct)
+                    .actualProgressPercentage(bActPct)
+                    .progressVariance(bVar)
+                    .performanceStatus(calculatePerformanceStatus(bActPct, bPlnPct, "IN_PROGRESS"))
+                    .build());
+        }
+
+        return ProjectProgressPercentageResponse.builder()
+                .projectId(project.getId())
+                .projectCode(project.getCode())
+                .projectName(project.getName())
+                .overallActualProgressPercentage(overallActual)
+                .overallPlannedProgressPercentage(overallPlanned)
+                .overallProgressVariance(overallVariance)
+                .overallPerformanceStatus(overallPerf)
+                .totalActivities(activities.size())
+                .plannedActivities(plannedCount)
+                .inProgressActivities(inProgressCount)
+                .completedActivities(completedCount)
+                .delayedActivities(delayedCount)
+                .aheadActivities(aheadCount)
+                .onTrackActivities(onTrackCount)
+                .behindActivities(behindCount)
+                .disciplineBreakdown(discSummaries)
+                .workPackageBreakdown(wpSummaries)
+                .locationBreakdown(locSummaries)
+                .build();
+    }
+
+    private ActivityProgressPercentageResponse buildActivityProgressPercentageResponse(WbsActivity act) {
+        LocalDate today = LocalDate.now();
+        double actualProg = calculateActualProgressPercentage(act);
+        double plannedProg = calculatePlannedProgressPercentage(act.getPlannedStartDate(), act.getPlannedEndDate(), today);
+        double variance = BigDecimal.valueOf(actualProg - plannedProg).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        String perfStatus = calculatePerformanceStatus(actualProg, plannedProg, act.getStatus());
+
+        double weightage = act.getWeightage() != null ? act.getWeightage() : 1.0;
+        double weightedContrib = BigDecimal.valueOf(actualProg * weightage).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+        Double plannedQty = act.getPlannedQuantity();
+        Double completedQty = act.getCompletedQuantity() != null ? act.getCompletedQuantity() : 0.0;
+        Double remainingQty = (plannedQty != null) ? Math.max(0.0, plannedQty - completedQty) : 0.0;
+
+        Long plannedDurationDays = null;
+        if (act.getPlannedStartDate() != null && act.getPlannedEndDate() != null) {
+            plannedDurationDays = Math.max(1L, ChronoUnit.DAYS.between(act.getPlannedStartDate(), act.getPlannedEndDate()) + 1L);
+        }
+
+        Long elapsedDays = null;
+        if (act.getPlannedStartDate() != null) {
+            if (today.isBefore(act.getPlannedStartDate())) {
+                elapsedDays = 0L;
+            } else {
+                elapsedDays = ChronoUnit.DAYS.between(act.getPlannedStartDate(), today) + 1L;
+            }
+        }
+
+        Long remainingDays = null;
+        if (act.getPlannedEndDate() != null) {
+            if (today.isAfter(act.getPlannedEndDate())) {
+                remainingDays = 0L;
+            } else {
+                remainingDays = Math.max(0L, ChronoUnit.DAYS.between(today, act.getPlannedEndDate()));
+            }
+        }
+
+        List<WbsActivity> children = wbsActivityRepository.findByParentIdOrderBySequenceOrderAsc(act.getId());
+        List<ActivityProgressPercentageResponse> subtaskResponses = new ArrayList<>();
+        Double subtasksWeightedProg = null;
+        if (!children.isEmpty()) {
+            double childTotalWeight = children.stream().mapToDouble(c -> c.getWeightage() != null ? c.getWeightage() : 1.0).sum();
+            double childWeightedSum = children.stream().mapToDouble(c -> calculateActualProgressPercentage(c) * (c.getWeightage() != null ? c.getWeightage() : 1.0)).sum();
+            subtasksWeightedProg = childTotalWeight > 0 ? (childWeightedSum / childTotalWeight) : 0.0;
+            subtasksWeightedProg = BigDecimal.valueOf(subtasksWeightedProg).setScale(2, RoundingMode.HALF_UP).doubleValue();
+
+            for (WbsActivity child : children) {
+                subtaskResponses.add(buildActivityProgressPercentageResponse(child));
+            }
+        }
+
+        return ActivityProgressPercentageResponse.builder()
+                .activityId(act.getId())
+                .activityCode(act.getCode())
+                .activityName(act.getName())
+                .discipline(act.getDiscipline())
+                .status(act.getStatus())
+                .uom(act.getUom())
+                .plannedQuantity(plannedQty)
+                .completedQuantity(completedQty)
+                .remainingQuantity(remainingQty)
+                .actualProgressPercentage(actualProg)
+                .plannedProgressPercentage(plannedProg)
+                .progressVariance(variance)
+                .performanceStatus(perfStatus)
+                .weightage(weightage)
+                .weightedProgressContribution(weightedContrib)
+                .plannedDurationDays(plannedDurationDays)
+                .elapsedDays(elapsedDays)
+                .remainingDays(remainingDays)
+                .plannedStartDate(act.getPlannedStartDate())
+                .plannedEndDate(act.getPlannedEndDate())
+                .actualStartDate(act.getActualStartDate())
+                .actualEndDate(act.getActualEndDate())
+                .workPackageId(act.getWorkPackage() != null ? act.getWorkPackage().getId() : null)
+                .workPackageCode(act.getWorkPackage() != null ? act.getWorkPackage().getCode() : null)
+                .workPackageName(act.getWorkPackage() != null ? act.getWorkPackage().getName() : null)
+                .projectId(act.getProject() != null ? act.getProject().getId() : null)
+                .projectName(act.getProject() != null ? act.getProject().getName() : null)
+                .locationHierarchy(formatLocation(act))
+                .subtaskCount(children.size())
+                .subtasksWeightedProgress(subtasksWeightedProg)
+                .subtasks(subtaskResponses)
+                .build();
+    }
+
+    private double calculateActualProgressPercentage(WbsActivity act) {
+        if (act.getProgressPercentage() != null) {
+            return BigDecimal.valueOf(Math.max(0.0, Math.min(100.0, act.getProgressPercentage())))
+                    .setScale(2, RoundingMode.HALF_UP).doubleValue();
+        } else if (act.getPlannedQuantity() != null && act.getPlannedQuantity() > 0 && act.getCompletedQuantity() != null) {
+            double p = (act.getCompletedQuantity() / act.getPlannedQuantity()) * 100.0;
+            return BigDecimal.valueOf(Math.max(0.0, Math.min(100.0, p)))
+                    .setScale(2, RoundingMode.HALF_UP).doubleValue();
+        }
+        return 0.0;
+    }
+
+    private double calculatePlannedProgressPercentage(LocalDate plannedStart, LocalDate plannedEnd, LocalDate asOfDate) {
+        if (plannedStart == null || plannedEnd == null) {
+            return 0.0;
+        }
+        if (asOfDate.isBefore(plannedStart)) {
+            return 0.0;
+        }
+        if (!asOfDate.isBefore(plannedEnd)) {
+            return 100.0;
+        }
+        long totalDays = ChronoUnit.DAYS.between(plannedStart, plannedEnd) + 1L;
+        if (totalDays <= 0) totalDays = 1;
+        long elapsedDays = ChronoUnit.DAYS.between(plannedStart, asOfDate) + 1L;
+        double plannedProg = ((double) elapsedDays / totalDays) * 100.0;
+        plannedProg = Math.max(0.0, Math.min(100.0, plannedProg));
+        return BigDecimal.valueOf(plannedProg).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private String calculatePerformanceStatus(double actualProg, double plannedProg, String status) {
+        if ("COMPLETED".equalsIgnoreCase(status) || actualProg >= 100.0) {
+            return "COMPLETED";
+        }
+        if (actualProg == 0.0 && plannedProg == 0.0) {
+            return "NOT_STARTED";
+        }
+        double variance = actualProg - plannedProg;
+        if (variance >= 5.0) {
+            return "AHEAD";
+        } else if (variance <= -5.0) {
+            return "BEHIND";
+        } else {
+            return "ON_TRACK";
+        }
+    }
+
 }

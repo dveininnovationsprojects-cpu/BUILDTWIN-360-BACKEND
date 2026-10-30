@@ -1,0 +1,259 @@
+{
+  "info": {
+    "_postman_id": "b360-overdue-activity-identification-v1",
+    "name": "BuildTwin 360 - Overdue Activity Identification & Mitigation Module",
+    "description": "Enterprise Postman collection for Overdue Activity Identification, Delay Aging Analytics, Downstream Impact Assessment & Root-Cause Mitigation Planning in BuildTwin 360.\nBase URL: http://localhost:8080/api/v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "activity_id",
+      "value": "2",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login (Admin) -> Auto Extract Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.collectionVariables.set('token', response.data.accessToken);",
+                  "    console.log('JWT Token successfully set into {{token}}');",
+                  "}",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"admin\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates system admin and automatically stores JWT token in {{token}}."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Overdue Activity Identification & Filtering",
+      "item": [
+        {
+          "name": "1.1 Identify All Overdue Activities (As Of Date)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/overdue?asOfDate=2026-10-25",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "overdue"],
+              "query": [
+                {
+                  "key": "asOfDate",
+                  "value": "2026-10-25",
+                  "description": "Evaluation reference cutoff date (defaults to today if omitted)"
+                }
+              ]
+            },
+            "description": "Identifies all construction activities that have missed planned end dates, missed kickoff dates, or are lagging significantly behind schedule."
+          }
+        },
+        {
+          "name": "1.2 Filter Overdue Activities by Severity (CRITICAL)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/overdue?asOfDate=2026-10-25&severity=CRITICAL",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "overdue"],
+              "query": [
+                {
+                  "key": "asOfDate",
+                  "value": "2026-10-25"
+                },
+                {
+                  "key": "severity",
+                  "value": "CRITICAL",
+                  "description": "Filter by severity: CRITICAL, HIGH, MEDIUM, LOW"
+                }
+              ]
+            },
+            "description": "Filters for CRITICAL overdue activities: delays > 30 days OR activities blocking multiple downstream successor tasks."
+          }
+        },
+        {
+          "name": "1.3 Filter Overdue by Aging Bucket (DAYS_8_TO_14)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/overdue?asOfDate=2026-10-25&agingBucket=DAYS_8_TO_14",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "overdue"],
+              "query": [
+                {
+                  "key": "asOfDate",
+                  "value": "2026-10-25"
+                },
+                {
+                  "key": "agingBucket",
+                  "value": "DAYS_8_TO_14",
+                  "description": "Filter by delay aging: DAYS_1_TO_7, DAYS_8_TO_14, DAYS_15_TO_30, OVER_30_DAYS"
+                }
+              ]
+            },
+            "description": "Filters for activities delayed between 8 and 14 days."
+          }
+        },
+        {
+          "name": "1.4 Filter Overdue by Type (OVERDUE_FINISH vs OVERDUE_START)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/overdue?asOfDate=2026-10-25&type=OVERDUE_FINISH&discipline=CIVIL",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "overdue"],
+              "query": [
+                {
+                  "key": "asOfDate",
+                  "value": "2026-10-25"
+                },
+                {
+                  "key": "type",
+                  "value": "OVERDUE_FINISH",
+                  "description": "Filter by type: OVERDUE_FINISH, OVERDUE_START, BEHIND_SCHEDULE"
+                },
+                {
+                  "key": "discipline",
+                  "value": "CIVIL",
+                  "description": "Filter by trade: CIVIL, MEP, FINISHING"
+                }
+              ]
+            },
+            "description": "Filters for activities that missed their planned completion deadline in the CIVIL discipline."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Executive Overdue Dashboard & KPI Summary",
+      "item": [
+        {
+          "name": "2.1 Get Overdue Activities Executive Summary & KPIs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/overdue/summary?asOfDate=2026-10-25",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "overdue", "summary"],
+              "query": [
+                {
+                  "key": "asOfDate",
+                  "value": "2026-10-25"
+                }
+              ]
+            },
+            "description": "Returns executive dashboard KPIs: total overdue count, overdue rate %, aging breakdown, severity distribution, trade distribution, contractor delay statistics, cumulative remaining workload by UOM, top 5 critical bottlenecks, and strategic recovery recommendations."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Root-Cause Analysis & Recovery Catch-Up Plan",
+      "item": [
+        {
+          "name": "3.1 Log Overdue Root Cause & Recovery Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delayReasonCategory\": \"MATERIAL_SHORTAGE\",\n  \"delayReasonDetails\": \"Shortage of Ready-Mix Concrete M25 batch supply due to transit mixer dispatch delay.\",\n  \"recoveryPlanAction\": \"Re-routed concrete pouring batch to primary RMC vendor with double-shift casting on Saturday.\",\n  \"revisedExpectedCompletionDate\": \"2026-10-28\",\n  \"additionalLaborAllocated\": 6,\n  \"notes\": \"Reviewed and approved in site contractor coordination meeting by Project Manager.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}/lookahead/overdue/{{activity_id}}/mitigation",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}", "lookahead", "overdue", "{{activity_id}}", "mitigation"]
+            },
+            "description": "Records formal delay root cause analysis and catch-up recovery action plan, updating the lookahead commitment variance notes and logging an audit trail event."
+          }
+        }
+      ]
+    }
+  ]
+}

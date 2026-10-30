@@ -319,4 +319,42 @@ public class WbsActivityController {
         WbsTreeResponse.WorkPackageNode node = wbsActivityService.getWorkPackageWbsTree(workPackageId);
         return ResponseEntity.ok(ApiResponse.success(node, "Work package WBS tree retrieved successfully"));
     }
+
+    @GetMapping({"/api/v1/wbs-activities/{id}/progress-tracking", "/api/v1/activities/{id}/progress-tracking"})
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Activity Progress Percentage Tracking",
+            description = "Calculates detailed progress metrics for an activity: planned vs actual progress %, planned vs actual quantity, schedule variance, S-curve time-based projection, performance status (AHEAD, ON_TRACK, BEHIND), and recursive subtasks progress breakdown."
+    )
+    public ResponseEntity<ApiResponse<ActivityProgressPercentageResponse>> getActivityProgressTracking(
+            @PathVariable Long id) {
+        ActivityProgressPercentageResponse response = wbsActivityService.getActivityProgressTracking(id);
+        return ResponseEntity.ok(ApiResponse.success(response, "Activity progress percentage tracking retrieved successfully"));
+    }
+
+    @GetMapping("/api/v1/projects/{projectId}/progress-percentage-tracking")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Project Progress Percentage Tracking Dashboard",
+            description = "Executive progress tracking dashboard for a project: weighted planned vs actual progress %, overall schedule variance, performance status, activity distribution, and breakdowns across disciplines, work packages, and locations."
+    )
+    public ResponseEntity<ApiResponse<ProjectProgressPercentageResponse>> getProjectProgressTracking(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) String discipline,
+            @RequestParam(required = false) Long workPackageId) {
+        ProjectProgressPercentageResponse response = wbsActivityService.getProjectProgressTracking(projectId, discipline, workPackageId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Project progress percentage tracking dashboard retrieved successfully"));
+    }
+
+    @GetMapping("/api/v1/work-packages/{workPackageId}/progress-percentage-tracking")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Get Work Package Progress Percentage Tracking",
+            description = "Detailed progress tracking breakdown for a specific work package: weighted planned vs actual progress %, schedule variance, performance status, and individual activity metrics."
+    )
+    public ResponseEntity<ApiResponse<WorkPackageProgressPercentageResponse>> getWorkPackageProgressTracking(
+            @PathVariable Long workPackageId) {
+        WorkPackageProgressPercentageResponse response = wbsActivityService.getWorkPackageProgressTracking(workPackageId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Work package progress percentage tracking retrieved successfully"));
+    }
 }

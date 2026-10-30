@@ -395,6 +395,11 @@ public class BaselineScheduleServiceImpl implements BaselineScheduleService {
                 .siteHindranceNotes(request.getSiteHindranceNotes())
                 .weatherCondition(request.getWeatherCondition())
                 .recordedBy(recordedBy)
+                .isBlocker(Boolean.TRUE.equals(request.getIsBlocker()))
+                .blockerCategory(request.getBlockerCategory())
+                .blockerReason(request.getBlockerReason())
+                .remarks(request.getRemarks())
+                .source("MANUAL_LOG")
                 .build();
 
         ActivityProgressLog savedLog = activityProgressLogRepository.save(logEntry);
@@ -451,8 +456,6 @@ public class BaselineScheduleServiceImpl implements BaselineScheduleService {
                 .activityId(curr.getId())
                 .activityCode(curr.getCode())
                 .activityName(curr.getName())
-                .discipline(curr.getDiscipline())
-                .currentStatus(curr.getStatus())
                 .baselineStartDate(baseStart)
                 .baselineEndDate(baseEnd)
                 .baselineDurationDays(baseDuration)
@@ -461,7 +464,6 @@ public class BaselineScheduleServiceImpl implements BaselineScheduleService {
                 .currentDurationDays(currDuration)
                 .startVarianceDays(startVariance)
                 .finishVarianceDays(finishVariance)
-                .currentProgressPercentage(curr.getProgressPercentage())
                 .healthStatus(health)
                 .build();
     }
@@ -508,6 +510,10 @@ public class BaselineScheduleServiceImpl implements BaselineScheduleService {
     }
 
     private ActivityProgressLogResponse mapToProgressLogResponse(ActivityProgressLog log, WbsActivity act) {
+        double todayPct = (act.getPlannedQuantity() != null && act.getPlannedQuantity() > 0.0 && log.getQuantityCompletedToday() != null)
+                ? Math.round((log.getQuantityCompletedToday() / act.getPlannedQuantity()) * 10000.0) / 100.0
+                : 0.0;
+
         return ActivityProgressLogResponse.builder()
                 .id(log.getId())
                 .activityId(act.getId())
@@ -518,11 +524,19 @@ public class BaselineScheduleServiceImpl implements BaselineScheduleService {
                 .quantityCompletedToday(log.getQuantityCompletedToday())
                 .cumulativeQuantityCompleted(log.getCumulativeQuantityCompleted())
                 .cumulativeProgressPercentage(log.getCumulativeProgressPercentage())
+                .progressPercentageToday(todayPct)
                 .manpowerCount(log.getManpowerCount())
                 .equipmentUsed(log.getEquipmentUsed())
                 .siteHindranceNotes(log.getSiteHindranceNotes())
                 .weatherCondition(log.getWeatherCondition())
                 .recordedBy(log.getRecordedBy())
+                .isBlocker(log.getIsBlocker())
+                .blockerCategory(log.getBlockerCategory())
+                .blockerReason(log.getBlockerReason())
+                .remarks(log.getRemarks())
+                .source(log.getSource() != null ? log.getSource() : "MANUAL_LOG")
+                .dprId(log.getDprId())
+                .dprReportCode(log.getDprReportCode())
                 .createdAt(log.getCreatedAt())
                 .build();
     }
