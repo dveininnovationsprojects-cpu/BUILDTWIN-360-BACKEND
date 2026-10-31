@@ -10,4 +10,5 @@ import java.util.List;
 public interface GrnRepository extends JpaRepository<Grn, Long> {
     List<Grn> findByPoId(Long poId);
     List<Grn> findByProjectId(Long projectId);
+    long countByProjectId(Long projectId);
 }

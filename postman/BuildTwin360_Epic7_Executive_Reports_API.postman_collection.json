@@ -1,0 +1,466 @@
+{
+  "info": {
+    "_postman_id": "b360-epic7-reports-analytics-2026",
+    "name": "BuildTwin 360 - Epic 7: Executive Reports & Analytics Backend API Suite",
+    "description": "Complete Postman API test collection for Epic 7: Consolidated Weekly Reports, Material Inventory Valuation, Procurement & Labour Cross-Domain Reports, Cost-Quality Dashboards, and Composite 0-100 Project Health Scores with Multi-Project Isolation & Performance Optimizations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "week_number",
+      "value": "10",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication & Token Extraction",
+      "item": [
+        {
+          "name": "0.1 Login as Administrator (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Login successful with valid JWT Access Token\", function () {",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data).to.have.property('accessToken');",
+                  "});",
+                  "if (jsonData.data && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.accessToken);",
+                  "    console.log('JWT Token successfully set for ADMIN');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "0.2 Login as Project Director (DIRECTOR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.accessToken);",
+                  "    console.log('JWT Token successfully set for DIRECTOR');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"director\",\n  \"password\": \"Director@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Epic 7: Executive Reports & Analytics Endpoints",
+      "item": [
+        {
+          "name": "1.1 Generate Weekly Project Executive Report (Week 10 Day 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Response has success=true and valid payload\", function () {",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "});",
+                  "pm.test(\"Validate Project Details and Week Number\", function () {",
+                  "    pm.expect(jsonData.data.projectId).to.eql(parseInt(pm.collectionVariables.get('project_id')));",
+                  "    pm.expect(jsonData.data.weekNumber).to.eql(parseInt(pm.collectionVariables.get('week_number')));",
+                  "    pm.expect(jsonData.data).to.have.property('projectName');",
+                  "    pm.expect(jsonData.data).to.have.property('projectCode');",
+                  "});",
+                  "pm.test(\"Validate Physical Progress and Schedule Status\", function () {",
+                  "    pm.expect(jsonData.data.plannedProgressPercentage).to.be.a('number');",
+                  "    pm.expect(jsonData.data.actualProgressPercentage).to.be.a('number');",
+                  "    pm.expect(['ON_SCHEDULE', 'BEHIND_SCHEDULE']).to.include(jsonData.data.scheduleStatus);",
+                  "});",
+                  "pm.test(\"Validate Cost & EVM Metrics\", function () {",
+                  "    pm.expect(jsonData.data.costPerformanceIndex).to.be.a('number');",
+                  "    pm.expect(jsonData.data.schedulePerformanceIndex).to.be.a('number');",
+                  "    pm.expect(jsonData.data).to.have.property('baselineBudget');",
+                  "    pm.expect(jsonData.data).to.have.property('actualExpense');",
+                  "    pm.expect(jsonData.data).to.have.property('costVariance');",
+                  "});",
+                  "pm.test(\"Validate Quality and Delay Days\", function () {",
+                  "    pm.expect(jsonData.data.totalSiteDelayDays).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.activeNcrsCount).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.criticalBlockersCount).to.be.at.least(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/weekly/{{project_id}}?weekNumber={{week_number}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "weekly", "{{project_id}}"],
+              "query": [
+                {
+                  "key": "weekNumber",
+                  "value": "{{week_number}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.2 Generate Material & Inventory Valuation Report (Week 10 Day 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Validate Project-Isolated Inventory Summary\", function () {",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.projectId).to.eql(parseInt(pm.collectionVariables.get('project_id')));",
+                  "    pm.expect(jsonData.data.totalInventoryValuation).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.totalMaterialsCataloged).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.criticalLowStockItems).to.be.an('array');",
+                  "});",
+                  "pm.test(\"Validate Critical Low Stock Items Deficit calculation\", function () {",
+                  "    if (jsonData.data.criticalLowStockItems.length > 0) {",
+                  "        var item = jsonData.data.criticalLowStockItems[0];",
+                  "        pm.expect(item).to.have.property('materialCode');",
+                  "        pm.expect(item).to.have.property('currentStock');",
+                  "        pm.expect(item).to.have.property('reorderLevel');",
+                  "        pm.expect(item.stockDeficit).to.be.at.least(0);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/inventory/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "inventory", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Generate Procurement & Labour Unified Report (Week 10 Day 3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Validate Procurement PO & GRN Counts\", function () {",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.totalPurchaseOrders).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.totalGrnReceiptsLogged).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.totalCommittedAmount).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.totalIncurredGrnCost).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.outstandingLiability).to.be.at.least(0);",
+                  "});",
+                  "pm.test(\"Validate Project-Isolated Active Contractor and Labour Hours\", function () {",
+                  "    pm.expect(jsonData.data.activeContractorsCount).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.totalHeadcountDeployed).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.totalStandardHours).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.totalLabourWageCost).to.be.at.least(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/procurement-labour/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "procurement-labour", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "1.4 Generate Cost & Quality Control Unified Report (Week 10 Day 4)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Validate Cost Control & Overruns Breakdown\", function () {",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data).to.have.property('baselineBudget');",
+                  "    pm.expect(jsonData.data).to.have.property('revisedBudget');",
+                  "    pm.expect(jsonData.data).to.have.property('actualCostIncurred');",
+                  "    pm.expect(jsonData.data).to.have.property('netBudgetVariance');",
+                  "    pm.expect(jsonData.data).to.have.property('budgetStatus');",
+                  "    pm.expect(jsonData.data.activeBudgetOverrunsCount).to.be.at.least(0);",
+                  "});",
+                  "pm.test(\"Validate Quality Resolution and Delay Tracking\", function () {",
+                  "    pm.expect(jsonData.data.totalIssuesReported).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.qualityResolutionPercentage).to.be.within(0, 100);",
+                  "    pm.expect(jsonData.data.totalSiteDelayDays).to.be.at.least(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/cost-quality/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "cost-quality", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "1.5 Generate Executive Analytics & 0-100 Composite Health Score (Week 10 Day 5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Validate Composite Health Score within 0 to 100\", function () {",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.data.compositeHealthScore).to.be.within(0, 100);",
+                  "    pm.expect(['OPTIMAL', 'GOOD', 'ATTENTION_REQUIRED', 'CRITICAL']).to.include(jsonData.data.overallHealthStatus);",
+                  "});",
+                  "pm.test(\"Validate Sub-Dimension Health Categorizations\", function () {",
+                  "    pm.expect(['ON_BUDGET', 'WARNING', 'CRITICAL']).to.include(jsonData.data.budgetHealth);",
+                  "    pm.expect(['ON_SCHEDULE', 'DELAYED']).to.include(jsonData.data.scheduleHealth);",
+                  "    pm.expect(['SUFFICIENT', 'LOW_STOCK']).to.include(jsonData.data.inventoryHealth);",
+                  "    pm.expect(['PASSING', 'AUDIT_FAILURES']).to.include(jsonData.data.qualityHealth);",
+                  "});",
+                  "pm.test(\"Validate EVM Indices and Critical Escalations\", function () {",
+                  "    pm.expect(jsonData.data.cpi).to.be.a('number');",
+                  "    pm.expect(jsonData.data.spi).to.be.a('number');",
+                  "    pm.expect(jsonData.data.activeBlockersCount).to.be.at.least(0);",
+                  "    pm.expect(jsonData.data.unreadCriticalAlertsCount).to.be.at.least(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/analytics/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "analytics", "{{project_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Security & Negative Boundary Test Cases",
+      "item": [
+        {
+          "name": "2.1 Unauthenticated Request (Missing Bearer Token) -> 401 Unauthorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/weekly/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "weekly", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Invalid Project ID -> 404 Resource Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Error response indicates Project Not Found\", function () {",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/weekly/99999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "weekly", "99999"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

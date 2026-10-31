@@ -40,4 +40,10 @@ public interface StockLedgerRepository extends JpaRepository<StockLedger, Long> 
 
     @Query("SELECT COALESCE(SUM(s.quantity * s.unitPrice), 0) FROM StockLedger s WHERE s.projectId = :projectId AND s.transactionType = 'CONSUMPTION'")
     BigDecimal getTotalMaterialConsumptionCostByProjectId(@Param("projectId") Long projectId);
+
+    @Query("SELECT COUNT(DISTINCT s.material.id) FROM StockLedger s WHERE s.projectId = :projectId")
+    long countDistinctMaterialsByProjectId(@Param("projectId") Long projectId);
+
+    @Query("SELECT DISTINCT s.material FROM StockLedger s WHERE s.projectId = :projectId")
+    List<com.example.BuildTwin._0.domain.materials.model.Material> findDistinctMaterialsByProjectId(@Param("projectId") Long projectId);
 }

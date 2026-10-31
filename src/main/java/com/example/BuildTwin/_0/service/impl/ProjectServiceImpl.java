@@ -44,12 +44,10 @@ import java.util.stream.Collectors;
 public class ProjectServiceImpl implements ProjectService {
 
     private static final Set<String> ALLOWED_PROJECT_STATUSES = Set.of(
-            "PLANNED", "ACTIVE", "INACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"
-    );
+            "PLANNED", "ACTIVE", "INACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED");
 
     private static final Set<String> ALLOWED_PROJECT_TYPES = Set.of(
-            "RESIDENTIAL", "COMMERCIAL", "INFRASTRUCTURE", "INDUSTRIAL", "MIXED_USE"
-    );
+            "RESIDENTIAL", "COMMERCIAL", "INFRASTRUCTURE", "INDUSTRIAL", "MIXED_USE");
 
     private final ProjectRepository projectRepository;
     private final SiteRepository siteRepository;
@@ -72,13 +70,16 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         String projectStatus = request.getStatus() != null ? validateAndNormalizeStatus(request.getStatus()) : "ACTIVE";
-        String projectType = request.getProjectType() != null ? validateAndNormalizeProjectType(request.getProjectType()) : "RESIDENTIAL";
+        String projectType = request.getProjectType() != null
+                ? validateAndNormalizeProjectType(request.getProjectType())
+                : "RESIDENTIAL";
 
         Project project = Project.builder()
                 .name(request.getName().trim())
                 .code(code)
                 .description(request.getDescription())
-                .clientName(request.getClientName() != null ? request.getClientName().trim() : "Ashok Builders & Developers")
+                .clientName(request.getClientName() != null ? request.getClientName().trim()
+                        : "Ashok Builders & Developers")
                 .projectType(projectType)
                 .location(request.getLocation())
                 .status(projectStatus)
@@ -93,7 +94,8 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project savedProject = projectRepository.save(project);
 
-        // If a project manager was specified, automatically register the project role assignment
+        // If a project manager was specified, automatically register the project role
+        // assignment
         if (savedProject.getProjectManagerId() != null) {
             roleRepository.findByName("ROLE_PROJECT_MANAGER").ifPresent(pmRole -> {
                 userRepository.findById(savedProject.getProjectManagerId()).ifPresent(pmUser -> {
@@ -115,9 +117,9 @@ public class ProjectServiceImpl implements ProjectService {
                 "CREATE_PROJECT",
                 "PROJECT",
                 String.valueOf(savedProject.getId()),
-                "Created project: " + savedProject.getName() + " (" + savedProject.getCode() + ") with status " + savedProject.getStatus(),
-                null
-        );
+                "Created project: " + savedProject.getName() + " (" + savedProject.getCode() + ") with status "
+                        + savedProject.getStatus(),
+                null);
 
         return mapToProjectResponse(savedProject);
     }
@@ -137,13 +139,17 @@ public class ProjectServiceImpl implements ProjectService {
         if (hasSearch && hasStatus) {
             String q = search.trim();
             String st = status.trim().toUpperCase();
-            projectPage = projectRepository.findByStatusAndNameContainingIgnoreCaseOrStatusAndCodeContainingIgnoreCaseOrStatusAndLocationContainingIgnoreCase(
-                    st, q, st, q, st, q, pageable);
+            projectPage = projectRepository
+                    .findByStatusAndNameContainingIgnoreCaseOrStatusAndCodeContainingIgnoreCaseOrStatusAndLocationContainingIgnoreCase(
+                            st, q, st, q, st, q, pageable);
         } else if (hasSearch) {
             String q = search.trim();
-            projectPage = projectRepository.findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrLocationContainingIgnoreCase(q, q, q, pageable);
+            projectPage = projectRepository
+                    .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrLocationContainingIgnoreCase(q, q, q,
+                            pageable);
         } else if (hasStatus && hasType) {
-            projectPage = projectRepository.findByStatusAndProjectType(status.trim().toUpperCase(), projectType.trim().toUpperCase(), pageable);
+            projectPage = projectRepository.findByStatusAndProjectType(status.trim().toUpperCase(),
+                    projectType.trim().toUpperCase(), pageable);
         } else if (hasStatus) {
             projectPage = projectRepository.findByStatus(status.trim().toUpperCase(), pageable);
         } else if (hasType) {
@@ -201,16 +207,21 @@ public class ProjectServiceImpl implements ProjectService {
         project.setName(request.getName().trim());
         project.setCode(newCode);
         project.setDescription(request.getDescription());
-        if (request.getClientName() != null) project.setClientName(request.getClientName().trim());
-        if (request.getProjectType() != null) project.setProjectType(validateAndNormalizeProjectType(request.getProjectType()));
+        if (request.getClientName() != null)
+            project.setClientName(request.getClientName().trim());
+        if (request.getProjectType() != null)
+            project.setProjectType(validateAndNormalizeProjectType(request.getProjectType()));
         project.setLocation(request.getLocation());
-        if (request.getStatus() != null) project.setStatus(validateAndNormalizeStatus(request.getStatus()));
+        if (request.getStatus() != null)
+            project.setStatus(validateAndNormalizeStatus(request.getStatus()));
         project.setPlannedStartDate(request.getPlannedStartDate());
         project.setPlannedEndDate(request.getPlannedEndDate());
         project.setActualStartDate(request.getActualStartDate());
         project.setActualEndDate(request.getActualEndDate());
-        if (request.getEstimatedBudget() != null) project.setEstimatedBudget(request.getEstimatedBudget());
-        if (request.getCurrency() != null) project.setCurrency(request.getCurrency().toUpperCase());
+        if (request.getEstimatedBudget() != null)
+            project.setEstimatedBudget(request.getEstimatedBudget());
+        if (request.getCurrency() != null)
+            project.setCurrency(request.getCurrency().toUpperCase());
         project.setTotalBuiltUpAreaSqFt(request.getTotalBuiltUpAreaSqFt());
         project.setProjectManagerId(request.getProjectManagerId());
 
@@ -222,8 +233,7 @@ public class ProjectServiceImpl implements ProjectService {
                 "PROJECT",
                 String.valueOf(updatedProject.getId()),
                 "Updated project: " + updatedProject.getName() + " (" + updatedProject.getCode() + ")",
-                null
-        );
+                null);
 
         return mapToProjectResponse(updatedProject);
     }
@@ -252,9 +262,9 @@ public class ProjectServiceImpl implements ProjectService {
                 "UPDATE_PROJECT_STATUS",
                 "PROJECT",
                 String.valueOf(id),
-                "Changed status of project '" + project.getName() + "' from " + oldStatus + " to " + updated.getStatus(),
-                null
-        );
+                "Changed status of project '" + project.getName() + "' from " + oldStatus + " to "
+                        + updated.getStatus(),
+                null);
 
         if (notificationService.isPresent() && !oldStatus.equalsIgnoreCase(validatedStatus)) {
             try {
@@ -308,8 +318,7 @@ public class ProjectServiceImpl implements ProjectService {
                 "PROJECT",
                 String.valueOf(id),
                 "Deleted project: " + projectName + " (" + projectCode + ")",
-                null
-        );
+                null);
     }
 
     @Override
@@ -336,11 +345,13 @@ public class ProjectServiceImpl implements ProjectService {
 
     private String validateAndNormalizeStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
-            throw new BadRequestException("Project status cannot be blank. Allowed statuses: " + ALLOWED_PROJECT_STATUSES);
+            throw new BadRequestException(
+                    "Project status cannot be blank. Allowed statuses: " + ALLOWED_PROJECT_STATUSES);
         }
         String normalized = status.trim().toUpperCase();
         if (!ALLOWED_PROJECT_STATUSES.contains(normalized)) {
-            throw new BadRequestException("Invalid project status: '" + status + "'. Allowed statuses are: " + ALLOWED_PROJECT_STATUSES);
+            throw new BadRequestException(
+                    "Invalid project status: '" + status + "'. Allowed statuses are: " + ALLOWED_PROJECT_STATUSES);
         }
         return normalized;
     }
@@ -351,7 +362,8 @@ public class ProjectServiceImpl implements ProjectService {
         }
         String normalized = projectType.trim().toUpperCase();
         if (!ALLOWED_PROJECT_TYPES.contains(normalized)) {
-            throw new BadRequestException("Invalid project type: '" + projectType + "'. Allowed types are: " + ALLOWED_PROJECT_TYPES);
+            throw new BadRequestException(
+                    "Invalid project type: '" + projectType + "'. Allowed types are: " + ALLOWED_PROJECT_TYPES);
         }
         return normalized;
     }
@@ -387,6 +399,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .totalSitesCount(sitesCount)
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
+
                 .build();
     }
 

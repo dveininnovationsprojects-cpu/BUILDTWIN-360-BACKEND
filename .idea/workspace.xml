@@ -4,7 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="" />
+    <list default="true" id="9cd110f7-21be-425a-a497-76614e67f7b8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/issues/repository/IssueBlockerRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/issues/repository/IssueBlockerRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/repository/LabourDailyRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/labour/repository/LabourDailyRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/repository/StockLedgerRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/materials/repository/StockLedgerRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/notifications/repository/NotificationRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/notifications/repository/NotificationRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/procurement/repository/GrnRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/procurement/repository/GrnRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/procurement/repository/PurchaseOrderRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/procurement/repository/PurchaseOrderRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/reports/service/ReportServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/domain/reports/service/ReportServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/ProjectServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/BuildTwin/_0/service/impl/ProjectServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/domain/reports/service/ReportServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/example/BuildTwin/_0/domain/reports/service/ReportServiceTest.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

@@ -10,4 +10,5 @@ import java.util.List;
 public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Long> {
     List<PurchaseOrder> findByProjectId(Long projectId);
     List<PurchaseOrder> findBySupplierId(Long supplierId);
+    long countByProjectId(Long projectId);
 }

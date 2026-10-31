@@ -24,4 +24,7 @@ public interface LabourDailyRepository extends JpaRepository<LabourDaily, Long> 
 
     @Query("SELECT SUM(l.headcount) FROM LabourDaily l WHERE l.projectId = :projectId AND l.recordDate = :recordDate")
     Integer getTotalHeadcountForProjectAndDate(@Param("projectId") Long projectId, @Param("recordDate") LocalDate recordDate);
+
+    @Query("SELECT COUNT(DISTINCT l.contractor.id) FROM LabourDaily l WHERE l.projectId = :projectId")
+    int countDistinctContractorsByProjectId(@Param("projectId") Long projectId);
 }
