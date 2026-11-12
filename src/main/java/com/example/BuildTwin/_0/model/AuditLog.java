@@ -7,7 +7,13 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "audit_logs")
+@Table(name = "audit_logs", indexes = {
+        @Index(name = "idx_audit_username", columnList = "username"),
+        @Index(name = "idx_audit_action", columnList = "action"),
+        @Index(name = "idx_audit_entity_type", columnList = "entity_type"),
+        @Index(name = "idx_audit_entity_id", columnList = "entity_id"),
+        @Index(name = "idx_audit_created_at", columnList = "created_at")
+})
 @Getter
 @Setter
 @NoArgsConstructor
