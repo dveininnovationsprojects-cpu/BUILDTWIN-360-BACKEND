@@ -29,6 +29,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByProjectIdAndPriority(Long projectId, NotificationPriority priority);
 
+    long countByProjectIdAndStatus(Long projectId, NotificationStatus status);
+
+    long countByProjectIdAndStatusAndPriority(Long projectId, NotificationStatus status, NotificationPriority priority);
+
     Page<Notification> findByRecipientUsernameAndPriority(String username, NotificationPriority priority, Pageable pageable);
 
     long countByRecipientUsernameAndStatus(String username, NotificationStatus status);
@@ -47,7 +51,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countUrgentUnread(@Param("username") String username);
 
     @Query("SELECT COUNT(n) > 0 FROM Notification n WHERE n.projectId = :projectId AND n.notificationType = :type " +
-           "AND (:referenceId IS NULL OR n.referenceId = :referenceId) " +
+           "AND ((:referenceId IS NULL AND n.referenceId IS NULL) OR n.referenceId = :referenceId) " +
            "AND n.status = 'UNREAD' AND n.createdAt >= :since")
     boolean existsActiveUnreadAlert(
             @Param("projectId") Long projectId,

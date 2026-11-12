@@ -13,7 +13,10 @@ import java.util.List;
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
     List<Activity> findByProjectId(Long projectId);
 
-    @Query("SELECT a FROM Activity a WHERE a.projectId = :projectId AND a.plannedStartDate BETWEEN :startDate AND :endDate")
+    @Query("SELECT a FROM Activity a WHERE a.projectId = :projectId " +
+           "AND a.status != 'COMPLETED' " +
+           "AND a.plannedStartDate <= :endDate " +
+           "AND (a.plannedEndDate >= :startDate OR a.plannedEndDate IS NULL)")
     List<Activity> findLookaheadActivities(@Param("projectId") Long projectId,
                                            @Param("startDate") LocalDate startDate,
                                            @Param("endDate") LocalDate endDate);

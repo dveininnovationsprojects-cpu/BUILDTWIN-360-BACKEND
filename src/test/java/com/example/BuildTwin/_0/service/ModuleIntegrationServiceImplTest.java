@@ -1,6 +1,7 @@
 package com.example.BuildTwin._0.service;
 
 import com.example.BuildTwin._0.domain.projects.model.Project;
+import com.example.BuildTwin._0.domain.projects.model.Site;
 import com.example.BuildTwin._0.domain.projects.repository.ProjectRepository;
 import com.example.BuildTwin._0.dto.integration.*;
 import com.example.BuildTwin._0.dto.summary.ProjectProgressSummaryResponse;

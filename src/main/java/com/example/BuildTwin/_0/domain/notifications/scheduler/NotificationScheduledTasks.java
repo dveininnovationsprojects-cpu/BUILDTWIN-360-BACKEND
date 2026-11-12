@@ -115,8 +115,11 @@ public class NotificationScheduledTasks {
                 if (report != null && report.getOverruns() != null) {
                     for (BudgetOverrunReportDto.BudgetOverrunItemDto item : report.getOverruns()) {
                         if ("CRITICAL_OVERRUN".equalsIgnoreCase(item.getAlertSeverity()) || "WARNING_90_PERCENT".equalsIgnoreCase(item.getAlertSeverity())) {
-                            if (notificationService.isDuplicateActiveAlert(proj.getId(), NotificationType.BUDGET_OVERRUN, item.getActivityId())) {
-                                log.debug("Active BUDGET_OVERRUN alert exists within 24h for activity {}. Skipping duplicate dispatch.", item.getActivityId());
+                            Long refId = item.getActivityId() != null ? item.getActivityId()
+                                    : (item.getCostCode() != null ? (long) Math.abs(item.getCostCode().hashCode()) : null);
+
+                            if (notificationService.isDuplicateActiveAlert(proj.getId(), NotificationType.BUDGET_OVERRUN, refId)) {
+                                log.debug("Active BUDGET_OVERRUN alert exists within 24h for reference {}. Skipping duplicate dispatch.", refId);
                                 continue;
                             }
 
@@ -129,7 +132,7 @@ public class NotificationScheduledTasks {
                                     .notificationType(NotificationType.BUDGET_OVERRUN)
                                     .priority("CRITICAL_OVERRUN".equalsIgnoreCase(item.getAlertSeverity()) ? NotificationPriority.URGENT : NotificationPriority.HIGH)
                                     .referenceModule("COST_BUDGET")
-                                    .referenceId(item.getActivityId())
+                                    .referenceId(refId)
                                     .build());
                         }
                     }

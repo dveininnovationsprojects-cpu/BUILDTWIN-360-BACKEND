@@ -2,6 +2,8 @@ package com.example.BuildTwin._0.domain.issues.repository;
 
 import com.example.BuildTwin._0.domain.issues.model.IssueBlocker;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,4 +19,7 @@ public interface IssueBlockerRepository extends JpaRepository<IssueBlocker, Long
     long countByProjectIdAndStatus(Long projectId, String status);
     long countByProjectIdAndIssueType(Long projectId, String issueType);
     long countByProjectIdAndSeverity(Long projectId, String severity);
+
+    @Query("SELECT COALESCE(SUM(b.daysDelayed), 0) FROM IssueBlocker b WHERE b.projectId = :projectId")
+    int sumDaysDelayedByProjectId(@Param("projectId") Long projectId);
 }
