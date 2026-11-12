@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
-import com.example.BuildTwin._0.domain.projects.model.Project;
 
 @Configuration
 public class OpenApiConfig {
@@ -25,7 +24,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("BuildTwin 360 - Construction Progress Intelligence & Digital Site Control Platform")
-                        .description("Enterprise REST API Documentation for Ashok Builders & Developers, Padur, Chennai. Covering WBS scheduling, Daily Progress Reports (DPR), Labour productivity, Material inventory, Procurement, Budget control, Quality snags, Construction issues, Document repository, and Executive Analytics.")
+                        .description("Enterprise REST API Documentation for Ashok Builders & Developers, Padur, Chennai. Covering WBS scheduling, Daily Progress Reports (DPR), Labour productivity, Material inventory, Procurement, Budget control, Quality snags, Construction issues, Document repository, Module Integration, and Audit History Analytics.")
                         .version("1.0.0")
                         .contact(new Contact()
                                 .name("BuildTwin 360 Engineering Team")
@@ -39,18 +38,25 @@ public class OpenApiConfig {
                         new Server().url("https://api.buildtwin360.com").description("Production Server")
                 ))
                 .tags(List.of(
-                        new Tag().name("1. Identity & Access Management").description("Authentication, User management, RBAC, Project-specific role assignments"),
-                        new Tag().name("2. Project Hierarchy").description("Projects, Sites, Buildings, Floors, and Micro-zones"),
-                        new Tag().name("3. WBS & Schedule Management").description("Work Breakdown Structure, Activities, Precedence dependencies, Baseline freezing, Delay tracking"),
-                        new Tag().name("4. Daily Progress Reporting (DPR)").description("DPR submissions, Approvals, Multi-stage revisions, Progress snapshots, Geo-tagged site photos"),
-                        new Tag().name("5. Labour & Subcontractor Control").description("Contractor masters, Trade categories, Labour attendance, Activity hours, Overtime, Shift allocations"),
-                        new Tag().name("6. Materials & Inventory Control").description("Material catalog, Site indents, Stock ledger, Issue notes, Consumption logs, AI Forecasts"),
-                        new Tag().name("7. Procurement & Vendor Management").description("Vendors, Purchase Orders, Material Goods Receipt Notes (GRN), Inspections"),
-                        new Tag().name("8. Cost & Budget Control").description("Cost breakdown codes, Project budget heads, Budget revisions, Cost transactions"),
-                        new Tag().name("9. Quality Assurance & Snags").description("Inspection test plans, Quality checklists, Snag defect logging, Resolution evidence"),
-                        new Tag().name("10. Site Issues, Risks & Equipment").description("Site blocker issues, Project risk registers, Machinery & heavy equipment allocation"),
-                        new Tag().name("11. Document Management System (EDMS)").description("Project drawings, Version control, BOQ documents, Site approval records"),
-                        new Tag().name("12. System Governance & Audit").description("Audit trails, System notifications, Event bus processing, Report export requests")
+                        new Tag().name("1. Identity & Access Management").description("Authentication, User management, RBAC, and Project-specific role assignments"),
+                        new Tag().name("2. Project & Site Master Setup").description("Projects, Sites, Buildings, Floors, Zones, and Physical Lineage Hierarchy"),
+                        new Tag().name("3. Work Package & WBS Module").description("Work Breakdown Structure (WBS), Activity management, Quantity tracking, and Trade allocations"),
+                        new Tag().name("4. Activity Dependency & CPM Network Module").description("Precedence relationships (FS, SS, FF, SF), Lag times, Critical Path Method (CPM), and Network loop detection"),
+                        new Tag().name("5. Baseline Schedule & Progress Tracking Module").description("Baseline freezing, Planned vs Actual dates, S-curves, and Schedule variance metrics"),
+                        new Tag().name("6. Schedule Revision Tracking Module").description("Formal schedule change management, Revision numbers, Reason codes, and Impact assessments"),
+                        new Tag().name("7. Daily Progress Report (DPR) Module").description("DPR submissions, Approvals, Revisions, Geo-tagged site photos, and Daily field logs"),
+                        new Tag().name("8. Progress History Module").description("Historical audit snapshots, Daily cumulative progress timeline, and Trend analytics"),
+                        new Tag().name("9. Calculate Cumulative Progress Engine").description("Automated mathematical engine calculating physical & financial cumulative progress across all WBS levels"),
+                        new Tag().name("10. Schedule Delay Alert Support Module").description("Early warning engine, Critical path slippage alerts, Delay severity scoring, and Mitigations"),
+                        new Tag().name("11. Procurement & Goods Receipt (GRN)").description("Material Requests, Purchase Orders, Delivery Verification & Goods Receipt Notes"),
+                        new Tag().name("12. Module Integration & Collaboration").description("Unified Cross-Module Integration APIs: Spatial Hierarchy, WBS & Activities, Schedule Baselines, Lookahead Planning, DPR Field Logging, and Cumulative Progress Engine Integration."),
+                        new Tag().name("13. Issue, Blocker & Risk Register").description("Construction site blockers, Escalations, Severity classification, Owner assignment & Resolution SLA"),
+                        new Tag().name("14. Equipment & Asset Usage").description("Equipment register, Site mobilization, Operating hours, and Downtime tracking"),
+                        new Tag().name("15. Document & Photo Repository").description("Centralized electronic document management (EDMS), Drawings, Version control, and Site photos"),
+                        new Tag().name("17. Project Issue Lifecycle (5-Step Master Workflow)").description("End-to-End master workflow: Step 1 (Capture) -> Step 2 (PM Assign) -> Step 3 (Contractor Fix) -> Step 4 (QA Audit) -> Step 5 (Red Alert)"),
+                        new Tag().name("18. Audit & History Logging").description("Enterprise System Audit Trails, Compliance Logs, Security Tracking & Operational Activity Analytics"),
+                        new Tag().name("19. Notification & Communication Service").description("Real-time in-app alerts, Email notifications, Shortage alarms, and Scheduled background jobs"),
+                        new Tag().name("20. Executive Reports & Analytics Backend").description("Executive KPI dashboards, Consolidated weekly reports, Cost-Quality scores, and Export services")
                 ))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
